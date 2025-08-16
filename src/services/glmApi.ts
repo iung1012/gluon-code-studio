@@ -95,40 +95,34 @@ export default Component;
     const messages: GLMMessage[] = [
       {
         role: 'system',
-        content: `Você é um especialista em desenvolvimento web. Baseado na solicitação do usuário, gere um website completo usando JavaScript Monolítico (Single-File Architecture).
+        content: `Você é um desenvolvedor JavaScript especialista. Siga estas regras RIGOROSAMENTE:
 
-IMPORTANTE - ARQUITETURA MONOLÍTICA:
-- Crie APENAS 1 arquivo: app.js
-- TODO o código HTML, CSS e JavaScript deve estar em um único arquivo
-- Use template strings para HTML
-- Use objetos JavaScript para CSS-in-JS
-- Inclua todas as funcionalidades: roteamento SPA, componentes, estado, API calls
-- O arquivo deve ser completamente autossuficiente e funcional
+1. SEMPRE escreva código JavaScript MONOLITO (tudo em um único arquivo HTML)
+2. NUNCA modifique código existente, APENAS adicione ou edite o que o usuário solicitar especificamente
+3. Mantenha toda funcionalidade existente intacta
+4. Use apenas HTML, CSS inline/interno e JavaScript vanilla
+5. Estrutura obrigatória:
+   - HTML completo com DOCTYPE
+   - CSS dentro de <style> no <head>
+   - JavaScript dentro de <script> antes do </body>
+6. Quando o usuário pedir mudanças, identifique EXATAMENTE o que alterar e mantenha o resto igual
+7. Sempre forneça o código completo funcional em um único arquivo
 
-ESTRUTURA OBRIGATÓRIA do app.js:
-1. Configuração inicial e constantes
-2. Sistema de roteamento SPA
-3. Gerenciamento de estado global
-4. Componentes como funções JavaScript
-5. Estilos CSS-in-JS ou template strings
-6. Event listeners e interatividade
-7. Inicialização da aplicação
-
-Formato de resposta JSON:
+FORMATO DE RESPOSTA JSON OBRIGATÓRIO:
 {
   "files": [
     {
-      "name": "app.js",
-      "type": "file",
-      "path": "app.js",
-      "content": "// JavaScript Monolítico - Single File App\\n\\n// === CONFIGURAÇÃO ===\\nconst APP = {\\n  state: {},\\n  router: {},\\n  components: {},\\n  utils: {}\\n};\\n\\n// === ESTILOS ===\\nconst styles = \`/* CSS aqui */\`;\\n\\n// === COMPONENTES ===\\n// Funções que retornam HTML\\n\\n// === ROTEAMENTO ===\\n// Sistema SPA\\n\\n// === INICIALIZAÇÃO ===\\ndocument.addEventListener('DOMContentLoaded', () => {\\n  // Inject styles\\n  const styleEl = document.createElement('style');\\n  styleEl.textContent = styles;\\n  document.head.appendChild(styleEl);\\n  \\n  // Initialize app\\n});\\n\\n// === HTML STRUCTURE ===\\ndocument.body.innerHTML = \`<div id='app'></div>\`;"
+      "name": "index.html",
+      "type": "file", 
+      "path": "index.html",
+      "content": "<!DOCTYPE html>\\n<html lang=\\"pt-BR\\">\\n<head>\\n  <meta charset=\\"UTF-8\\">\\n  <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1.0\\">\\n  <title>Título</title>\\n  <style>\\n    /* CSS aqui */\\n  </style>\\n</head>\\n<body>\\n  <!-- HTML aqui -->\\n  <script>\\n    // JavaScript aqui\\n  </script>\\n</body>\\n</html>"
     }
   ]
 }`
       },
       {
         role: 'user',
-        content: `Crie um website JavaScript Monolítico (arquivo único) para: ${prompt}`
+        content: `Crie um website completo HTML monolítico para: ${prompt}`
       }
     ];
 
@@ -143,7 +137,7 @@ Formato de resposta JSON:
         body: JSON.stringify({
           model: 'glm-4-32b-0414-128k',
           messages,
-          temperature: 0.6,
+          temperature: 0.3,
           max_tokens: 8192
         })
       });

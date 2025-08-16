@@ -37,7 +37,7 @@ export const PromptInput = ({ onSubmit, isLoading }: PromptInputProps) => {
         <div className="flex-1 mb-6">
           <h2 className="text-lg font-medium mb-4">Descreva seu website</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Descreva sua ideia de website e eu vou gerar o código usando JavaScript Monolítico em arquivo único.
+            Descreva sua ideia de website e eu vou gerar um arquivo HTML completo e monolítico com tudo integrado.
           </p>
         </div>
 

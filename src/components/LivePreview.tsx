@@ -11,30 +11,15 @@ export const LivePreview = ({ files }: LivePreviewProps) => {
   useEffect(() => {
     if (!iframeRef.current || files.length === 0) return;
 
-    // Find the main JavaScript file (app.js for monolithic architecture)
-    const jsFile = files.find(file => 
-      (file.name === 'app.js' || file.name.endsWith('.js')) && file.type === 'file'
+    // Find the main HTML file (index.html for monolithic architecture)
+    const htmlFile = files.find(file => 
+      (file.name === 'index.html' || file.name.endsWith('.html')) && file.type === 'file'
     );
 
-    if (!jsFile?.content) return;
+    if (!htmlFile?.content) return;
 
-    // Create a complete HTML document that will execute the monolithic JS
-    const htmlContent = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JavaScript Monolítico Preview</title>
-    <style>
-        body { margin: 0; padding: 0; }
-    </style>
-</head>
-<body>
-    <script>
-        ${jsFile.content}
-    </script>
-</body>
-</html>`;
+    // Use the HTML content directly since it's already complete
+    const htmlContent = htmlFile.content;
 
     // Write the content to iframe
     const iframe = iframeRef.current;
@@ -54,9 +39,9 @@ export const LivePreview = ({ files }: LivePreviewProps) => {
           <div className="w-16 h-16 bg-muted rounded-lg mx-auto mb-4 flex items-center justify-center">
             <span className="text-2xl">⚡</span>
           </div>
-          <h3 className="text-lg font-medium mb-2">Preview JavaScript Monolítico</h3>
+          <h3 className="text-lg font-medium mb-2">Preview HTML Monolítico</h3>
           <p className="text-muted-foreground max-w-sm">
-            Gere um website JavaScript monolítico para ver o preview ao vivo aqui
+            Gere um website HTML monolítico para ver o preview ao vivo aqui
           </p>
         </div>
       </div>
