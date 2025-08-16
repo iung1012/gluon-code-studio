@@ -51,90 +51,113 @@ const Index = () => {
     } catch (error) {
       console.error('Error parsing project structure:', error);
       
-      // Fallback: create basic monolithic HTML structure
+      // Fallback: create basic monolithic JS structure
       return [
         {
-          name: "index.html",
+          name: "app.js",
           type: "file" as const,
-          path: "index.html",
-          content: `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Website Monolítico</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+          path: "app.js",
+          content: `// JavaScript Monolítico - Single File App
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+// === CONFIGURAÇÃO ===
+const APP = {
+  state: {
+    currentView: 'home',
+    data: {}
+  },
+  router: {},
+  components: {},
+  utils: {}
+};
 
-        .container {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 3rem;
-            text-align: center;
-            color: white;
-            max-width: 500px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
+// === ESTILOS ===
+const styles = \`
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-        p {
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-        }
+.container {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 3rem;
+  text-align: center;
+  color: white;
+  max-width: 500px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
 
-        button {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: 600;
-            transition: transform 0.3s ease;
-        }
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
 
-        button:hover {
-            transform: translateY(-2px);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Website Monolítico</h1>
-        <p>Aplicação HTML completa gerada com IA</p>
-        <button onclick="showMessage()">Clique Aqui</button>
-    </div>
+p {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
 
-    <script>
-        function showMessage() {
-            alert('Aplicação HTML monolítica funcionando perfeitamente!');
-        }
+button {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: transform 0.3s ease;
+}
 
-        console.log('Website HTML monolítico carregado com sucesso!');
-    </script>
-</body>
-</html>`
+button:hover {
+  transform: translateY(-2px);
+}
+\`;
+
+// === COMPONENTES ===
+APP.components.main = () => \`
+  <div class="container">
+    <h1>Website Monolítico</h1>
+    <p>Aplicação JavaScript completa gerada com IA</p>
+    <button onclick="APP.utils.showMessage()">Clique Aqui</button>
+  </div>
+\`;
+
+// === UTILITÁRIOS ===
+APP.utils.showMessage = () => {
+  alert('Aplicação JavaScript monolítica funcionando perfeitamente!');
+};
+
+// === RENDERIZAÇÃO ===
+APP.render = () => {
+  document.body.innerHTML = APP.components.main();
+};
+
+// === INICIALIZAÇÃO ===
+document.addEventListener('DOMContentLoaded', () => {
+  // Inject styles
+  const styleEl = document.createElement('style');
+  styleEl.textContent = styles;
+  document.head.appendChild(styleEl);
+  
+  // Initialize app
+  APP.render();
+  
+  console.log('Website JavaScript monolítico carregado com sucesso!');
+});`
         }
       ];
     }
