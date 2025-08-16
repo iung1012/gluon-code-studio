@@ -13,13 +13,26 @@ interface Message {
   timestamp: Date;
 }
 
+interface SelectedElement {
+  tag: string;
+  text: string;
+  selector: string;
+  position: { x: number; y: number };
+}
+
 interface ChatPanelProps {
   onSendMessage: (message: string) => Promise<void>;
   isLoading: boolean;
   initialMessages?: Message[];
+  selectedElement?: SelectedElement | null;
 }
 
-export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: ChatPanelProps) => {
+export const ChatPanel = ({ 
+  onSendMessage, 
+  isLoading, 
+  initialMessages = [],
+  selectedElement 
+}: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -170,7 +183,11 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Descreva as alterações..."
+              placeholder={
+                selectedElement 
+                  ? `Alterar ${selectedElement.tag.toUpperCase()}: "${selectedElement.text.substring(0, 30)}..."`
+                  : "Descreva as alterações..."
+              }
               className="min-h-[60px] max-h-[120px] pr-12 text-sm resize-none border-border/50 bg-background/50 focus:ring-primary/10 focus:border-primary/50"
               disabled={isLoading}
             />
