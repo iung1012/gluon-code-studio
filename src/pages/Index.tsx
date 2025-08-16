@@ -1,59 +1,88 @@
 import { useState, useEffect } from "react";
-import { GLMApiService } from "@/services/glmApi";
-import { AdvancedCodeGenerator } from "@/services/advancedCodeGenerator";
-import { DownloadManager } from "@/utils/downloadManager";
-import { ApiKeyInput } from "@/components/ApiKeyInput";
-import { WelcomeScreen } from "@/components/WelcomeScreen";
-import { SidebarMenu } from "@/components/SidebarMenu";
-import { ResponsivePreview } from "@/components/ResponsivePreview";
+import { PromptInput } from "@/components/PromptInput";
+import { FileTree, FileNode } from "@/components/FileTree";
 import { CodePreview } from "@/components/CodePreview";
+import { ApiKeyInput } from "@/components/ApiKeyInput";
+import { GLMApiService } from "@/services/glmApi";
+import { useToast } from "@/hooks/use-toast";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { toast } from "sonner";
-import { FileNode } from "@/components/FileTree";
 
-export default function Index() {
+const Index = () => {
   const [apiKey, setApiKey] = useState<string>("");
   const [glmService, setGlmService] = useState<GLMApiService | null>(null);
-  const [codeGenerator, setCodeGenerator] = useState<AdvancedCodeGenerator | null>(null);
   const [files, setFiles] = useState<FileNode[]>([]);
-  const [selectedFile, setSelectedFile] = useState<{ path: string; content: string } | undefined>();
+  const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
-  const [htmlContent, setHtmlContent] = useState<string>("");
-  const [cssContent, setCssContent] = useState<string>("");
-  const [jsContent, setJsContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentView, setCurrentView] = useState<'welcome' | 'editor'>('welcome');
-  const [currentChatId, setCurrentChatId] = useState<string>("");
-  const [projectName, setProjectName] = useState<string>("");
+  const { toast } = useToast();
 
-  // Load API key on mount
+  // Load API key from localStorage on mount
   useEffect(() => {
-    const savedKey = localStorage.getItem("glm_api_key");
-    if (savedKey) {
-      handleApiKeySubmit(savedKey);
+    const savedApiKey = localStorage.getItem("glm-api-key");
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+      setGlmService(new GLMApiService(savedApiKey));
     }
   }, []);
 
   const handleApiKeySubmit = (key: string) => {
     setApiKey(key);
+    localStorage.setItem("glm-api-key", key);
     setGlmService(new GLMApiService(key));
-    setCodeGenerator(new AdvancedCodeGenerator(key));
-    localStorage.setItem("glm_api_key", key);
+    toast({
+      title: "API Key Saved",
+      description: "You can now start generating websites!",
+    });
   };
 
   const parseProjectStructure = (content: string): FileNode[] => {
     try {
-      const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      // Remove any markdown code blocks
+      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
       const parsed = JSON.parse(cleanContent);
       return parsed.files || [];
     } catch (error) {
       console.error('Error parsing project structure:', error);
+      // Fallback: create a single file with the generated content
       return [{
         name: "App.tsx",
         type: "file" as const,
         path: "src/App.tsx",
         content: content
       }];
+    }
+  };
+
+  const handlePromptSubmit = async (prompt: string) => {
+    if (!glmService) return;
+
+    setIsLoading(true);
+    try {
+      const response = await glmService.generateProjectStructure(prompt);
+      const parsedFiles = parseProjectStructure(response);
+      
+      setFiles(parsedFiles);
+      setGeneratedCode(response);
+      
+      // Auto-select the first file
+      const firstFile = findFirstFile(parsedFiles);
+      if (firstFile) {
+        setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
+      }
+
+      toast({
+        title: "Website Generated!",
+        description: "Your website structure has been created successfully.",
+      });
+    } catch (error) {
+      console.error('Error generating code:', error);
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate website. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -70,141 +99,38 @@ export default function Index() {
     return null;
   };
 
-  const handlePromptSubmit = async (prompt: string) => {
-    if (!codeGenerator) return;
-
-    setIsLoading(true);
-    setCurrentView('editor');
-    setProjectName(DownloadManager.generateProjectName(prompt));
-    
-    try {
-      // Generate advanced project
-      const project = await codeGenerator.generateAdvancedProject(prompt);
-      
-      // Set content for preview
-      setHtmlContent(project.html);
-      setCssContent(project.css);
-      setJsContent(project.javascript);
-      
-      // Parse files for code view
-      const parsedFiles = project.files.map(file => ({
-        name: file.name,
-        type: "file" as const,
-        path: file.path,
-        content: file.content
-      }));
-      
-      setFiles(parsedFiles);
-      
-      // Auto-select first file
-      const firstFile = parsedFiles[0];
-      if (firstFile) {
-        setSelectedFile({
-          path: firstFile.path,
-          content: firstFile.content || ""
-        });
-        setGeneratedCode(firstFile.content || "");
-      }
-      
-      toast.success("Projeto avançado gerado com sucesso!");
-    } catch (error) {
-      console.error("Error generating advanced project:", error);
-      toast.error("Erro ao gerar projeto. Verifique sua chave API.");
-      setCurrentView('welcome');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleFileSelect = (path: string, content: string) => {
     setSelectedFile({ path, content });
   };
 
-  const handleNewChat = () => {
-    setCurrentView('welcome');
-    setFiles([]);
-    setSelectedFile(undefined);
-    setGeneratedCode("");
-    setHtmlContent("");
-    setCssContent("");
-    setJsContent("");
-    setCurrentChatId("");
-    setProjectName("");
-  };
-
-  const handleSelectChat = (chatId: string) => {
-    setCurrentChatId(chatId);
-    // Implementar carregamento do chat do histórico
-    toast("Funcionalidade de histórico em desenvolvimento");
-  };
-
-  const handleDownload = async () => {
-    if (!files.length) return;
-    
-    try {
-      const projectFiles = files.map(file => ({
-        name: file.name,
-        path: file.path,
-        content: file.content || "",
-        type: file.path.split('.').pop() || 'txt'
-      }));
-
-      await DownloadManager.downloadAsZip({
-        files: projectFiles,
-        projectName: projectName || 'website-projeto'
-      });
-      
-      toast.success("Download iniciado!");
-    } catch (error) {
-      console.error("Error downloading project:", error);
-      toast.error("Erro ao fazer download do projeto");
-    }
-  };
-
-  if (!apiKey) {
+  if (!apiKey || !glmService) {
     return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
   }
 
   return (
-    <div className="min-h-screen w-full relative">
-      {/* Sidebar Menu */}
-      <SidebarMenu 
-        onNewChat={handleNewChat}
-        onSelectChat={handleSelectChat}
-        currentChatId={currentChatId}
-      />
-      
-      {/* Main Content */}
-      {currentView === 'welcome' ? (
-        <WelcomeScreen 
-          onSubmit={handlePromptSubmit} 
-          isLoading={isLoading} 
-        />
-      ) : (
-        <div className="h-screen">
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={60} minSize={40}>
-              <ResponsivePreview 
-                htmlContent={htmlContent}
-                cssContent={cssContent}
-                jsContent={jsContent}
-                onDownload={handleDownload}
-              />
-            </ResizablePanel>
-            
-            <ResizableHandle />
-            
-            <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
-              <CodePreview 
-                files={files}
-                selectedFile={selectedFile}
-                onFileSelect={handleFileSelect}
-                generatedCode={generatedCode}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
-      )}
+    <div className="h-screen bg-background">
+      <ResizablePanelGroup direction="horizontal" className="h-full">
+        {/* Left Panel - Prompt Input */}
+        <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
+          <div className="h-full border-r border-border">
+            <PromptInput onSubmit={handlePromptSubmit} isLoading={isLoading} />
+          </div>
+        </ResizablePanel>
+        
+        <ResizableHandle />
+        
+        {/* Right Panel - Preview with File Tree */}
+        <ResizablePanel defaultSize={70} minSize={55}>
+          <CodePreview 
+            files={files}
+            selectedFile={selectedFile}
+            onFileSelect={handleFileSelect}
+            generatedCode={!selectedFile ? generatedCode : undefined}
+          />
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
-}
+};
+
+export default Index;
