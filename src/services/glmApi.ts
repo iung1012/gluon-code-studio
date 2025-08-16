@@ -1,4 +1,3 @@
-
 interface GLMMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -30,7 +29,7 @@ interface StreamCallbacks {
 export class GLMApiService {
   private apiKey: string;
   private baseUrl = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-  private model = 'glm-4-flash';
+  private model = 'glm-4-plus';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -110,26 +109,44 @@ Retorne o HTML completo modificado agora:`
     console.log('🚀 Calling GLM Streaming API with model:', this.model);
     
     try {
+      const requestBody = {
+        model: this.model,
+        messages,
+        temperature: 0.4,
+        max_tokens: 4000,
+        top_p: 0.8,
+        stream: true
+      };
+
+      console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: this.model,
-          messages,
-          temperature: 0.4,
-          max_tokens: 8000,
-          top_p: 0.7,
-          stream: true
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ GLM Streaming API error response:', response.status, errorText);
-        const error = new Error(`GLM API error: ${response.status} ${response.statusText}`);
+        
+        let errorMessage = `GLM API error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.error?.message) {
+            errorMessage = `GLM API error: ${errorData.error.message}`;
+          }
+        } catch (e) {
+          // Keep original error message if JSON parsing fails
+        }
+        
+        const error = new Error(errorMessage);
         callbacks.onError?.(error);
         throw error;
       }
@@ -209,25 +226,42 @@ Retorne o HTML completo modificado agora:`
     console.log('🚀 Calling GLM API with model:', this.model);
     
     try {
+      const requestBody = {
+        model: this.model,
+        messages,
+        temperature: 0.4,
+        max_tokens: 4000,
+        top_p: 0.8
+      };
+
+      console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: this.model,
-          messages,
-          temperature: 0.4,
-          max_tokens: 8000,
-          top_p: 0.7
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ GLM API error response:', response.status, errorText);
-        throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
+        
+        let errorMessage = `GLM API error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.error?.message) {
+            errorMessage = `GLM API error: ${errorData.error.message}`;
+          }
+        } catch (e) {
+          // Keep original error message if JSON parsing fails
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data: GLMResponse = await response.json();
