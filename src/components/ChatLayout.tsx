@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-react";
@@ -125,20 +126,20 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
   return (
     <div className="h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="border-b border-border bg-card">
+      <div className="border-b bg-card/30 backdrop-blur-sm">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={onBackToInput}
-              className="gap-2"
+              className="gap-2 hover:bg-muted/50"
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar ao Início
             </Button>
-            <div className="h-6 w-px bg-border" />
-            <h2 className="font-semibold">Website Gerado</h2>
+            <div className="h-4 w-px bg-border/50" />
+            <h2 className="font-medium text-foreground/90">Website Gerado</h2>
           </div>
           
           <div className="flex items-center gap-2">
@@ -146,7 +147,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={() => setChatVisible(!chatVisible)}
-              className="gap-2"
+              className="gap-2 bg-background/50 hover:bg-muted/50"
             >
               {chatVisible ? (
                 <>
@@ -161,11 +162,11 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               )}
             </Button>
             
-            <div className="h-6 w-px bg-border" />
+            <div className="h-4 w-px bg-border/50" />
             
             {/* Device Selector */}
             <Select value={previewDevice} onValueChange={(value: any) => setPreviewDevice(value)}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[120px] bg-background/50">
                 <SelectValue>
                   <div className="flex items-center gap-2">
                     {(() => {
@@ -188,13 +189,13 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               </SelectContent>
             </Select>
             
-            <div className="h-6 w-px bg-border" />
+            <div className="h-4 w-px bg-border/50" />
             
             <Button
               variant="outline"
               size="sm"
               onClick={downloadHtml}
-              className="gap-2"
+              className="gap-2 bg-background/50 hover:bg-muted/50"
             >
               <Download className="w-4 h-4" />
               HTML
@@ -203,7 +204,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={downloadZip}
-              className="gap-2"
+              className="gap-2 bg-background/50 hover:bg-muted/50"
             >
               <Download className="w-4 h-4" />
               ZIP
@@ -212,7 +213,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={openInNewTab}
-              className="gap-2"
+              className="gap-2 bg-background/50 hover:bg-muted/50"
             >
               <ExternalLink className="w-4 h-4" />
               Abrir
@@ -221,7 +222,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={onNewProject}
-              className="gap-2 text-destructive hover:text-destructive"
+              className="gap-2 text-destructive hover:text-destructive bg-background/50 hover:bg-destructive/10"
             >
               <RotateCcw className="w-4 h-4" />
               Novo Projeto
@@ -231,9 +232,9 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         {chatVisible && (
-          <div className="w-80 border-r border-border">
+          <div className="w-80 border-r bg-card/20 backdrop-blur-sm">
             <ChatPanel
               onSendMessage={onSendMessage}
               isLoading={isLoading}
@@ -241,7 +242,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
           </div>
         )}
         
-        <div className="flex-1">
+        <div className="flex-1 bg-muted/20">
           <LivePreview
             files={files}
             generatedCode={generatedCode}
