@@ -29,7 +29,7 @@ interface StreamCallbacks {
 export class GLMApiService {
   private apiKey: string;
   private baseUrl = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-  private model = 'glm-4-plus';
+  private model = 'glm-4.5';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
