@@ -25,38 +25,101 @@ export const LivePreview = ({ files, className }: LivePreviewProps) => {
   };
 
   const createPreviewContent = () => {
+    console.log('🎬 Creating preview from', files.length, 'files');
+    
     // Find the main HTML file
     const htmlFile = files.find(file => 
       file.name.toLowerCase() === 'index.html' || 
-      file.path.toLowerCase().includes('index.html')
+      file.path.toLowerCase().includes('index.html') ||
+      file.name.toLowerCase().endsWith('.html')
     );
 
     if (!htmlFile || !htmlFile.content) {
-      return '<html><body><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666;">Nenhum arquivo HTML encontrado</div></body></html>';
+      console.log('❌ No HTML file found, creating fallback');
+      return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #333;
+        }
+        .message {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+        h1 { color: #555; margin-bottom: 20px; }
+        p { color: #777; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="message">
+        <h1>⚠️ Nenhum arquivo HTML encontrado</h1>
+        <p>O sistema não conseguiu localizar um arquivo HTML válido para exibir o preview.</p>
+        <p>Tente gerar novamente com instruções mais específicas.</p>
+    </div>
+</body>
+</html>`;
     }
 
     let htmlContent = htmlFile.content;
+    console.log('🔨 Processing HTML file:', htmlFile.name);
 
-    // Inject CSS files
-    const cssFiles = files.filter(file => file.name.endsWith('.css') && file.content);
+    // Inject CSS files into the HTML
+    const cssFiles = files.filter(file => 
+      file.name.endsWith('.css') && file.content && file.content.trim()
+    );
+    
+    console.log('🎨 Found', cssFiles.length, 'CSS files');
     cssFiles.forEach(cssFile => {
-      const cssContent = `<style>\n${cssFile.content}\n</style>`;
-      htmlContent = htmlContent.replace('</head>', `${cssContent}\n</head>`);
+      const cssContent = `<style>\n/* ${cssFile.name} */\n${cssFile.content}\n</style>`;
+      if (htmlContent.includes('</head>')) {
+        htmlContent = htmlContent.replace('</head>', `${cssContent}\n</head>`);
+      } else {
+        htmlContent = htmlContent.replace('<html', `<head>${cssContent}</head>\n<html`);
+      }
     });
 
-    // Inject JavaScript files
-    const jsFiles = files.filter(file => file.name.endsWith('.js') && file.content);
+    // Inject JavaScript files into the HTML
+    const jsFiles = files.filter(file => 
+      file.name.endsWith('.js') && file.content && file.content.trim()
+    );
+    
+    console.log('⚡ Found', jsFiles.length, 'JS files');
     jsFiles.forEach(jsFile => {
-      const scriptContent = `<script>\n${jsFile.content}\n</script>`;
-      htmlContent = htmlContent.replace('</body>', `${scriptContent}\n</body>`);
+      const scriptContent = `<script>\n/* ${jsFile.name} */\n${jsFile.content}\n</script>`;
+      if (htmlContent.includes('</body>')) {
+        htmlContent = htmlContent.replace('</body>', `${scriptContent}\n</body>`);
+      } else {
+        htmlContent = htmlContent + scriptContent;
+      }
     });
 
-    // Add meta viewport if not present
+    // Ensure viewport meta tag exists
     if (!htmlContent.includes('viewport')) {
       const viewportMeta = '<meta name="viewport" content="width=device-width, initial-scale=1.0">';
-      htmlContent = htmlContent.replace('<head>', `<head>\n${viewportMeta}`);
+      if (htmlContent.includes('<head>')) {
+        htmlContent = htmlContent.replace('<head>', `<head>\n${viewportMeta}`);
+      } else {
+        htmlContent = htmlContent.replace('<html', `<head>${viewportMeta}</head>\n<html`);
+      }
     }
 
+    console.log('✅ Preview content ready, length:', htmlContent.length);
     return htmlContent;
   };
 

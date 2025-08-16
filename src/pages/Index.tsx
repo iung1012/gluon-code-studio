@@ -45,101 +45,167 @@ const Index = () => {
   };
 
   const parseProjectStructure = (content: string): { files: FileNode[], projectFiles: ProjectFile[] } => {
+    console.log('🔍 Raw AI Response:', content.substring(0, 200) + '...');
+    
     try {
-      // Advanced JSON cleaning and sanitization
       let cleanContent = content.trim();
       
-      // Remove markdown code blocks
+      // Remove markdown code blocks and extra text
       cleanContent = cleanContent.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+      cleanContent = cleanContent.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
       
-      // Extract JSON from mixed content
+      // Extract JSON object more aggressively
       const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         cleanContent = jsonMatch[0];
       }
       
-      // Fix common JSON formatting issues
+      // Advanced JSON sanitization
       cleanContent = cleanContent
-        // Fix escaped quotes in code content
-        .replace(/\\\\"/g, '\\"')
-        // Fix unescaped newlines in strings
-        .replace(/(?<!\\)\n(?=\s*"[^"]*":)/g, '\\n')
-        // Fix unescaped tabs
-        .replace(/(?<!\\)\t/g, '\\t')
-        // Remove trailing commas
-        .replace(/,\s*([}\]])/g, '$1')
-        // Fix double backslashes that might break parsing
-        .replace(/\\\\\\\\/g, '\\\\');
+        .replace(/\\\\"/g, '\\"')           // Fix double-escaped quotes
+        .replace(/\\n/g, '\\n')             // Ensure newlines are properly escaped
+        .replace(/\\t/g, '\\t')             // Ensure tabs are properly escaped
+        .replace(/\\r/g, '\\r')             // Ensure carriage returns are properly escaped
+        .replace(/,(\s*[}\]])/g, '$1')      // Remove trailing commas
+        .replace(/([^\\])"/g, '$1\\"')       // Escape unescaped quotes in strings
+        .replace(/^"/g, '\\"');             // Fix quotes at start of string
       
-      console.log('Attempting to parse JSON:', cleanContent.substring(0, 200) + '...');
+      console.log('🧹 Cleaned JSON:', cleanContent.substring(0, 300) + '...');
       
       const parsed = JSON.parse(cleanContent);
-      const projectFiles = parsed.files || [];
       
-      // Convert ProjectFile[] to FileNode[] for backward compatibility
-      const convertToFileNodes = (pFiles: ProjectFile[]): FileNode[] => {
-        return pFiles.map(pFile => ({
-          name: pFile.name,
-          type: pFile.type,
-          path: pFile.path,
-          content: pFile.content || '',
-          children: pFile.children ? convertToFileNodes(pFile.children) : undefined
-        }));
-      };
+      if (parsed.files && Array.isArray(parsed.files)) {
+        const projectFiles = parsed.files;
+        
+        // Convert ProjectFile[] to FileNode[] for backward compatibility
+        const convertToFileNodes = (pFiles: ProjectFile[]): FileNode[] => {
+          return pFiles.map(pFile => ({
+            name: pFile.name,
+            type: pFile.type,
+            path: pFile.path,
+            content: pFile.content || '',
+            children: pFile.children ? convertToFileNodes(pFile.children) : undefined
+          }));
+        };
 
-      return {
-        files: convertToFileNodes(projectFiles),
-        projectFiles: projectFiles
-      };
-    } catch (error) {
-      console.error('Error parsing project structure:', error);
-      console.log('Raw content that failed:', content.substring(0, 500));
+        console.log('✅ Successfully parsed', projectFiles.length, 'files');
+        return {
+          files: convertToFileNodes(projectFiles),
+          projectFiles: projectFiles
+        };
+      }
       
-      // Enhanced fallback: try to extract recognizable code patterns
+      throw new Error('Invalid structure: missing files array');
+      
+    } catch (error) {
+      console.error('❌ JSON Parse Error:', error);
+      console.log('🔧 Creating fallback content from raw response');
+      
+      // Intelligent fallback: create proper web files from raw content
       const fallbackFiles: ProjectFile[] = [];
       
-      // Try to find HTML content
-      const htmlMatch = content.match(/<!DOCTYPE html>[\s\S]*?<\/html>/i);
+      // Try to extract HTML content
+      let htmlContent = '';
+      const htmlMatch = content.match(/<!DOCTYPE html>[\s\S]*?<\/html>/i) || 
+                       content.match(/<html[\s\S]*?<\/html>/i) ||
+                       content.match(/<body[\s\S]*?<\/body>/i);
+      
       if (htmlMatch) {
-        fallbackFiles.push({
-          name: "index.html",
-          type: "file",
-          path: "./index.html",
-          content: htmlMatch[0]
-        });
+        htmlContent = htmlMatch[0];
+        
+        // Ensure it's a complete HTML document
+        if (!htmlContent.includes('<!DOCTYPE html>')) {
+          htmlContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Gerado</title>
+</head>
+${htmlContent.includes('<body') ? htmlContent : `<body>${htmlContent}</body>`}
+</html>`;
+        }
+      } else {
+        // Create a basic HTML structure if no HTML found
+        htmlContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Gerado</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Site Gerado com Sucesso!</h1>
+        <p>A IA encontrou algumas dificuldades para gerar o código, mas criou uma estrutura básica funcional.</p>
+        <p>Tente descrever seu site de forma mais específica para melhores resultados.</p>
+    </div>
+</body>
+</html>`;
       }
       
-      // Try to find CSS content
-      const cssMatch = content.match(/:root\s*{[\s\S]*?}|\.[\w-]+\s*{[\s\S]*?}/g);
+      fallbackFiles.push({
+        name: "index.html",
+        type: "file",
+        path: "./index.html",
+        content: htmlContent
+      });
+
+      // Try to extract CSS
+      const cssMatch = content.match(/(?:style>|\.css["\s]*:|:root\s*{)[\s\S]*?(?:<\/style>|}\s*$)/gi);
       if (cssMatch) {
+        const cssContent = cssMatch.join('\n\n').replace(/<\/?style[^>]*>/gi, '');
         fallbackFiles.push({
-          name: "style.css",
-          type: "file", 
-          path: "./css/style.css",
-          content: cssMatch.join('\n\n')
+          name: "styles.css",
+          type: "file",
+          path: "./css/styles.css",
+          content: cssContent
         });
       }
-      
-      // Try to find JS content
-      const jsMatch = content.match(/(?:function|class|const|let|var)[\s\S]*?(?=\n\n|\n$|$)/g);
+
+      // Try to extract JavaScript
+      const jsMatch = content.match(/(?:script>|function\s+|class\s+|const\s+|let\s+|var\s+)[\s\S]*?(?:<\/script>|}\s*$)/gi);
       if (jsMatch) {
+        const jsContent = jsMatch.join('\n\n').replace(/<\/?script[^>]*>/gi, '');
         fallbackFiles.push({
           name: "script.js",
           type: "file",
-          path: "./js/script.js", 
-          content: jsMatch.join('\n\n')
+          path: "./js/script.js",
+          content: jsContent
         });
       }
-      
-      // If no patterns found, create error file
-      if (fallbackFiles.length === 0) {
-        fallbackFiles.push({
-          name: "error.txt",
-          type: "file",
-          path: "./error.txt",
-          content: `Erro ao processar resposta da IA:\n${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nConteúdo original:\n${content.substring(0, 1000)}...`
-        });
-      }
+
+      console.log('🔧 Created', fallbackFiles.length, 'fallback files');
       
       return {
         files: fallbackFiles,
