@@ -1,22 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone, MousePointer } from "lucide-react";
 import { ChatPanel } from "./ChatPanel";
 import { LivePreview } from "./LivePreview";
 import { FileNode } from "./FileTree";
 import { cn } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import JSZip from 'jszip';
-import { ElementSelector } from "./ElementSelector";
-
-interface SelectedElement {
-  element: HTMLElement;
-  selector: string;
-  type: string;
-  text?: string;
-  position: { x: number; y: number; width: number; height: number };
-}
 
 interface ChatLayoutProps {
   files: FileNode[];
@@ -27,6 +18,13 @@ interface ChatLayoutProps {
   onSendMessage: (message: string) => Promise<void>;
   generatedCode?: string;
   isLoading: boolean;
+}
+
+interface SelectedElement {
+  tag: string;
+  text: string;
+  selector: string;
+  position: { x: number; y: number };
 }
 
 export const ChatLayout = ({
@@ -43,8 +41,6 @@ export const ChatLayout = ({
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
-  const [isChatMode, setIsChatMode] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
 
   const downloadHtml = () => {
@@ -123,51 +119,24 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
     }
   };
 
-  const handleElementSelect = (element: SelectedElement | null) => {
-    setSelectedElement(element);
-    if (element) {
-      toast({
-        title: "Elemento Selecionado",
-        description: `${element.type} selecionado: "${element.text?.substring(0, 50)}${element.text && element.text.length > 50 ? '...' : ''}"`,
-      });
-    }
-  };
-
-  const handleChatMessage = async (message: string, elementContext?: SelectedElement, images?: string[]) => {
-    let contextualMessage = message;
-    
-    if (elementContext) {
-      contextualMessage = `Alterar o ${elementContext.type} que contém "${elementContext.text}" para: ${message}`;
-    }
-    
-    console.log('Chat message with context:', { message, elementContext, images });
-    
-    await onSendMessage(contextualMessage);
-    
-    // Clear selection after sending message
-    setSelectedElement(null);
+  const handleElementSelect = (elementInfo: SelectedElement) => {
+    setSelectedElement(elementInfo);
     setIsSelectionMode(false);
-  };
-
-  const toggleSelectionMode = () => {
-    setIsSelectionMode(!isSelectionMode);
-    if (!isSelectionMode) {
-      setSelectedElement(null);
-    }
     toast({
-      title: isSelectionMode ? "Modo Seleção Desativado" : "Modo Seleção Ativado",
-      description: isSelectionMode 
-        ? "Você pode agora usar o chat normalmente" 
-        : "Clique em elementos da página para selecioná-los",
+      title: "Elemento Selecionado",
+      description: `${elementInfo.tag.toUpperCase()}: "${elementInfo.text.substring(0, 50)}${elementInfo.text.length > 50 ? '...' : ''}"`,
     });
   };
 
-  const toggleChatMode = () => {
-    setIsChatMode(!isChatMode);
-    if (!isChatMode) {
+  const handleSendMessageWithElement = async (message: string) => {
+    let enhancedMessage = message;
+    
+    if (selectedElement) {
+      enhancedMessage = `Modifique o elemento ${selectedElement.tag.toUpperCase()} com o texto "${selectedElement.text}" (seletor: ${selectedElement.selector}). ${message}`;
       setSelectedElement(null);
-      setIsSelectionMode(false);
     }
+    
+    await onSendMessage(enhancedMessage);
   };
 
   const deviceIcons = {
@@ -183,30 +152,47 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 flex flex-col">
       {/* Header */}
-      <div className="border-b bg-card/30 backdrop-blur-sm">
+      <div className="border-b bg-white/70 backdrop-blur-xl shadow-sm">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={onBackToInput}
-              className="gap-2 hover:bg-muted/50"
+              className="gap-2 hover:bg-slate-100/80 text-slate-700"
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar ao Início
             </Button>
-            <div className="h-4 w-px bg-border/50" />
-            <h2 className="font-medium text-foreground/90">Website Gerado</h2>
+            <div className="h-4 w-px bg-slate-200" />
+            <h2 className="font-medium text-slate-800">Website Gerado</h2>
           </div>
           
           <div className="flex items-center gap-2">
             <Button
+              variant={isSelectionMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              className={cn(
+                "gap-2 transition-all",
+                isSelectionMode 
+                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md" 
+                  : "bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
+              )}
+            >
+              <MousePointer className="w-4 h-4" />
+              {isSelectionMode ? 'Cancelar Seleção' : 'Selecionar Elemento'}
+            </Button>
+            
+            <div className="h-4 w-px bg-slate-200" />
+            
+            <Button
               variant="outline"
               size="sm"
               onClick={() => setChatVisible(!chatVisible)}
-              className="gap-2 bg-background/50 hover:bg-muted/50"
+              className="gap-2 bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
             >
               {chatVisible ? (
                 <>
@@ -220,25 +206,12 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
                 </>
               )}
             </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleSelectionMode}
-              className={cn(
-                "gap-2 bg-background/50 hover:bg-muted/50",
-                isSelectionMode && "bg-purple-100 text-purple-700 border-purple-300"
-              )}
-            >
-              <span className="w-4 h-4 text-center">🎯</span>
-              {isSelectionMode ? 'Sair da Seleção' : 'Selecionar'}
-            </Button>
             
-            <div className="h-4 w-px bg-border/50" />
+            <div className="h-4 w-px bg-slate-200" />
             
             {/* Device Selector */}
             <Select value={previewDevice} onValueChange={(value: any) => setPreviewDevice(value)}>
-              <SelectTrigger className="w-[120px] bg-background/50">
+              <SelectTrigger className="w-[120px] bg-white/80 border-slate-200">
                 <SelectValue>
                   <div className="flex items-center gap-2">
                     {(() => {
@@ -261,13 +234,13 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               </SelectContent>
             </Select>
             
-            <div className="h-4 w-px bg-border/50" />
+            <div className="h-4 w-px bg-slate-200" />
             
             <Button
               variant="outline"
               size="sm"
               onClick={downloadHtml}
-              className="gap-2 bg-background/50 hover:bg-muted/50"
+              className="gap-2 bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
             >
               <Download className="w-4 h-4" />
               HTML
@@ -276,7 +249,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={downloadZip}
-              className="gap-2 bg-background/50 hover:bg-muted/50"
+              className="gap-2 bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
             >
               <Download className="w-4 h-4" />
               ZIP
@@ -285,7 +258,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={openInNewTab}
-              className="gap-2 bg-background/50 hover:bg-muted/50"
+              className="gap-2 bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
             >
               <ExternalLink className="w-4 h-4" />
               Abrir
@@ -294,7 +267,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={onNewProject}
-              className="gap-2 text-destructive hover:text-destructive bg-background/50 hover:bg-destructive/10"
+              className="gap-2 text-destructive hover:text-destructive bg-white/80 hover:bg-destructive/10"
             >
               <RotateCcw className="w-4 h-4" />
               Novo Projeto
@@ -303,51 +276,47 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
         </div>
       </div>
 
+      {/* Selected Element Indicator */}
+      {selectedElement && (
+        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+          <div className="flex items-center gap-2 text-sm">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+            <span className="text-blue-700 font-medium">Elemento selecionado:</span>
+            <span className="text-blue-600">
+              {selectedElement.tag.toUpperCase()} - "{selectedElement.text.substring(0, 50)}{selectedElement.text.length > 50 ? '...' : ''}"
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedElement(null)}
+              className="ml-auto h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className="flex-1 flex overflow-hidden">
         {chatVisible && (
-          <div className="w-80 border-r bg-card/20 backdrop-blur-sm">
+          <div className="w-80 border-r bg-white/40 backdrop-blur-xl shadow-sm">
             <ChatPanel
-              onSendMessage={handleChatMessage}
+              onSendMessage={handleSendMessageWithElement}
               isLoading={isLoading}
               selectedElement={selectedElement}
-              isChatMode={isChatMode}
-              onToggleChatMode={toggleChatMode}
             />
           </div>
         )}
         
-        <div className="flex-1 bg-muted/20 relative">
+        <div className="flex-1 bg-slate-50/50">
           <LivePreview
             files={files}
             generatedCode={generatedCode}
             device={previewDevice}
-            ref={iframeRef}
-          />
-          
-          <ElementSelector
-            isActive={isSelectionMode}
+            isSelectionMode={isSelectionMode}
             onElementSelect={handleElementSelect}
-            iframeRef={iframeRef}
           />
-          
-          {isSelectionMode && (
-            <div className="absolute top-4 left-4 bg-purple-100 text-purple-800 px-3 py-2 rounded-lg text-sm font-medium border border-purple-300">
-              🎯 Modo Seleção Ativo - Clique em elementos para selecioná-los
-            </div>
-          )}
-          
-          {selectedElement && (
-            <div 
-              className="absolute bg-purple-600 text-white px-2 py-1 rounded text-xs font-medium pointer-events-none z-50"
-              style={{
-                left: selectedElement.position.x,
-                top: selectedElement.position.y - 30,
-              }}
-            >
-              {selectedElement.type} selecionado
-            </div>
-          )}
         </div>
       </div>
     </div>
