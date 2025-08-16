@@ -19,78 +19,6 @@ export class GLMApiService {
     this.apiKey = apiKey;
   }
 
-  async generateCode(prompt: string): Promise<string> {
-    const messages: GLMMessage[] = [
-      {
-        role: 'system',
-        content: `Você é um especialista em desenvolvimento web. Gere código React/TypeScript limpo e funcional baseado na solicitação do usuário. 
-
-IMPORTANTE: 
-- Retorne APENAS código válido React/TypeScript
-- Use componentes funcionais com hooks
-- Use Tailwind CSS para estilização
-- Inclua TypeScript interfaces quando necessário
-- O código deve ser completo e executável
-- Não inclua explicações, apenas código
-
-Exemplo de estrutura esperada:
-\`\`\`tsx
-import React from 'react';
-
-interface Props {
-  // props interface
-}
-
-const Component: React.FC<Props> = () => {
-  return (
-    <div className="...">
-      {/* component JSX */}
-    </div>
-  );
-};
-
-export default Component;
-\`\`\``
-      },
-      {
-        role: 'user',
-        content: prompt
-      }
-    ];
-
-    try {
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept-Language': 'en-US,en',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'glm-4-32b-0414-128k',
-          messages,
-          temperature: 0.6,
-          max_tokens: 4096
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data: GLMResponse = await response.json();
-      
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response from GLM API');
-      }
-
-      return data.choices[0].message.content;
-    } catch (error) {
-      console.error('Error calling GLM API:', error);
-      throw error;
-    }
-  }
-
   async generateProjectStructure(prompt: string): Promise<string> {
     const messages: GLMMessage[] = [
       {
@@ -107,17 +35,19 @@ export default Component;
 5. Sempre forneça código completo funcional
 6. Use apenas HTML, CSS e JavaScript vanilla
 
-FORMATO DE RESPOSTA JSON OBRIGATÓRIO:
+FORMATO DE RESPOSTA JSON OBRIGATÓRIO - ESCAPE CORRETAMENTE:
 {
   "files": [
     {
       "name": "index.html",
       "type": "file", 
       "path": "index.html",
-      "content": "<!DOCTYPE html>\\n<html lang=\\"pt-BR\\">\\n<head>\\n  <meta charset=\\"UTF-8\\">\\n  <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1.0\\">\\n  <title>Título</title>\\n  <style>\\n    /* CSS aqui */\\n  </style>\\n</head>\\n<body>\\n  <!-- HTML aqui -->\\n  <script>\\n    // JavaScript aqui\\n  </script>\\n</body>\\n</html>"
+      "content": "[COLOQUE TODO O HTML AQUI COM ESCAPE CORRETO]"
     }
   ]
-}`
+}
+
+IMPORTANTE: Use \\n para quebras de linha e \\" para aspas dentro do content!`
       },
       {
         role: 'user',
@@ -125,37 +55,7 @@ FORMATO DE RESPOSTA JSON OBRIGATÓRIO:
       }
     ];
 
-    try {
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Accept-Language': 'en-US,en',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'glm-4-32b-0414-128k',
-          messages,
-          temperature: 0.3,
-          max_tokens: 4000
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data: GLMResponse = await response.json();
-      
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response from GLM API');
-      }
-
-      return data.choices[0].message.content;
-    } catch (error) {
-      console.error('Error calling GLM API:', error);
-      throw error;
-    }
+    return this.callAPI(messages, 0.3, 6000);
   }
 
   async editSpecificPart(currentCode: string, editRequest: string): Promise<string> {
@@ -177,17 +77,19 @@ IMPORTANTE:
 - NÃO modifique a estrutura geral
 - Mantenha formatting e indentação originais
 
-FORMATO DE RESPOSTA JSON:
+FORMATO DE RESPOSTA JSON - ESCAPE CORRETAMENTE:
 {
   "files": [
     {
       "name": "index.html",
       "type": "file",
       "path": "index.html", 
-      "content": "[HTML COMPLETO COM APENAS A ALTERAÇÃO ESPECÍFICA]"
+      "content": "[HTML COMPLETO COM APENAS A ALTERAÇÃO ESPECÍFICA - USE \\n E \\"]"
     }
   ]
-}`
+}
+
+ESCAPE OBRIGATÓRIO: Use \\n para quebras de linha e \\" para aspas!`
       },
       {
         role: 'user',
@@ -199,6 +101,12 @@ FORMATO DE RESPOSTA JSON:
       }
     ];
 
+    return this.callAPI(messages, 0.1, 8000);
+  }
+
+  private async callAPI(messages: GLMMessage[], temperature: number, maxTokens: number): Promise<string> {
+    console.log('🚀 Calling GLM API with:', { temperature, maxTokens, messagesCount: messages.length });
+    
     try {
       const response = await fetch(this.baseUrl, {
         method: 'POST',
@@ -210,24 +118,36 @@ FORMATO DE RESPOSTA JSON:
         body: JSON.stringify({
           model: 'glm-4-32b-0414-128k',
           messages,
-          temperature: 0.1, // Muito baixo para máxima precisão
-          max_tokens: 8000
+          temperature,
+          max_tokens: maxTokens,
+          top_p: 0.7,
+          frequency_penalty: 0.0,
+          presence_penalty: 0.0
         })
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ GLM API error response:', errorText);
         throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
       }
 
       const data: GLMResponse = await response.json();
+      console.log('✅ GLM API response received:', { 
+        hasChoices: !!data.choices,
+        choicesCount: data.choices?.length || 0
+      });
       
       if (!data.choices || data.choices.length === 0) {
         throw new Error('No response from GLM API');
       }
 
-      return data.choices[0].message.content;
+      const content = data.choices[0].message.content;
+      console.log('📄 Content preview:', content.substring(0, 200) + '...');
+      
+      return content;
     } catch (error) {
-      console.error('Error calling GLM API:', error);
+      console.error('❌ Error calling GLM API:', error);
       throw error;
     }
   }
