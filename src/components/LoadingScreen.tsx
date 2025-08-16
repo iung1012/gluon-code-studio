@@ -4,48 +4,67 @@ import { Sparkles, Code, Palette, Zap } from "lucide-react";
 
 interface LoadingScreenProps {
   isVisible: boolean;
+  progress?: number;
+  currentContent?: string;
 }
 
-export const LoadingScreen = ({ isVisible }: LoadingScreenProps) => {
-  const [progress, setProgress] = useState(0);
+export const LoadingScreen = ({ isVisible, progress: externalProgress, currentContent }: LoadingScreenProps) => {
+  const [internalProgress, setInternalProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-    { icon: Sparkles, text: "Analyzing your request...", duration: 20 },
+    { icon: Sparkles, text: "Connecting to AI...", duration: 10 },
     { icon: Code, text: "Generating HTML structure...", duration: 40 },
-    { icon: Palette, text: "Designing beautiful styles...", duration: 30 },
-    { icon: Zap, text: "Adding final touches...", duration: 10 }
+    { icon: Palette, text: "Designing beautiful styles...", duration: 35 },
+    { icon: Zap, text: "Adding final touches...", duration: 15 }
   ];
+
+  // Use external progress if provided, otherwise use internal progress
+  const currentProgress = externalProgress !== undefined ? externalProgress : internalProgress;
 
   useEffect(() => {
     if (!isVisible) {
-      setProgress(0);
+      setInternalProgress(0);
       setCurrentStep(0);
       return;
     }
 
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        const newProgress = prev + 1;
-        
-        // Update current step based on progress
-        let stepIndex = 0;
-        let cumulativePercent = 0;
-        for (let i = 0; i < steps.length; i++) {
-          cumulativePercent += steps[i].duration;
-          if (newProgress <= cumulativePercent) {
-            stepIndex = i;
-            break;
-          }
-        }
-        setCurrentStep(stepIndex);
-        
-        return Math.min(newProgress, 100);
-      });
-    }, 80);
+    // Only run internal progress if no external progress is provided
+    if (externalProgress === undefined) {
+      const interval = setInterval(() => {
+        setInternalProgress((prev) => {
+          const newProgress = Math.min(prev + 0.5, 95); // Stop at 95% to wait for real completion
+          return newProgress;
+        });
+      }, 100);
 
-    return () => clearInterval(interval);
-  }, [isVisible]);
+      return () => clearInterval(interval);
+    }
+  }, [isVisible, externalProgress]);
+
+  // Update current step based on progress
+  useEffect(() => {
+    let stepIndex = 0;
+    let cumulativePercent = 0;
+    for (let i = 0; i < steps.length; i++) {
+      cumulativePercent += steps[i].duration;
+      if (currentProgress <= cumulativePercent) {
+        stepIndex = i;
+        break;
+      }
+    }
+    setCurrentStep(stepIndex);
+  }, [currentProgress, steps]);
+
+  // Calculate progress from content length for streaming
+  useEffect(() => {
+    if (currentContent && externalProgress === undefined) {
+      // Estimate progress based on content length
+      // Typical HTML might be 2000-10000 characters
+      const estimatedProgress = Math.min((currentContent.length / 5000) * 100, 100);
+      setInternalProgress(estimatedProgress);
+    }
+  }, [currentContent, externalProgress]);
 
   if (!isVisible) return null;
 
@@ -71,11 +90,11 @@ export const LoadingScreen = ({ isVisible }: LoadingScreenProps) => {
             </p>
           </div>
           
-          <Progress value={progress} className="h-2" />
+          <Progress value={currentProgress} className="h-2" />
           
           <div className="text-center">
             <span className="text-sm text-muted-foreground">
-              {Math.round(progress)}% complete
+              {Math.round(currentProgress)}% complete
             </span>
           </div>
         </div>
@@ -85,7 +104,7 @@ export const LoadingScreen = ({ isVisible }: LoadingScreenProps) => {
           {steps.map((step, index) => {
             const StepIcon = step.icon;
             const isActive = index === currentStep;
-            const isCompleted = index < currentStep || progress === 100;
+            const isCompleted = index < currentStep || currentProgress === 100;
             
             return (
               <div

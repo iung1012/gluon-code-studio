@@ -11,6 +11,21 @@ interface GLMResponse {
   }>;
 }
 
+interface GLMStreamResponse {
+  choices: Array<{
+    delta: {
+      content?: string;
+    };
+    finish_reason?: string;
+  }>;
+}
+
+interface StreamCallbacks {
+  onProgress?: (content: string, isComplete: boolean) => void;
+  onComplete?: (fullContent: string) => void;
+  onError?: (error: Error) => void;
+}
+
 export class GLMApiService {
   private apiKey: string;
   private baseUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
@@ -19,7 +34,7 @@ export class GLMApiService {
     this.apiKey = apiKey;
   }
 
-  async generateProjectStructure(prompt: string): Promise<string> {
+  async generateProjectStructure(prompt: string, callbacks?: StreamCallbacks): Promise<string> {
     const messages: GLMMessage[] = [
       {
         role: 'system',
@@ -41,10 +56,12 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
       }
     ];
 
-    return this.callAPI(messages, 0.3, 6000);
+    return callbacks 
+      ? this.callStreamingAPI(messages, 0.3, 6000, callbacks)
+      : this.callAPI(messages, 0.3, 6000);
   }
 
-  async editSpecificPart(currentCode: string, editRequest: string): Promise<string> {
+  async editSpecificPart(currentCode: string, editRequest: string, callbacks?: StreamCallbacks): Promise<string> {
     const messages: GLMMessage[] = [
       {
         role: 'system',
@@ -68,7 +85,107 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
       }
     ];
 
-    return this.callAPI(messages, 0.1, 8000);
+    return callbacks 
+      ? this.callStreamingAPI(messages, 0.1, 8000, callbacks)
+      : this.callAPI(messages, 0.1, 8000);
+  }
+
+  private async callStreamingAPI(
+    messages: GLMMessage[], 
+    temperature: number, 
+    maxTokens: number, 
+    callbacks: StreamCallbacks
+  ): Promise<string> {
+    console.log('🚀 Calling GLM Streaming API with:', { temperature, maxTokens, messagesCount: messages.length });
+    
+    try {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Accept-Language': 'en-US,en',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'glm-4-32b-0414-128k',
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+          top_p: 0.7,
+          frequency_penalty: 0.0,
+          presence_penalty: 0.0,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ GLM Streaming API error response:', errorText);
+        const error = new Error(`GLM API error: ${response.status} ${response.statusText}`);
+        callbacks.onError?.(error);
+        throw error;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        const error = new Error('No readable stream in response');
+        callbacks.onError?.(error);
+        throw error;
+      }
+
+      let fullContent = '';
+      const decoder = new TextDecoder();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            console.log('✅ Streaming complete, total content length:', fullContent.length);
+            callbacks.onProgress?.(fullContent, true);
+            callbacks.onComplete?.(fullContent);
+            break;
+          }
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              
+              if (data === '[DONE]') {
+                continue;
+              }
+
+              try {
+                const parsed: GLMStreamResponse = JSON.parse(data);
+                const deltaContent = parsed.choices?.[0]?.delta?.content;
+                
+                if (deltaContent) {
+                  fullContent += deltaContent;
+                  callbacks.onProgress?.(fullContent, false);
+                }
+
+                if (parsed.choices?.[0]?.finish_reason) {
+                  console.log('🏁 Stream finished with reason:', parsed.choices[0].finish_reason);
+                }
+              } catch (parseError) {
+                console.warn('⚠️ Failed to parse streaming chunk:', data);
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      return fullContent;
+    } catch (error) {
+      console.error('❌ Error calling GLM Streaming API:', error);
+      callbacks.onError?.(error as Error);
+      throw error;
+    }
   }
 
   private async callAPI(messages: GLMMessage[], temperature: number, maxTokens: number): Promise<string> {

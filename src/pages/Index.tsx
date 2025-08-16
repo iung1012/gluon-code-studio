@@ -15,6 +15,8 @@ const Index = () => {
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [currentStreamContent, setCurrentStreamContent] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [useChatLayout, setUseChatLayout] = useState(false);
   const { toast } = useToast();
@@ -90,25 +92,44 @@ const Index = () => {
     if (!glmService) return;
 
     setIsLoading(true);
+    setLoadingProgress(0);
+    setCurrentStreamContent("");
     setShowPreview(true);
     setUseChatLayout(true); // Enable chat layout for new generations
     
     try {
       let response: string;
       
+      const streamCallbacks = {
+        onProgress: (content: string, isComplete: boolean) => {
+          setCurrentStreamContent(content);
+          // Estimate progress based on content characteristics
+          if (content.includes('<!DOCTYPE html>')) setLoadingProgress(Math.max(loadingProgress, 20));
+          if (content.includes('<style>')) setLoadingProgress(Math.max(loadingProgress, 50));
+          if (content.includes('<script>')) setLoadingProgress(Math.max(loadingProgress, 80));
+          if (isComplete) setLoadingProgress(100);
+        },
+        onComplete: (fullContent: string) => {
+          setLoadingProgress(100);
+        },
+        onError: (error: Error) => {
+          console.error('Streaming error:', error);
+        }
+      };
+      
       // Se já existem arquivos, usa edição específica
       if (files.length > 0 && files[0].content) {
         const currentFile = files.find(f => f.name === 'index.html');
         if (currentFile?.content) {
           console.log('🎯 Fazendo edição específica...');
-          response = await glmService.editSpecificPart(currentFile.content, prompt);
+          response = await glmService.editSpecificPart(currentFile.content, prompt, streamCallbacks);
         } else {
           console.log('🆕 Gerando novo projeto...');
-          response = await glmService.generateProjectStructure(prompt);
+          response = await glmService.generateProjectStructure(prompt, streamCallbacks);
         }
       } else {
         console.log('🆕 Gerando novo projeto...');
-        response = await glmService.generateProjectStructure(prompt);
+        response = await glmService.generateProjectStructure(prompt, streamCallbacks);
       }
       
       const parsedFiles = parseProjectStructure(response);
@@ -136,6 +157,8 @@ const Index = () => {
       });
     } finally {
       setIsLoading(false);
+      setLoadingProgress(0);
+      setCurrentStreamContent("");
     }
   };
 
@@ -143,14 +166,33 @@ const Index = () => {
     if (!glmService) return;
 
     setIsLoading(true);
+    setLoadingProgress(0);
+    setCurrentStreamContent("");
     
     try {
+      const streamCallbacks = {
+        onProgress: (content: string, isComplete: boolean) => {
+          setCurrentStreamContent(content);
+          // Estimate progress for edits
+          if (content.includes('<!DOCTYPE html>')) setLoadingProgress(Math.max(loadingProgress, 30));
+          if (content.length > 1000) setLoadingProgress(Math.max(loadingProgress, 60));
+          if (content.length > 3000) setLoadingProgress(Math.max(loadingProgress, 90));
+          if (isComplete) setLoadingProgress(100);
+        },
+        onComplete: (fullContent: string) => {
+          setLoadingProgress(100);
+        },
+        onError: (error: Error) => {
+          console.error('Streaming error:', error);
+        }
+      };
+      
       // Always use edit mode for chat messages
       if (files.length > 0 && files[0].content) {
         const currentFile = files.find(f => f.name === 'index.html');
         if (currentFile?.content) {
           console.log('🎯 Fazendo edição via chat...');
-          const response = await glmService.editSpecificPart(currentFile.content, message);
+          const response = await glmService.editSpecificPart(currentFile.content, message, streamCallbacks);
           
           const parsedFiles = parseProjectStructure(response);
           
@@ -179,6 +221,8 @@ const Index = () => {
       throw error; // Re-throw to let ChatPanel handle the error message
     } finally {
       setIsLoading(false);
+      setLoadingProgress(0);
+      setCurrentStreamContent("");
     }
   };
 
@@ -223,7 +267,11 @@ const Index = () => {
   if (showPreview && files.length > 0) {
     return (
       <>
-        <LoadingScreen isVisible={isLoading} />
+        <LoadingScreen 
+          isVisible={isLoading} 
+          progress={loadingProgress > 0 ? loadingProgress : undefined}
+          currentContent={currentStreamContent}
+        />
         {useChatLayout ? (
           <ChatLayout
             files={files}
@@ -251,7 +299,11 @@ const Index = () => {
 
   return (
     <>
-      <LoadingScreen isVisible={isLoading} />
+      <LoadingScreen 
+        isVisible={isLoading}
+        progress={loadingProgress > 0 ? loadingProgress : undefined}
+        currentContent={currentStreamContent}
+      />
       <WelcomeScreen 
         onSubmit={handlePromptSubmit} 
         isLoading={isLoading}
