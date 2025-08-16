@@ -4,6 +4,7 @@ import { ApiKeyInput } from "@/components/ApiKeyInput";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GeneratedPreview } from "@/components/GeneratedPreview";
+import { ChatLayout } from "@/components/ChatLayout";
 import { GLMApiService } from "@/services/glmApi";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,6 +16,7 @@ const Index = () => {
   const [generatedCode, setGeneratedCode] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [useChatLayout, setUseChatLayout] = useState(false);
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -89,6 +91,7 @@ const Index = () => {
 
     setIsLoading(true);
     setShowPreview(true);
+    setUseChatLayout(true); // Enable chat layout for new generations
     
     try {
       let response: string;
@@ -136,6 +139,49 @@ const Index = () => {
     }
   };
 
+  const handleChatMessage = async (message: string) => {
+    if (!glmService) return;
+
+    setIsLoading(true);
+    
+    try {
+      // Always use edit mode for chat messages
+      if (files.length > 0 && files[0].content) {
+        const currentFile = files.find(f => f.name === 'index.html');
+        if (currentFile?.content) {
+          console.log('🎯 Fazendo edição via chat...');
+          const response = await glmService.editSpecificPart(currentFile.content, message);
+          
+          const parsedFiles = parseProjectStructure(response);
+          
+          setFiles(parsedFiles);
+          setGeneratedCode(response);
+          
+          // Auto-select the first file
+          const firstFile = findFirstFile(parsedFiles);
+          if (firstFile) {
+            setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
+          }
+
+          toast({
+            title: "Website Updated!",
+            description: "Your changes have been applied successfully.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error processing chat message:', error);
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update website. Please try again.",
+        variant: "destructive"
+      });
+      throw error; // Re-throw to let ChatPanel handle the error message
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const findFirstFile = (nodes: FileNode[]): FileNode | null => {
     for (const node of nodes) {
       if (node.type === 'file' && node.content) {
@@ -154,6 +200,7 @@ const Index = () => {
     setSelectedFile(undefined);
     setGeneratedCode("");
     setShowPreview(false);
+    setUseChatLayout(false);
     toast({
       title: "New Project",
       description: "Project cleared. You can now generate a new website.",
@@ -162,6 +209,7 @@ const Index = () => {
 
   const handleBackToInput = () => {
     setShowPreview(false);
+    setUseChatLayout(false);
   };
 
   const handleFileSelect = (path: string, content: string) => {
@@ -176,14 +224,27 @@ const Index = () => {
     return (
       <>
         <LoadingScreen isVisible={isLoading} />
-        <GeneratedPreview
-          files={files}
-          selectedFile={selectedFile}
-          onFileSelect={handleFileSelect}
-          onBackToInput={handleBackToInput}
-          onNewProject={handleNewProject}
-          generatedCode={!selectedFile ? generatedCode : undefined}
-        />
+        {useChatLayout ? (
+          <ChatLayout
+            files={files}
+            selectedFile={selectedFile}
+            onFileSelect={handleFileSelect}
+            onBackToInput={handleBackToInput}
+            onNewProject={handleNewProject}
+            onSendMessage={handleChatMessage}
+            generatedCode={!selectedFile ? generatedCode : undefined}
+            isLoading={isLoading}
+          />
+        ) : (
+          <GeneratedPreview
+            files={files}
+            selectedFile={selectedFile}
+            onFileSelect={handleFileSelect}
+            onBackToInput={handleBackToInput}
+            onNewProject={handleNewProject}
+            generatedCode={!selectedFile ? generatedCode : undefined}
+          />
+        )}
       </>
     );
   }
