@@ -37,7 +37,7 @@ export const PromptInput = ({ onSubmit, isLoading }: PromptInputProps) => {
         <div className="flex-1 mb-6">
           <h2 className="text-lg font-medium mb-4">Descreva seu website</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Descreva sua ideia de website e eu vou gerar um arquivo JavaScript monolítico completo.
+            Descreva sua ideia de website e eu vou gerar um arquivo HTML monolítico completo com tudo integrado.
           </p>
         </div>
 
@@ -55,12 +55,12 @@ export const PromptInput = ({ onSubmit, isLoading }: PromptInputProps) => {
           <Button 
             type="submit" 
             disabled={!prompt.trim() || isLoading}
-            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity gap-2"
+            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-all duration-300 gap-2 hover-scale"
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Gerando Website...
+                <span className="animate-pulse">Gerando Website...</span>
               </>
             ) : (
               <>

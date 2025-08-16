@@ -55,7 +55,7 @@ export const CodePreview = ({ files, selectedFile, onFileSelect, generatedCode }
   };
 
   const codeToShow = selectedFile?.content || generatedCode || "";
-  const filename = selectedFile?.path || "app.js";
+  const filename = selectedFile?.path || "index.html";
 
   useEffect(() => {
     if (generatedCode) {

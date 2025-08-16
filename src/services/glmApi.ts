@@ -97,35 +97,31 @@ export default Component;
         role: 'system',
         content: `Você é um desenvolvedor JavaScript especialista. Regras OBRIGATÓRIAS:
 
-1. SEMPRE escreva código JavaScript MONOLITO (arquivo app.js único)
+1. SEMPRE escreva código JavaScript MONOLITO (arquivo HTML único)
 2. NUNCA modifique código existente - APENAS edite o que o usuário solicitar
-3. Estrutura obrigatória do app.js:
-   - Configuração inicial e constantes
-   - Sistema de roteamento SPA
-   - Gerenciamento de estado global
-   - Componentes como funções JavaScript
-   - Estilos CSS-in-JS ou template strings
-   - Event listeners e interatividade
-   - Inicialização da aplicação
+3. Estrutura obrigatória:
+   - HTML completo com DOCTYPE
+   - CSS dentro de <style> no <head>
+   - JavaScript dentro de <script> antes do </body>
 4. Para edições: identifique EXATAMENTE o que alterar e mantenha resto igual
 5. Sempre forneça código completo funcional
-6. Use apenas JavaScript vanilla, template strings para HTML e objetos para CSS
+6. Use apenas HTML, CSS e JavaScript vanilla
 
 FORMATO DE RESPOSTA JSON OBRIGATÓRIO:
 {
   "files": [
     {
-      "name": "app.js",
+      "name": "index.html",
       "type": "file", 
-      "path": "app.js",
-      "content": "// JavaScript Monolítico - Single File App\\n\\n// === CONFIGURAÇÃO ===\\nconst APP = {\\n  state: {},\\n  router: {},\\n  components: {},\\n  utils: {}\\n};\\n\\n// === ESTILOS ===\\nconst styles = \`/* CSS aqui */\`;\\n\\n// === COMPONENTES ===\\n// Funções que retornam HTML\\n\\n// === ROTEAMENTO ===\\n// Sistema SPA\\n\\n// === INICIALIZAÇÃO ===\\ndocument.addEventListener('DOMContentLoaded', () => {\\n  // Inject styles\\n  const styleEl = document.createElement('style');\\n  styleEl.textContent = styles;\\n  document.head.appendChild(styleEl);\\n  // Initialize app\\n});\\n\\n// HTML STRUCTURE\\ndocument.body.innerHTML = \`<div id='app'></div>\`;"
+      "path": "index.html",
+      "content": "<!DOCTYPE html>\\n<html lang=\\"pt-BR\\">\\n<head>\\n  <meta charset=\\"UTF-8\\">\\n  <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1.0\\">\\n  <title>Título</title>\\n  <style>\\n    /* CSS aqui */\\n  </style>\\n</head>\\n<body>\\n  <!-- HTML aqui -->\\n  <script>\\n    // JavaScript aqui\\n  </script>\\n</body>\\n</html>"
     }
   ]
 }`
       },
       {
         role: 'user',
-        content: `Crie um website JavaScript monolítico completo para: ${prompt}`
+        content: `Crie um website completo HTML monolítico para: ${prompt}`
       }
     ];
 
