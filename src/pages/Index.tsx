@@ -145,7 +145,23 @@ const Index = () => {
 
     setIsLoading(true);
     try {
-      const response = await glmService.generateProjectStructure(prompt);
+      let response: string;
+      
+      // Se já existem arquivos, usa edição específica
+      if (files.length > 0 && files[0].content) {
+        const currentFile = files.find(f => f.name === 'index.html');
+        if (currentFile?.content) {
+          console.log('🎯 Fazendo edição específica...');
+          response = await glmService.editSpecificPart(currentFile.content, prompt);
+        } else {
+          console.log('🆕 Gerando novo projeto...');
+          response = await glmService.generateProjectStructure(prompt);
+        }
+      } else {
+        console.log('🆕 Gerando novo projeto...');
+        response = await glmService.generateProjectStructure(prompt);
+      }
+      
       const parsedFiles = parseProjectStructure(response);
       
       setFiles(parsedFiles);
@@ -157,15 +173,16 @@ const Index = () => {
         setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
       }
 
+      const isEdit = files.length > 0;
       toast({
-        title: "Website Generated!",
-        description: "Your website structure has been created successfully.",
+        title: isEdit ? "Alteração Aplicada!" : "Website Gerado!",
+        description: isEdit ? "Sua alteração específica foi aplicada com sucesso." : "Sua estrutura de website foi criada com sucesso.",
       });
     } catch (error) {
       console.error('Error generating code:', error);
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate website. Please try again.",
+        title: "Falha na Geração",
+        description: error instanceof Error ? error.message : "Falha ao gerar website. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -186,6 +203,16 @@ const Index = () => {
     return null;
   };
 
+  const handleNewProject = () => {
+    setFiles([]);
+    setSelectedFile(undefined);
+    setGeneratedCode("");
+    toast({
+      title: "Novo Projeto",
+      description: "Projeto limpo criado. Agora você pode gerar um novo website.",
+    });
+  };
+
   const handleFileSelect = (path: string, content: string) => {
     setSelectedFile({ path, content });
   };
@@ -200,7 +227,12 @@ const Index = () => {
         {/* Left Panel - Prompt Input */}
         <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
           <div className="h-full border-r border-border">
-            <PromptInput onSubmit={handlePromptSubmit} isLoading={isLoading} />
+            <PromptInput 
+              onSubmit={handlePromptSubmit} 
+              isLoading={isLoading}
+              hasExistingFiles={files.length > 0}
+              onNewProject={handleNewProject}
+            />
           </div>
         </ResizablePanel>
         

@@ -157,4 +157,78 @@ FORMATO DE RESPOSTA JSON OBRIGATÓRIO:
       throw error;
     }
   }
+
+  async editSpecificPart(currentCode: string, editRequest: string): Promise<string> {
+    const messages: GLMMessage[] = [
+      {
+        role: 'system',
+        content: `Você é um desenvolvedor JavaScript especialista. REGRAS CRÍTICAS:
+
+1. Receba o código HTML monolítico atual completo
+2. Identifique EXATAMENTE a parte que o usuário quer alterar
+3. Faça APENAS a alteração solicitada
+4. Mantenha TODO o resto do código EXATAMENTE igual
+5. Retorne o arquivo HTML completo com APENAS a mudança específica
+
+IMPORTANTE:
+- NÃO reescreva o código inteiro
+- NÃO mude estilos não solicitados  
+- NÃO adicione funcionalidades extras
+- NÃO modifique a estrutura geral
+- Mantenha formatting e indentação originais
+
+FORMATO DE RESPOSTA JSON:
+{
+  "files": [
+    {
+      "name": "index.html",
+      "type": "file",
+      "path": "index.html", 
+      "content": "[HTML COMPLETO COM APENAS A ALTERAÇÃO ESPECÍFICA]"
+    }
+  ]
+}`
+      },
+      {
+        role: 'user',
+        content: `CÓDIGO ATUAL:\n${currentCode}`
+      },
+      {
+        role: 'user',
+        content: `ALTERAÇÃO ESPECÍFICA: ${editRequest}`
+      }
+    ];
+
+    try {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Accept-Language': 'en-US,en',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'glm-4-32b-0414-128k',
+          messages,
+          temperature: 0.1, // Muito baixo para máxima precisão
+          max_tokens: 8000
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data: GLMResponse = await response.json();
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No response from GLM API');
+      }
+
+      return data.choices[0].message.content;
+    } catch (error) {
+      console.error('Error calling GLM API:', error);
+      throw error;
+    }
+  }
 }
