@@ -1,5 +1,4 @@
-
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { cn } from "@/lib/utils";
 import { FileNode } from "./FileTree";
 import { AlertCircle, Monitor, Tablet, Smartphone, Eye } from "lucide-react";
@@ -12,10 +11,12 @@ interface LivePreviewProps {
   device?: 'desktop' | 'tablet' | 'mobile';
 }
 
-export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePreviewProps) => {
+export const LivePreview = forwardRef<HTMLIFrameElement, LivePreviewProps>(({ files, generatedCode, device = 'desktop' }, ref) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  useImperativeHandle(ref, () => iframeRef.current!);
   
   const htmlContent = files.length > 0 && files[0].content ? files[0].content : generatedCode || "";
   
@@ -155,4 +156,6 @@ export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePr
       />
     </div>
   );
-};
+});
+
+LivePreview.displayName = 'LivePreview';

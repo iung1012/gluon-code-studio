@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-react";
@@ -6,9 +5,18 @@ import { ChatPanel } from "./ChatPanel";
 import { LivePreview } from "./LivePreview";
 import { FileNode } from "./FileTree";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import JSZip from 'jszip';
+import { ElementSelector } from "./ElementSelector";
+
+interface SelectedElement {
+  element: HTMLElement;
+  selector: string;
+  type: string;
+  text?: string;
+  position: { x: number; y: number; width: number; height: number };
+}
 
 interface ChatLayoutProps {
   files: FileNode[];
@@ -33,6 +41,10 @@ export const ChatLayout = ({
 }: ChatLayoutProps) => {
   const [chatVisible, setChatVisible] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
+  const [isChatMode, setIsChatMode] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const { toast } = useToast();
 
   const downloadHtml = () => {
@@ -111,6 +123,53 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
     }
   };
 
+  const handleElementSelect = (element: SelectedElement | null) => {
+    setSelectedElement(element);
+    if (element) {
+      toast({
+        title: "Elemento Selecionado",
+        description: `${element.type} selecionado: "${element.text?.substring(0, 50)}${element.text && element.text.length > 50 ? '...' : ''}"`,
+      });
+    }
+  };
+
+  const handleChatMessage = async (message: string, elementContext?: SelectedElement, images?: string[]) => {
+    let contextualMessage = message;
+    
+    if (elementContext) {
+      contextualMessage = `Alterar o ${elementContext.type} que contém "${elementContext.text}" para: ${message}`;
+    }
+    
+    console.log('Chat message with context:', { message, elementContext, images });
+    
+    await onSendMessage(contextualMessage);
+    
+    // Clear selection after sending message
+    setSelectedElement(null);
+    setIsSelectionMode(false);
+  };
+
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    if (!isSelectionMode) {
+      setSelectedElement(null);
+    }
+    toast({
+      title: isSelectionMode ? "Modo Seleção Desativado" : "Modo Seleção Ativado",
+      description: isSelectionMode 
+        ? "Você pode agora usar o chat normalmente" 
+        : "Clique em elementos da página para selecioná-los",
+    });
+  };
+
+  const toggleChatMode = () => {
+    setIsChatMode(!isChatMode);
+    if (!isChatMode) {
+      setSelectedElement(null);
+      setIsSelectionMode(false);
+    }
+  };
+
   const deviceIcons = {
     desktop: Monitor,
     tablet: Tablet,
@@ -160,6 +219,19 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
                   Mostrar Chat
                 </>
               )}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSelectionMode}
+              className={cn(
+                "gap-2 bg-background/50 hover:bg-muted/50",
+                isSelectionMode && "bg-purple-100 text-purple-700 border-purple-300"
+              )}
+            >
+              <span className="w-4 h-4 text-center">🎯</span>
+              {isSelectionMode ? 'Sair da Seleção' : 'Selecionar'}
             </Button>
             
             <div className="h-4 w-px bg-border/50" />
@@ -236,18 +308,46 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
         {chatVisible && (
           <div className="w-80 border-r bg-card/20 backdrop-blur-sm">
             <ChatPanel
-              onSendMessage={onSendMessage}
+              onSendMessage={handleChatMessage}
               isLoading={isLoading}
+              selectedElement={selectedElement}
+              isChatMode={isChatMode}
+              onToggleChatMode={toggleChatMode}
             />
           </div>
         )}
         
-        <div className="flex-1 bg-muted/20">
+        <div className="flex-1 bg-muted/20 relative">
           <LivePreview
             files={files}
             generatedCode={generatedCode}
             device={previewDevice}
+            ref={iframeRef}
           />
+          
+          <ElementSelector
+            isActive={isSelectionMode}
+            onElementSelect={handleElementSelect}
+            iframeRef={iframeRef}
+          />
+          
+          {isSelectionMode && (
+            <div className="absolute top-4 left-4 bg-purple-100 text-purple-800 px-3 py-2 rounded-lg text-sm font-medium border border-purple-300">
+              🎯 Modo Seleção Ativo - Clique em elementos para selecioná-los
+            </div>
+          )}
+          
+          {selectedElement && (
+            <div 
+              className="absolute bg-purple-600 text-white px-2 py-1 rounded text-xs font-medium pointer-events-none z-50"
+              style={{
+                left: selectedElement.position.x,
+                top: selectedElement.position.y - 30,
+              }}
+            >
+              {selectedElement.type} selecionado
+            </div>
+          )}
         </div>
       </div>
     </div>
