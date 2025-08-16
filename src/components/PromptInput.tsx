@@ -35,26 +35,10 @@ export const PromptInput = ({ onSubmit, isLoading }: PromptInputProps) => {
 
       <div className="flex-1 p-6 flex flex-col">
         <div className="flex-1 mb-6">
-          <h2 className="text-lg font-medium mb-4">What would you like to build?</h2>
+          <h2 className="text-lg font-medium mb-4">Descreva seu website</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Describe your website idea and I'll generate the code for you using GLM AI.
+            Descreva sua ideia de website e eu vou gerar o código usando JavaScript Monolítico em arquivo único.
           </p>
-          
-          <div className="grid gap-3 mb-6">
-            {[
-              "Create a modern landing page for a SaaS product",
-              "Build a portfolio website with dark theme",
-              "Design a dashboard with charts and metrics",
-            ].map((example, index) => (
-              <Card 
-                key={index}
-                className="p-4 cursor-pointer hover:bg-accent/50 transition-colors border-border/50"
-                onClick={() => setPrompt(example)}
-              >
-                <p className="text-sm">{example}</p>
-              </Card>
-            ))}
-          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,8 +46,8 @@ export const PromptInput = ({ onSubmit, isLoading }: PromptInputProps) => {
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe your website idea in detail..."
-              className="min-h-[120px] resize-none bg-muted/30 border-border/50 focus:border-primary/50 transition-colors"
+              placeholder="Ex: Crie um dashboard de vendas com gráficos interativos, ou uma landing page moderna para uma startup..."
+              className="min-h-[160px] resize-none bg-muted/30 border-border/50 focus:border-primary/50 transition-colors"
               disabled={isLoading}
             />
           </div>
@@ -71,17 +55,17 @@ export const PromptInput = ({ onSubmit, isLoading }: PromptInputProps) => {
           <Button 
             type="submit" 
             disabled={!prompt.trim() || isLoading}
-            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity gap-2"
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Gerando Website...
               </>
             ) : (
               <>
-                <Send className="w-4 h-4 mr-2" />
-                Generate Website
+                <Send className="w-4 h-4" />
+                Enviar e Gerar
               </>
             )}
           </Button>

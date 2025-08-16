@@ -51,78 +51,116 @@ const Index = () => {
     } catch (error) {
       console.error('Error parsing project structure:', error);
       
-      // Fallback: create basic HTML/CSS/JS structure
+      // Fallback: create basic monolithic JS structure
       return [
         {
-          name: "index.html",
+          name: "app.js",
           type: "file" as const,
-          path: "index.html",
-          content: `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Website Gerado</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <header>
-        <h1>Website Gerado com IA</h1>
-    </header>
-    <main>
-        <section>
-            <h2>Conteúdo Principal</h2>
-            <p>Este é um exemplo de website gerado automaticamente.</p>
-        </section>
-    </main>
-    <script src="script.js"></script>
-</body>
-</html>`
-        },
-        {
-          name: "styles.css",
-          type: "file" as const,
-          path: "styles.css",
-          content: `* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+          path: "app.js",
+          content: `// JavaScript Monolítico - Single File App
+
+// === CONFIGURAÇÃO ===
+const APP = {
+  state: {
+    currentView: 'home',
+    data: {}
+  },
+  router: {},
+  components: {},
+  utils: {}
+};
+
+// === ESTILOS ===
+const styles = \`
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    color: #333;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
 }
 
-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem;
-    text-align: center;
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
-main {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}`
-        },
-        {
-          name: "script.js",
-          type: "file" as const,
-          path: "script.js",
-          content: `// JavaScript funcional
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Website carregado com sucesso!');
-    
-    // Adicionar interatividade básica
-    const header = document.querySelector('header h1');
-    if (header) {
-        header.addEventListener('click', function() {
-            this.style.transform = this.style.transform ? '' : 'scale(1.05)';
-        });
-    }
+.header {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 2rem;
+  text-align: center;
+  color: white;
+  margin-bottom: 2rem;
+}
+
+.main-content {
+  background: rgba(255,255,255,0.9);
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+\`;
+
+// === COMPONENTES ===
+APP.components.header = () => \`
+  <header class="header">
+    <h1>Website Monolítico</h1>
+    <p>Aplicação Single-File gerada com IA</p>
+  </header>
+\`;
+
+APP.components.main = () => \`
+  <main class="main-content">
+    <h2>Conteúdo Principal</h2>
+    <p>Esta é uma aplicação JavaScript monolítica funcionando perfeitamente!</p>
+    <button onclick="APP.utils.showAlert()" style="
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 20px;
+    ">Clique Aqui</button>
+  </main>
+\`;
+
+// === UTILITÁRIOS ===
+APP.utils.showAlert = () => {
+  alert('Aplicação monolítica funcionando!');
+};
+
+// === RENDERIZAÇÃO ===
+APP.render = () => {
+  const app = document.getElementById('app');
+  if (app) {
+    app.innerHTML = APP.components.header() + APP.components.main();
+  }
+};
+
+// === INICIALIZAÇÃO ===
+document.addEventListener('DOMContentLoaded', () => {
+  // Inject styles
+  const styleEl = document.createElement('style');
+  styleEl.textContent = styles;
+  document.head.appendChild(styleEl);
+  
+  // Create app container
+  document.body.innerHTML = '<div id="app"></div>';
+  
+  // Initialize app
+  APP.render();
+  
+  console.log('Aplicação JavaScript Monolítica iniciada!');
 });`
         }
       ];

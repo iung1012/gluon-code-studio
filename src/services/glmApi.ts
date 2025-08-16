@@ -95,49 +95,40 @@ export default Component;
     const messages: GLMMessage[] = [
       {
         role: 'system',
-        content: `Você é um especialista em desenvolvimento web. Baseado na solicitação do usuário, gere uma estrutura de website completa usando HTML, CSS e JavaScript puro.
+        content: `Você é um especialista em desenvolvimento web. Baseado na solicitação do usuário, gere um website completo usando JavaScript Monolítico (Single-File Architecture).
 
-IMPORTANTE:
-- Retorne a resposta no formato JSON específico abaixo
-- Crie SEMPRE 3 arquivos obrigatórios: index.html, styles.css e script.js
-- O HTML deve ser semântico e completo (com DOCTYPE, meta tags, etc.)
-- O CSS deve ser moderno e responsivo (use flexbox, grid, media queries)
-- O JavaScript deve ser funcional e interativo (validações, eventos, animações)
-- Cada arquivo deve ter conteúdo completo e funcional
-- Use boas práticas de SEO e acessibilidade
+IMPORTANTE - ARQUITETURA MONOLÍTICA:
+- Crie APENAS 1 arquivo: app.js
+- TODO o código HTML, CSS e JavaScript deve estar em um único arquivo
+- Use template strings para HTML
+- Use objetos JavaScript para CSS-in-JS
+- Inclua todas as funcionalidades: roteamento SPA, componentes, estado, API calls
+- O arquivo deve ser completamente autossuficiente e funcional
 
-Estrutura obrigatória:
-- index.html: Estrutura completa da página
-- styles.css: Estilos modernos e responsivos  
-- script.js: Funcionalidades e validações
+ESTRUTURA OBRIGATÓRIA do app.js:
+1. Configuração inicial e constantes
+2. Sistema de roteamento SPA
+3. Gerenciamento de estado global
+4. Componentes como funções JavaScript
+5. Estilos CSS-in-JS ou template strings
+6. Event listeners e interatividade
+7. Inicialização da aplicação
 
 Formato de resposta JSON:
 {
   "files": [
     {
-      "name": "index.html",
+      "name": "app.js",
       "type": "file",
-      "path": "index.html",
-      "content": "<!DOCTYPE html>\\n<html lang=\\"pt-BR\\">\\n<head>\\n  <meta charset=\\"UTF-8\\">\\n  <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1.0\\">\\n  <title>...</title>\\n  <link rel=\\"stylesheet\\" href=\\"styles.css\\">\\n</head>\\n<body>\\n  ...\\n  <script src=\\"script.js\\"></script>\\n</body>\\n</html>"
-    },
-    {
-      "name": "styles.css",
-      "type": "file",
-      "path": "styles.css", 
-      "content": "/* CSS moderno e responsivo */"
-    },
-    {
-      "name": "script.js",
-      "type": "file",
-      "path": "script.js",
-      "content": "// JavaScript funcional e interativo"
+      "path": "app.js",
+      "content": "// JavaScript Monolítico - Single File App\\n\\n// === CONFIGURAÇÃO ===\\nconst APP = {\\n  state: {},\\n  router: {},\\n  components: {},\\n  utils: {}\\n};\\n\\n// === ESTILOS ===\\nconst styles = \`/* CSS aqui */\`;\\n\\n// === COMPONENTES ===\\n// Funções que retornam HTML\\n\\n// === ROTEAMENTO ===\\n// Sistema SPA\\n\\n// === INICIALIZAÇÃO ===\\ndocument.addEventListener('DOMContentLoaded', () => {\\n  // Inject styles\\n  const styleEl = document.createElement('style');\\n  styleEl.textContent = styles;\\n  document.head.appendChild(styleEl);\\n  \\n  // Initialize app\\n});\\n\\n// === HTML STRUCTURE ===\\ndocument.body.innerHTML = \`<div id='app'></div>\`;"
     }
   ]
 }`
       },
       {
         role: 'user',
-        content: `Crie um website completo com HTML, CSS e JavaScript para: ${prompt}`
+        content: `Crie um website JavaScript Monolítico (arquivo único) para: ${prompt}`
       }
     ];
 

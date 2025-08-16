@@ -11,39 +11,30 @@ export const LivePreview = ({ files }: LivePreviewProps) => {
   useEffect(() => {
     if (!iframeRef.current || files.length === 0) return;
 
-    // Find HTML, CSS, and JS files
-    const htmlFile = files.find(file => file.name === 'index.html' && file.type === 'file');
-    const cssFile = files.find(file => file.name === 'styles.css' && file.type === 'file');
-    const jsFile = files.find(file => file.name === 'script.js' && file.type === 'file');
+    // Find the main JavaScript file (app.js for monolithic architecture)
+    const jsFile = files.find(file => 
+      (file.name === 'app.js' || file.name.endsWith('.js')) && file.type === 'file'
+    );
 
-    if (!htmlFile?.content) return;
+    if (!jsFile?.content) return;
 
-    // Create a complete HTML document
-    let htmlContent = htmlFile.content;
-
-    // If CSS exists, inject it into the HTML
-    if (cssFile?.content) {
-      const styleTag = `<style>${cssFile.content}</style>`;
-      
-      // Try to inject before closing head tag, or create head if it doesn't exist
-      if (htmlContent.includes('</head>')) {
-        htmlContent = htmlContent.replace('</head>', `${styleTag}\n</head>`);
-      } else {
-        htmlContent = htmlContent.replace('<html', `<head>${styleTag}</head>\n<html`);
-      }
-    }
-
-    // If JS exists, inject it into the HTML
-    if (jsFile?.content) {
-      const scriptTag = `<script>${jsFile.content}</script>`;
-      
-      // Try to inject before closing body tag, or at the end
-      if (htmlContent.includes('</body>')) {
-        htmlContent = htmlContent.replace('</body>', `${scriptTag}\n</body>`);
-      } else {
-        htmlContent += scriptTag;
-      }
-    }
+    // Create a complete HTML document that will execute the monolithic JS
+    const htmlContent = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Monolítico Preview</title>
+    <style>
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <script>
+        ${jsFile.content}
+    </script>
+</body>
+</html>`;
 
     // Write the content to iframe
     const iframe = iframeRef.current;
@@ -61,11 +52,11 @@ export const LivePreview = ({ files }: LivePreviewProps) => {
       <div className="h-full flex items-center justify-center text-center p-8">
         <div>
           <div className="w-16 h-16 bg-muted rounded-lg mx-auto mb-4 flex items-center justify-center">
-            <span className="text-2xl">🌐</span>
+            <span className="text-2xl">⚡</span>
           </div>
-          <h3 className="text-lg font-medium mb-2">Preview Area</h3>
+          <h3 className="text-lg font-medium mb-2">Preview JavaScript Monolítico</h3>
           <p className="text-muted-foreground max-w-sm">
-            Gere um website com HTML, CSS e JavaScript para ver o preview ao vivo aqui
+            Gere um website JavaScript monolítico para ver o preview ao vivo aqui
           </p>
         </div>
       </div>
