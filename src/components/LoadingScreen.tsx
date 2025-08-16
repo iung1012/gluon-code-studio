@@ -1,35 +1,70 @@
-
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, Code, Palette, Zap } from "lucide-react";
 
 interface LoadingScreenProps {
   isVisible: boolean;
-  progress: number;
+  progress?: number;
   currentContent?: string;
 }
 
-export const LoadingScreen = ({ isVisible, progress, currentContent }: LoadingScreenProps) => {
+export const LoadingScreen = ({ isVisible, progress: externalProgress, currentContent }: LoadingScreenProps) => {
+  const [internalProgress, setInternalProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-    { icon: Sparkles, text: "Conectando à IA...", minProgress: 0 },
-    { icon: Code, text: "Gerando estrutura HTML...", minProgress: 20 },
-    { icon: Palette, text: "Criando estilos visuais...", minProgress: 50 },
-    { icon: Zap, text: "Finalizando detalhes...", minProgress: 80 }
+    { icon: Sparkles, text: "Conectando à IA...", duration: 10 },
+    { icon: Code, text: "Gerando estrutura HTML...", duration: 40 },
+    { icon: Palette, text: "Criando estilos visuais...", duration: 35 },
+    { icon: Zap, text: "Finalizando detalhes...", duration: 15 }
   ];
 
-  // Update current step based on real progress
+  // Use external progress if provided, otherwise use internal progress
+  const currentProgress = externalProgress !== undefined ? externalProgress : internalProgress;
+
+  useEffect(() => {
+    if (!isVisible) {
+      setInternalProgress(0);
+      setCurrentStep(0);
+      return;
+    }
+
+    // Only run internal progress if no external progress is provided
+    if (externalProgress === undefined) {
+      const interval = setInterval(() => {
+        setInternalProgress((prev) => {
+          const newProgress = Math.min(prev + 0.5, 95); // Stop at 95% to wait for real completion
+          return newProgress;
+        });
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+  }, [isVisible, externalProgress]);
+
+  // Update current step based on progress
   useEffect(() => {
     let stepIndex = 0;
-    for (let i = steps.length - 1; i >= 0; i--) {
-      if (progress >= steps[i].minProgress) {
+    let cumulativePercent = 0;
+    for (let i = 0; i < steps.length; i++) {
+      cumulativePercent += steps[i].duration;
+      if (currentProgress <= cumulativePercent) {
         stepIndex = i;
         break;
       }
     }
     setCurrentStep(stepIndex);
-  }, [progress, steps]);
+  }, [currentProgress, steps]);
+
+  // Calculate progress from content length for streaming
+  useEffect(() => {
+    if (currentContent && externalProgress === undefined) {
+      // Estimate progress based on content length
+      // Typical HTML might be 2000-10000 characters
+      const estimatedProgress = Math.min((currentContent.length / 5000) * 100, 100);
+      setInternalProgress(estimatedProgress);
+    }
+  }, [currentContent, externalProgress]);
 
   if (!isVisible) return null;
 
@@ -55,17 +90,12 @@ export const LoadingScreen = ({ isVisible, progress, currentContent }: LoadingSc
             </p>
           </div>
           
-          <Progress value={progress} className="h-2" />
+          <Progress value={currentProgress} className="h-2" />
           
           <div className="text-center">
             <span className="text-sm text-muted-foreground">
-              {Math.round(progress)}% concluído
+              {Math.round(currentProgress)}% concluído
             </span>
-            {currentContent && (
-              <div className="text-xs text-muted-foreground mt-1">
-                {currentContent.length} caracteres processados
-              </div>
-            )}
           </div>
         </div>
 
@@ -74,7 +104,7 @@ export const LoadingScreen = ({ isVisible, progress, currentContent }: LoadingSc
           {steps.map((step, index) => {
             const StepIcon = step.icon;
             const isActive = index === currentStep;
-            const isCompleted = progress >= step.minProgress && progress > step.minProgress + 10;
+            const isCompleted = index < currentStep || currentProgress === 100;
             
             return (
               <div
@@ -100,16 +130,6 @@ export const LoadingScreen = ({ isVisible, progress, currentContent }: LoadingSc
             );
           })}
         </div>
-
-        {/* Real-time content preview */}
-        {currentContent && currentContent.length > 100 && (
-          <div className="text-center">
-            <div className="text-xs text-muted-foreground mb-2">Preview em tempo real:</div>
-            <div className="bg-muted/30 rounded-lg p-3 text-xs font-mono text-left max-h-20 overflow-hidden">
-              {currentContent.substring(0, 150)}...
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

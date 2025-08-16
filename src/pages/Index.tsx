@@ -33,6 +33,7 @@ const Index = () => {
   const handleApiKeySubmit = (key: string) => {
     setApiKey(key);
     localStorage.setItem("glm-api-key", key);
+    // Default model will be set when first prompt is submitted
     toast({
       title: "Chave API Salva",
       description: "Agora você pode começar a gerar websites!",
@@ -40,8 +41,8 @@ const Index = () => {
   };
 
   const parseProjectStructure = (content: string): FileNode[] => {
-    console.log('🔍 Analisando conteúdo da API:', content.substring(0, 200) + '...');
-    console.log('📊 Estatísticas do conteúdo:', { 
+    console.log('🔍 Parsing content from API:', content.substring(0, 200) + '...');
+    console.log('📊 Content stats:', { 
       length: content.length, 
       includesDoctype: content.includes('<!DOCTYPE'), 
       includesHtml: content.includes('<html'),
@@ -53,7 +54,7 @@ const Index = () => {
     
     // Verificar se é HTML válido
     if (cleanContent.includes('<!DOCTYPE html>') || cleanContent.includes('<html')) {
-      console.log('✅ HTML monolítico válido detectado');
+      console.log('✅ Valid HTML monolith detected');
       
       return [{
         name: 'index.html',
@@ -75,7 +76,7 @@ const Index = () => {
       throw new Error(`A API não executou a alteração solicitada. Resposta: "${cleanContent.substring(0, 100)}..."`);
     }
     
-    console.error('❌ Conteúdo HTML inválido recebido');
+    console.error('❌ Invalid HTML content received');
     return [{
       name: 'index.html',
       type: 'file',
@@ -104,63 +105,6 @@ const Index = () => {
     }];
   };
 
-  const createStreamCallbacks = (isNewProject: boolean = true) => {
-    let startTime = Date.now();
-    let progressValue = 0;
-    
-    return {
-      onProgress: (content: string, isComplete: boolean) => {
-        const currentTime = Date.now();
-        const elapsedSeconds = (currentTime - startTime) / 1000;
-        
-        console.log('📊 Stream progress:', { 
-          contentLength: content.length, 
-          elapsedSeconds: elapsedSeconds.toFixed(1),
-          isComplete 
-        });
-        
-        setCurrentStreamContent(content);
-        
-        if (isComplete) {
-          progressValue = 100;
-        } else {
-          // Progresso baseado no tempo (20% nos primeiros 5 segundos)
-          const timeProgress = Math.min((elapsedSeconds / 5) * 20, 20);
-          
-          // Progresso baseado no conteúdo (60% baseado no tamanho)
-          const expectedSize = isNewProject ? 5000 : 3000;
-          const contentProgress = Math.min((content.length / expectedSize) * 60, 60);
-          
-          // Marcos do HTML (20% adicional)
-          let milestoneProgress = 0;
-          if (content.includes('<!DOCTYPE')) milestoneProgress += 3;
-          if (content.includes('<head>')) milestoneProgress += 3;
-          if (content.includes('<style>')) milestoneProgress += 4;
-          if (content.includes('</style>')) milestoneProgress += 4;
-          if (content.includes('<body>')) milestoneProgress += 3;
-          if (content.includes('</body>')) milestoneProgress += 3;
-          
-          // Somar todos os progressos
-          progressValue = Math.min(timeProgress + contentProgress + milestoneProgress, 98);
-          
-          // Garantir que o progresso sempre aumenta
-          progressValue = Math.max(progressValue, loadingProgress);
-        }
-        
-        console.log('📈 Progress updated to:', progressValue);
-        setLoadingProgress(Math.round(progressValue));
-      },
-      onComplete: (fullContent: string) => {
-        console.log('🎉 Streaming completo! Conteúdo final:', fullContent.length, 'caracteres');
-        setLoadingProgress(100);
-      },
-      onError: (error: Error) => {
-        console.error('❌ Erro no streaming:', error);
-        setLoadingProgress(0);
-      }
-    };
-  };
-
   const handlePromptSubmit = async (prompt: string, model: string, temperature: number) => {
     // Create or update GLM service with selected model
     let currentService = glmService;
@@ -182,12 +126,27 @@ const Index = () => {
     setLoadingProgress(0);
     setCurrentStreamContent("");
     setShowPreview(true);
-    setUseChatLayout(true);
+    setUseChatLayout(true); // Enable chat layout for new generations
     
     try {
       let response: string;
-      const isNewProject = files.length === 0;
-      const streamCallbacks = createStreamCallbacks(isNewProject);
+      
+      const streamCallbacks = {
+        onProgress: (content: string, isComplete: boolean) => {
+          setCurrentStreamContent(content);
+          // Estimate progress based on content characteristics
+          if (content.includes('<!DOCTYPE html>')) setLoadingProgress(Math.max(loadingProgress, 20));
+          if (content.includes('<style>')) setLoadingProgress(Math.max(loadingProgress, 50));
+          if (content.includes('<script>')) setLoadingProgress(Math.max(loadingProgress, 80));
+          if (isComplete) setLoadingProgress(100);
+        },
+        onComplete: (fullContent: string) => {
+          setLoadingProgress(100);
+        },
+        onError: (error: Error) => {
+          console.error('Streaming error:', error);
+        }
+      };
       
       // Se já existem arquivos, usa edição específica
       if (files.length > 0 && files[0].content) {
@@ -221,7 +180,7 @@ const Index = () => {
         description: isEdit ? `Alterações aplicadas usando ${model}.` : `Website criado usando ${model}.`,
       });
     } catch (error) {
-      console.error('❌ Erro ao gerar código:', error);
+      console.error('Error generating code:', error);
       toast({
         title: "Falha na Geração",
         description: error instanceof Error ? error.message : "Erro ao gerar website. Tente novamente.",
@@ -242,7 +201,22 @@ const Index = () => {
     setCurrentStreamContent("");
     
     try {
-      const streamCallbacks = createStreamCallbacks(false); // Edições são menores
+      const streamCallbacks = {
+        onProgress: (content: string, isComplete: boolean) => {
+          setCurrentStreamContent(content);
+          // Estimate progress for edits
+          if (content.includes('<!DOCTYPE html>')) setLoadingProgress(Math.max(loadingProgress, 30));
+          if (content.length > 1000) setLoadingProgress(Math.max(loadingProgress, 60));
+          if (content.length > 3000) setLoadingProgress(Math.max(loadingProgress, 90));
+          if (isComplete) setLoadingProgress(100);
+        },
+        onComplete: (fullContent: string) => {
+          setLoadingProgress(100);
+        },
+        onError: (error: Error) => {
+          console.error('Streaming error:', error);
+        }
+      };
       
       // Always use edit mode for chat messages
       if (files.length > 0 && files[0].content) {
@@ -277,7 +251,7 @@ const Index = () => {
         throw new Error("Nenhum website gerado para editar");
       }
     } catch (error) {
-      console.error('❌ Erro ao processar mensagem do chat:', error);
+      console.error('Error processing chat message:', error);
       toast({
         title: "Falha na Atualização",
         description: error instanceof Error ? error.message : "Erro ao atualizar website. Tente novamente.",
@@ -334,7 +308,7 @@ const Index = () => {
       <>
         <LoadingScreen 
           isVisible={isLoading} 
-          progress={loadingProgress}
+          progress={loadingProgress > 0 ? loadingProgress : undefined}
           currentContent={currentStreamContent}
         />
         {useChatLayout ? (
@@ -366,7 +340,7 @@ const Index = () => {
     <>
       <LoadingScreen 
         isVisible={isLoading}
-        progress={loadingProgress}
+        progress={loadingProgress > 0 ? loadingProgress : undefined}
         currentContent={currentStreamContent}
       />
       <WelcomeScreen 
