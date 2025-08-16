@@ -95,42 +95,49 @@ export default Component;
     const messages: GLMMessage[] = [
       {
         role: 'system',
-        content: `Você é um especialista em desenvolvimento web. Baseado na solicitação do usuário, gere uma estrutura de projeto completa com múltiplos arquivos.
+        content: `Você é um especialista em desenvolvimento web. Baseado na solicitação do usuário, gere uma estrutura de website completa usando HTML, CSS e JavaScript puro.
 
 IMPORTANTE:
 - Retorne a resposta no formato JSON específico abaixo
-- Inclua todos os arquivos necessários (componentes, estilos, utils, etc.)
-- Use React/TypeScript e Tailwind CSS
+- Crie SEMPRE 3 arquivos obrigatórios: index.html, styles.css e script.js
+- O HTML deve ser semântico e completo (com DOCTYPE, meta tags, etc.)
+- O CSS deve ser moderno e responsivo (use flexbox, grid, media queries)
+- O JavaScript deve ser funcional e interativo (validações, eventos, animações)
 - Cada arquivo deve ter conteúdo completo e funcional
+- Use boas práticas de SEO e acessibilidade
+
+Estrutura obrigatória:
+- index.html: Estrutura completa da página
+- styles.css: Estilos modernos e responsivos  
+- script.js: Funcionalidades e validações
 
 Formato de resposta JSON:
 {
   "files": [
     {
-      "name": "App.tsx",
+      "name": "index.html",
       "type": "file",
-      "path": "src/App.tsx",
-      "content": "conteúdo do arquivo..."
+      "path": "index.html",
+      "content": "<!DOCTYPE html>\\n<html lang=\\"pt-BR\\">\\n<head>\\n  <meta charset=\\"UTF-8\\">\\n  <meta name=\\"viewport\\" content=\\"width=device-width, initial-scale=1.0\\">\\n  <title>...</title>\\n  <link rel=\\"stylesheet\\" href=\\"styles.css\\">\\n</head>\\n<body>\\n  ...\\n  <script src=\\"script.js\\"></script>\\n</body>\\n</html>"
     },
     {
-      "name": "components",
-      "type": "folder",
-      "path": "src/components",
-      "children": [
-        {
-          "name": "Header.tsx",
-          "type": "file", 
-          "path": "src/components/Header.tsx",
-          "content": "conteúdo do arquivo..."
-        }
-      ]
+      "name": "styles.css",
+      "type": "file",
+      "path": "styles.css", 
+      "content": "/* CSS moderno e responsivo */"
+    },
+    {
+      "name": "script.js",
+      "type": "file",
+      "path": "script.js",
+      "content": "// JavaScript funcional e interativo"
     }
   ]
 }`
       },
       {
         role: 'user',
-        content: `Crie uma estrutura de projeto completa para: ${prompt}`
+        content: `Crie um website completo com HTML, CSS e JavaScript para: ${prompt}`
       }
     ];
 

@@ -37,19 +37,95 @@ const Index = () => {
 
   const parseProjectStructure = (content: string): FileNode[] => {
     try {
-      // Remove any markdown code blocks
-      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      // Remove any markdown code blocks and clean content
+      let cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      
+      // Try to extract JSON from the response
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanContent = jsonMatch[0];
+      }
+      
       const parsed = JSON.parse(cleanContent);
       return parsed.files || [];
     } catch (error) {
       console.error('Error parsing project structure:', error);
-      // Fallback: create a single file with the generated content
-      return [{
-        name: "App.tsx",
-        type: "file" as const,
-        path: "src/App.tsx",
-        content: content
-      }];
+      
+      // Fallback: create basic HTML/CSS/JS structure
+      return [
+        {
+          name: "index.html",
+          type: "file" as const,
+          path: "index.html",
+          content: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Gerado</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Website Gerado com IA</h1>
+    </header>
+    <main>
+        <section>
+            <h2>Conteúdo Principal</h2>
+            <p>Este é um exemplo de website gerado automaticamente.</p>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>`
+        },
+        {
+          name: "styles.css",
+          type: "file" as const,
+          path: "styles.css",
+          content: `* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+main {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}`
+        },
+        {
+          name: "script.js",
+          type: "file" as const,
+          path: "script.js",
+          content: `// JavaScript funcional
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Website carregado com sucesso!');
+    
+    // Adicionar interatividade básica
+    const header = document.querySelector('header h1');
+    if (header) {
+        header.addEventListener('click', function() {
+            this.style.transform = this.style.transform ? '' : 'scale(1.05)';
+        });
+    }
+});`
+        }
+      ];
     }
   };
 

@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Eye, Code, Copy, Check, ExternalLink } from "lucide-react";
+import { Eye, Code, Copy, Check } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FileTree, FileNode } from "./FileTree";
+import { LivePreview } from "./LivePreview";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 interface CodePreviewProps {
@@ -50,43 +51,11 @@ export const CodePreview = ({ files, selectedFile, onFileSelect, generatedCode }
   };
 
   const renderPreview = () => {
-    if (!generatedCode && !selectedFile?.content) {
-      return (
-        <div className="h-full flex items-center justify-center text-center p-8">
-          <div>
-            <Eye className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Preview Area</h3>
-            <p className="text-muted-foreground max-w-sm">
-              Generate code with AI to see a live preview of your website here
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    // For now, show a mock preview since we can't safely execute arbitrary code
-    return (
-      <div className="h-full bg-white rounded-lg shadow-inner">
-        <div className="h-full flex items-center justify-center text-center p-8">
-          <div>
-            <div className="w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-lg mx-auto mb-4 flex items-center justify-center">
-              <ExternalLink className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="text-lg font-medium mb-2 text-gray-800">Live Preview</h3>
-            <p className="text-gray-600 max-w-sm mb-4">
-              Your generated website would appear here in a real implementation
-            </p>
-            <Button variant="outline" size="sm">
-              Open in New Tab
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <LivePreview files={files} />;
   };
 
   const codeToShow = selectedFile?.content || generatedCode || "";
-  const filename = selectedFile?.path || "generated-code.tsx";
+  const filename = selectedFile?.path || "index.html";
 
   useEffect(() => {
     if (generatedCode) {
