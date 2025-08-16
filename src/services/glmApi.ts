@@ -68,8 +68,8 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
     ];
 
     return callbacks 
-      ? this.callStreamingAPIWithRetry(messages, temperature, 4500, callbacks, 3)
-      : this.callAPIWithRetry(messages, temperature, 4500, 3);
+      ? this.callStreamingAPI(messages, temperature, 4500, callbacks) // Reduzido de 6000 para 4500
+      : this.callAPI(messages, temperature, 4500);
   }
 
   async editSpecificPart(currentCode: string, editRequest: string, callbacks?: StreamCallbacks, temperature: number = 0.1): Promise<string> {
@@ -109,102 +109,8 @@ Retorne o HTML completo modificado agora:`
     });
 
     return callbacks 
-      ? this.callStreamingAPIWithRetry(messages, temperature, 5500, callbacks, 3)
-      : this.callAPIWithRetry(messages, temperature, 5500, 3);
-  }
-
-  private async callStreamingAPIWithRetry(
-    messages: GLMMessage[], 
-    temperature: number, 
-    maxTokens: number, 
-    callbacks: StreamCallbacks,
-    maxRetries: number = 3
-  ): Promise<string> {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`🚀 Attempting streaming call (${attempt}/${maxRetries})`);
-        return await this.callStreamingAPI(messages, temperature, maxTokens, callbacks);
-      } catch (error) {
-        console.warn(`⚠️ Streaming attempt ${attempt} failed:`, error);
-        lastError = error as Error;
-        
-        // Se não é o último attempt e o erro é relacionado a conexão
-        if (attempt < maxRetries && this.isRetryableError(error as Error)) {
-          console.log(`🔄 Retrying in ${attempt * 1000}ms...`);
-          await this.delay(attempt * 1000);
-          continue;
-        }
-        
-        // Se chegou aqui, não vai tentar mais
-        break;
-      }
-    }
-    
-    // Se todos os attempts falharam, tenta fallback sem streaming
-    console.log('🔄 All streaming attempts failed, trying non-streaming...');
-    callbacks.onError?.(new Error('Streaming failed, switching to non-streaming mode'));
-    
-    try {
-      const result = await this.callAPIWithRetry(messages, temperature, maxTokens, 2);
-      callbacks.onComplete?.(result);
-      return result;
-    } catch (fallbackError) {
-      console.error('❌ Fallback also failed:', fallbackError);
-      const finalError = lastError || (fallbackError as Error);
-      callbacks.onError?.(finalError);
-      throw finalError;
-    }
-  }
-
-  private async callAPIWithRetry(
-    messages: GLMMessage[], 
-    temperature: number, 
-    maxTokens: number, 
-    maxRetries: number = 3
-  ): Promise<string> {
-    let lastError: Error | null = null;
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`🚀 Attempting API call (${attempt}/${maxRetries})`);
-        return await this.callAPI(messages, temperature, maxTokens);
-      } catch (error) {
-        console.warn(`⚠️ API attempt ${attempt} failed:`, error);
-        lastError = error as Error;
-        
-        if (attempt < maxRetries && this.isRetryableError(error as Error)) {
-          console.log(`🔄 Retrying in ${attempt * 1000}ms...`);
-          await this.delay(attempt * 1000);
-          continue;
-        }
-        
-        break;
-      }
-    }
-    
-    throw lastError || new Error('All API attempts failed');
-  }
-
-  private isRetryableError(error: Error): boolean {
-    const retryableMessages = [
-      'aborted',
-      'network',
-      'timeout',
-      'connection',
-      'ECONNRESET',
-      'ENOTFOUND',
-      'ETIMEDOUT',
-      'budystreambuffer was aborted'
-    ];
-    
-    const errorMessage = error.message.toLowerCase();
-    return retryableMessages.some(msg => errorMessage.includes(msg));
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+      ? this.callStreamingAPI(messages, temperature, 5500, callbacks) // Reduzido de 8000 para 5500
+      : this.callAPI(messages, temperature, 5500);
   }
 
   private async callStreamingAPI(
@@ -215,16 +121,11 @@ Retorne o HTML completo modificado agora:`
   ): Promise<string> {
     console.log('🚀 Calling GLM Streaming API with:', { temperature, maxTokens, messagesCount: messages.length });
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ Request timeout, aborting...');
-      controller.abort();
-    }, 35000); // Timeout aumentado para 35s
-    
-    let response: Response;
-    
     try {
-      response = await fetch(this.baseUrl, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Timeout de 30s (reduzido de implícito)
+
+      const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
@@ -236,107 +137,94 @@ Retorne o HTML completo modificado agora:`
           messages,
           temperature,
           max_tokens: maxTokens,
-          top_p: 0.8,
+          top_p: 0.8, // Aumentado de 0.7 para 0.8 para mais criatividade
           frequency_penalty: 0.0,
           presence_penalty: 0.0,
           stream: true
         }),
         signal: controller.signal
       });
-    } catch (error) {
+
       clearTimeout(timeoutId);
-      console.error('❌ Fetch error:', error);
-      throw new Error(`Network error: ${(error as Error).message}`);
-    }
 
-    clearTimeout(timeoutId);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ GLM Streaming API error response:', errorText);
+        const error = new Error(`GLM API error: ${response.status} ${response.statusText}`);
+        callbacks.onError?.(error);
+        throw error;
+      }
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('❌ GLM Streaming API error response:', errorText);
-      throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
-    }
+      const reader = response.body?.getReader();
+      if (!reader) {
+        const error = new Error('No readable stream in response');
+        callbacks.onError?.(error);
+        throw error;
+      }
 
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('No readable stream in response');
-    }
+      let fullContent = '';
+      const decoder = new TextDecoder();
 
-    let fullContent = '';
-    const decoder = new TextDecoder();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            console.log('✅ Streaming complete, total content length:', fullContent.length);
+            callbacks.onProgress?.(fullContent, true);
+            callbacks.onComplete?.(fullContent);
+            break;
+          }
 
-    try {
-      while (true) {
-        let result;
-        try {
-          result = await reader.read();
-        } catch (readError) {
-          console.error('❌ Stream read error:', readError);
-          throw new Error(`Stream read error: ${(readError as Error).message}`);
-        }
-        
-        const { done, value } = result;
-        
-        if (done) {
-          console.log('✅ Streaming complete, total content length:', fullContent.length);
-          callbacks.onProgress?.(fullContent, true);
-          callbacks.onComplete?.(fullContent);
-          break;
-        }
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(line => line.trim() !== '');
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(line => line.trim() !== '');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            
-            if (data === '[DONE]') {
-              continue;
-            }
-
-            try {
-              const parsed: GLMStreamResponse = JSON.parse(data);
-              const deltaContent = parsed.choices?.[0]?.delta?.content;
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
               
-              if (deltaContent) {
-                fullContent += deltaContent;
-                callbacks.onProgress?.(fullContent, false);
+              if (data === '[DONE]') {
+                continue;
               }
 
-              if (parsed.choices?.[0]?.finish_reason) {
-                console.log('🏁 Stream finished with reason:', parsed.choices[0].finish_reason);
+              try {
+                const parsed: GLMStreamResponse = JSON.parse(data);
+                const deltaContent = parsed.choices?.[0]?.delta?.content;
+                
+                if (deltaContent) {
+                  fullContent += deltaContent;
+                  callbacks.onProgress?.(fullContent, false);
+                }
+
+                if (parsed.choices?.[0]?.finish_reason) {
+                  console.log('🏁 Stream finished with reason:', parsed.choices[0].finish_reason);
+                }
+              } catch (parseError) {
+                console.warn('⚠️ Failed to parse streaming chunk:', data);
               }
-            } catch (parseError) {
-              console.warn('⚠️ Failed to parse streaming chunk:', data);
             }
           }
         }
-      }
-    } finally {
-      try {
+      } finally {
         reader.releaseLock();
-      } catch (lockError) {
-        console.warn('⚠️ Error releasing reader lock:', lockError);
       }
-    }
 
-    return fullContent;
+      return fullContent;
+    } catch (error) {
+      console.error('❌ Error calling GLM Streaming API:', error);
+      callbacks.onError?.(error as Error);
+      throw error;
+    }
   }
 
   private async callAPI(messages: GLMMessage[], temperature: number, maxTokens: number): Promise<string> {
     console.log('🚀 Calling GLM API with:', { temperature, maxTokens, messagesCount: messages.length });
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ Request timeout, aborting...');
-      controller.abort();
-    }, 30000); // Timeout de 30s
-
-    let response: Response;
-    
     try {
-      response = await fetch(this.baseUrl, {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000); // Timeout de 25s
+
+      const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
@@ -354,33 +242,32 @@ Retorne o HTML completo modificado agora:`
         }),
         signal: controller.signal
       });
-    } catch (error) {
+
       clearTimeout(timeoutId);
-      console.error('❌ Fetch error:', error);
-      throw new Error(`Network error: ${(error as Error).message}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ GLM API error response:', errorText);
+        throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data: GLMResponse = await response.json();
+      console.log('✅ GLM API response received:', { 
+        hasChoices: !!data.choices,
+        choicesCount: data.choices?.length || 0
+      });
+      
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No response from GLM API');
+      }
+
+      const content = data.choices[0].message.content;
+      console.log('📄 Content preview:', content.substring(0, 200) + '...');
+      
+      return content;
+    } catch (error) {
+      console.error('❌ Error calling GLM API:', error);
+      throw error;
     }
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('❌ GLM API error response:', errorText);
-      throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data: GLMResponse = await response.json();
-    console.log('✅ GLM API response received:', { 
-      hasChoices: !!data.choices,
-      choicesCount: data.choices?.length || 0
-    });
-    
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error('No response from GLM API');
-    }
-
-    const content = data.choices[0].message.content;
-    console.log('📄 Content preview:', content.substring(0, 200) + '...');
-    
-    return content;
   }
 }
