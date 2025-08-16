@@ -67,20 +67,49 @@ const Index = () => {
       
       // Fallback: try to extract HTML directly from response
       try {
-        const htmlMatch = content.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
-        if (htmlMatch) {
-          console.log('🔄 Found HTML in response, using direct extraction');
+        console.log('🔄 Attempting HTML extraction...');
+        
+        // Look for HTML content in the JSON response
+        let htmlContent = '';
+        
+        // Try to extract content value from the malformed JSON
+        const contentMatch = content.match(/"content":\s*"([^"]*(?:\\.[^"]*)*)"/);
+        if (contentMatch) {
+          htmlContent = contentMatch[1];
+          console.log('📝 Found content field:', htmlContent.substring(0, 200) + '...');
+          
+          // Properly unescape the HTML
+          htmlContent = htmlContent
+            .replace(/\\n/g, '\n')           // Convert \\n to actual newlines
+            .replace(/\\"/g, '"')            // Convert \\" to quotes  
+            .replace(/\\'/g, "'")            // Convert \\' to single quotes
+            .replace(/\\\\/g, '\\')          // Convert \\\\ to single backslash
+            .replace(/\\t/g, '\t')           // Convert \\t to tabs
+            .replace(/\\r/g, '\r');          // Convert \\r to carriage returns
+          
+          console.log('🎯 Unescaped HTML preview:', htmlContent.substring(0, 300) + '...');
+        } else {
+          // Try direct HTML extraction
+          const htmlMatch = content.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
+          if (htmlMatch) {
+            htmlContent = htmlMatch[0];
+            console.log('🔍 Direct HTML extraction successful');
+          }
+        }
+        
+        if (htmlContent && htmlContent.includes('<!DOCTYPE html>')) {
+          console.log('✅ HTML content found and processed');
           return [
             {
               name: "index.html",
               type: "file" as const,
               path: "index.html",
-              content: htmlMatch[0]
+              content: htmlContent
             }
           ];
         }
       } catch (htmlError) {
-        console.error('❌ HTML extraction also failed:', htmlError);
+        console.error('❌ HTML extraction failed:', htmlError);
       }
       
       // Final fallback: create basic monolithic HTML structure
