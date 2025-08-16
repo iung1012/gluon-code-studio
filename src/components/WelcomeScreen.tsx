@@ -1,20 +1,29 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowUp, Sparkles, Bot } from "lucide-react";
 
 interface WelcomeScreenProps {
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string, model: string) => void;
   isLoading: boolean;
 }
 
 export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
   const [prompt, setPrompt] = useState("");
+  const [selectedModel, setSelectedModel] = useState("glm-4-0520");
+
+  const models = [
+    { value: "glm-4-0520", label: "GLM-4.5 (Latest)", description: "Mais recente e avançado" },
+    { value: "glm-4-32b-0414-128k", label: "GLM-4 (32B)", description: "Modelo robusto com 128k contexto" },
+    { value: "glm-4-plus", label: "GLM-4 Plus", description: "Versão aprimorada do GLM-4" },
+    { value: "glm-4-air", label: "GLM-4 Air", description: "Versão mais rápida e eficiente" }
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim() && !isLoading) {
-      onSubmit(prompt.trim());
+      onSubmit(prompt.trim(), selectedModel);
     }
   };
 
@@ -41,6 +50,31 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
           <p className="text-lg text-muted-foreground">
             Describe your website and I'll generate the complete HTML code for you
           </p>
+        </div>
+
+        {/* Model Selection */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">AI Model</label>
+          <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isLoading}>
+            <SelectTrigger className="w-full bg-card border-border">
+              <SelectValue placeholder="Selecione o modelo">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-primary" />
+                  <span>{models.find(m => m.value === selectedModel)?.label}</span>
+                </div>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="bg-card border-border">
+              {models.map((model) => (
+                <SelectItem key={model.value} value={model.value} className="focus:bg-accent">
+                  <div className="flex flex-col">
+                    <span className="font-medium">{model.label}</span>
+                    <span className="text-xs text-muted-foreground">{model.description}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Input Form */}
@@ -75,7 +109,7 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
                 size="sm"
                 onClick={() => setPrompt(example)}
                 disabled={isLoading}
-                className="text-xs h-8 px-3 bg-card hover:bg-accent"
+                className="text-xs h-8 px-3 bg-card hover:bg-accent border-border"
               >
                 {example}
               </Button>

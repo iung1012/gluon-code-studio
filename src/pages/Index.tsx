@@ -33,7 +33,7 @@ const Index = () => {
   const handleApiKeySubmit = (key: string) => {
     setApiKey(key);
     localStorage.setItem("glm-api-key", key);
-    setGlmService(new GLMApiService(key));
+    // Default model will be set when first prompt is submitted
     toast({
       title: "API Key Saved",
       description: "You can now start generating websites!",
@@ -105,8 +105,22 @@ const Index = () => {
     }];
   };
 
-  const handlePromptSubmit = async (prompt: string) => {
-    if (!glmService) return;
+  const handlePromptSubmit = async (prompt: string, model: string) => {
+    // Create or update GLM service with selected model
+    let currentService = glmService;
+    if (!glmService || glmService.getModel() !== model) {
+      currentService = new GLMApiService(apiKey, model);
+      setGlmService(currentService);
+    }
+    
+    if (!currentService) {
+      toast({
+        title: "Service Error",
+        description: "Failed to initialize GLM service. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setIsLoading(true);
     setLoadingProgress(0);
@@ -138,15 +152,15 @@ const Index = () => {
       if (files.length > 0 && files[0].content) {
         const currentFile = files.find(f => f.name === 'index.html');
         if (currentFile?.content) {
-          console.log('🎯 Fazendo edição específica...');
-          response = await glmService.editSpecificPart(currentFile.content, prompt, streamCallbacks);
+          console.log('🎯 Fazendo edição específica...', { model });
+          response = await currentService.editSpecificPart(currentFile.content, prompt, streamCallbacks);
         } else {
-          console.log('🆕 Gerando novo projeto...');
-          response = await glmService.generateProjectStructure(prompt, streamCallbacks);
+          console.log('🆕 Gerando novo projeto...', { model });
+          response = await currentService.generateProjectStructure(prompt, streamCallbacks);
         }
       } else {
-        console.log('🆕 Gerando novo projeto...');
-        response = await glmService.generateProjectStructure(prompt, streamCallbacks);
+        console.log('🆕 Gerando novo projeto...', { model });
+        response = await currentService.generateProjectStructure(prompt, streamCallbacks);
       }
       
       const parsedFiles = parseProjectStructure(response);
@@ -163,7 +177,7 @@ const Index = () => {
       const isEdit = files.length > 0;
       toast({
         title: isEdit ? "Website Updated!" : "Website Generated!",
-        description: isEdit ? "Your changes have been applied successfully." : "Your website has been created successfully.",
+        description: isEdit ? `Your changes have been applied using ${model}.` : `Your website has been created using ${model}.`,
       });
     } catch (error) {
       console.error('Error generating code:', error);
@@ -285,7 +299,7 @@ const Index = () => {
     setSelectedFile({ path, content });
   };
 
-  if (!apiKey || !glmService) {
+  if (!apiKey) {
     return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
   }
 

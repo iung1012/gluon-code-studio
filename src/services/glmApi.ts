@@ -29,9 +29,19 @@ interface StreamCallbacks {
 export class GLMApiService {
   private apiKey: string;
   private baseUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
+  private model: string;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, model: string = 'glm-4-32b-0414-128k') {
     this.apiKey = apiKey;
+    this.model = model;
+  }
+
+  setModel(model: string) {
+    this.model = model;
+  }
+
+  getModel(): string {
+    return this.model;
   }
 
   async generateProjectStructure(prompt: string, callbacks?: StreamCallbacks): Promise<string> {
@@ -118,7 +128,7 @@ Retorne o HTML completo modificado agora:`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'glm-4-32b-0414-128k',
+          model: this.model,
           messages,
           temperature,
           max_tokens: maxTokens,
@@ -211,7 +221,7 @@ Retorne o HTML completo modificado agora:`
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'glm-4-32b-0414-128k',
+          model: this.model,
           messages,
           temperature,
           max_tokens: maxTokens,
