@@ -46,8 +46,33 @@ const Index = () => {
 
   const parseProjectStructure = (content: string): { files: FileNode[], projectFiles: ProjectFile[] } => {
     try {
-      // Remove any markdown code blocks
-      const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      // Advanced JSON cleaning and sanitization
+      let cleanContent = content.trim();
+      
+      // Remove markdown code blocks
+      cleanContent = cleanContent.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+      
+      // Extract JSON from mixed content
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanContent = jsonMatch[0];
+      }
+      
+      // Fix common JSON formatting issues
+      cleanContent = cleanContent
+        // Fix escaped quotes in code content
+        .replace(/\\\\"/g, '\\"')
+        // Fix unescaped newlines in strings
+        .replace(/(?<!\\)\n(?=\s*"[^"]*":)/g, '\\n')
+        // Fix unescaped tabs
+        .replace(/(?<!\\)\t/g, '\\t')
+        // Remove trailing commas
+        .replace(/,\s*([}\]])/g, '$1')
+        // Fix double backslashes that might break parsing
+        .replace(/\\\\\\\\/g, '\\\\');
+      
+      console.log('Attempting to parse JSON:', cleanContent.substring(0, 200) + '...');
+      
       const parsed = JSON.parse(cleanContent);
       const projectFiles = parsed.files || [];
       
@@ -57,7 +82,7 @@ const Index = () => {
           name: pFile.name,
           type: pFile.type,
           path: pFile.path,
-          content: pFile.content,
+          content: pFile.content || '',
           children: pFile.children ? convertToFileNodes(pFile.children) : undefined
         }));
       };
@@ -68,16 +93,57 @@ const Index = () => {
       };
     } catch (error) {
       console.error('Error parsing project structure:', error);
-      // Fallback: create a single file with the generated content
-      const fallbackFile = {
-        name: "index.html",
-        type: "file" as const,
-        path: "./index.html",
-        content: content
-      };
+      console.log('Raw content that failed:', content.substring(0, 500));
+      
+      // Enhanced fallback: try to extract recognizable code patterns
+      const fallbackFiles: ProjectFile[] = [];
+      
+      // Try to find HTML content
+      const htmlMatch = content.match(/<!DOCTYPE html>[\s\S]*?<\/html>/i);
+      if (htmlMatch) {
+        fallbackFiles.push({
+          name: "index.html",
+          type: "file",
+          path: "./index.html",
+          content: htmlMatch[0]
+        });
+      }
+      
+      // Try to find CSS content
+      const cssMatch = content.match(/:root\s*{[\s\S]*?}|\.[\w-]+\s*{[\s\S]*?}/g);
+      if (cssMatch) {
+        fallbackFiles.push({
+          name: "style.css",
+          type: "file", 
+          path: "./css/style.css",
+          content: cssMatch.join('\n\n')
+        });
+      }
+      
+      // Try to find JS content
+      const jsMatch = content.match(/(?:function|class|const|let|var)[\s\S]*?(?=\n\n|\n$|$)/g);
+      if (jsMatch) {
+        fallbackFiles.push({
+          name: "script.js",
+          type: "file",
+          path: "./js/script.js", 
+          content: jsMatch.join('\n\n')
+        });
+      }
+      
+      // If no patterns found, create error file
+      if (fallbackFiles.length === 0) {
+        fallbackFiles.push({
+          name: "error.txt",
+          type: "file",
+          path: "./error.txt",
+          content: `Erro ao processar resposta da IA:\n${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nConteúdo original:\n${content.substring(0, 1000)}...`
+        });
+      }
+      
       return {
-        files: [fallbackFile],
-        projectFiles: [fallbackFile]
+        files: fallbackFiles,
+        projectFiles: fallbackFiles
       };
     }
   };

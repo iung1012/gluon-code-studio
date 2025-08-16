@@ -31,28 +31,36 @@ export class AdvancedCodeGenerator {
     const messages: GLMMessage[] = [
       {
         role: 'system',
-        content: `Você é um especialista em desenvolvimento web full-stack. Crie um projeto completo e profissional com personalização avançada via CSS, JavaScript vanilla e Node.js quando necessário.
+        content: `Você é um especialista em desenvolvimento web full-stack. Crie um projeto WEB COMPLETO e AVANÇADO com tecnologias modernas.
 
-ESTRUTURA OBRIGATÓRIA:
-- HTML semântico e acessível 
-- CSS moderno com:
-  * Custom properties (CSS variables)
-  * Grid e Flexbox
-  * Animações e transições
-  * Media queries para responsividade
-  * Dark/light theme support
-- JavaScript vanilla ES6+ com:
-  * Modules
-  * Classes
-  * Event handlers
-  * API calls
-  * LocalStorage/SessionStorage
-  * Animations via CSS classes
-- Node.js/Express (quando aplicável):
-  * API endpoints
-  * Middleware
-  * Database connection
-  * Authentication
+REQUISITOS OBRIGATÓRIOS - PROJETO PROFISSIONAL:
+- HTML5 semântico e acessível (semantic tags, ARIA, meta tags)
+- CSS3 AVANÇADO com:
+  * Custom properties e CSS Variables complexas
+  * CSS Grid + Flexbox layouts sofisticados  
+  * Animações CSS3 e @keyframes elaboradas
+  * Transitions e transforms 3D
+  * Media queries mobile-first responsivo
+  * Dark/Light theme automático
+  * Gradients, shadows, blur effects
+  * CSS animations para interatividade
+- JavaScript ES6+ MODERNO:
+  * Classes ES6+ e Modules
+  * Async/await e Promises
+  * Event delegation e listeners
+  * Intersection Observer API
+  * LocalStorage + SessionStorage
+  * Fetch API para requisições
+  * DOM manipulation avançado
+  * Animations e GSAP-like effects
+  * Dynamic content loading
+- Node.js/Express BACKEND:
+  * RESTful API endpoints completos
+  * Middleware customizado
+  * Database integration (MongoDB/SQLite)
+  * Authentication JWT
+  * File uploads e processing
+  * Error handling robusto
 
 FORMATO DE RESPOSTA JSON:
 {
@@ -116,17 +124,31 @@ FORMATO DE RESPOSTA JSON:
   ]
 }
 
-REQUISITOS TÉCNICOS:
-- Código 100% funcional e executável
-- Variáveis CSS para temas
-- JavaScript modular e reutilizável  
-- Responsivo (mobile-first)
-- Performance otimizada
-- SEO-friendly
-- Acessibilidade (ARIA labels)
-- Compatibilidade cross-browser
+REQUISITOS TÉCNICOS AVANÇADOS:
+- Código 100% funcional, executável e testado
+- Design system completo com variáveis CSS
+- JavaScript modular, reutilizável e performático
+- Responsivo mobile-first com breakpoints
+- Performance otimizada (lazy loading, compression)
+- SEO-friendly (meta tags, structured data)
+- Acessibilidade WCAG 2.1 completa
+- Cross-browser compatibility
+- Error handling e validação
+- Loading states e feedback visual
+- Smooth animations e micro-interactions
+- Professional UI/UX design
 
-IMPORTANTE: Retorne APENAS o JSON válido, sem markdown ou explicações.`
+IMPORTANTE CRÍTICO: 
+1. ESCAPE todas as aspas e caracteres especiais no JSON
+2. Use \\n para quebras de linha no código
+3. Use \\\\ para backslashes literais
+4. Retorne APENAS JSON válido, sem markdown
+5. Teste mentalmente o JSON antes de retornar
+
+EXEMPLO DE ESCAPE CORRETO:
+"content": "function test() {\\n  console.log(\\"Hello\\");\\n}"
+
+NUNCA use aspas não escapadas dentro do JSON!`
       },
       {
         role: 'user',
