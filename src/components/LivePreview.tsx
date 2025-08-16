@@ -228,7 +228,7 @@ export const LivePreview = ({ files, className }: LivePreviewProps) => {
               ref={iframeRef}
               className="w-full h-full border-none"
               title="Live Preview"
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
               style={{ display: isLoading || error ? 'none' : 'block' }}
             />
           </div>

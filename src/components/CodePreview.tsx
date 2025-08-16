@@ -2,11 +2,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Eye, Code, Copy, Check, Download } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Eye, Code, Copy, Check, Download, Settings } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { FileTree, FileNode } from "./FileTree";
 import { LivePreview } from "./LivePreview";
+import { MonacoCodeEditor } from "./MonacoCodeEditor";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { ProjectFile } from "@/services/advancedCodeGenerator";
 import { DownloadManager } from "@/utils/downloadManager";
@@ -34,6 +37,7 @@ export const CodePreview = ({
 }: CodePreviewProps) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const [useMonacoEditor, setUseMonacoEditor] = useState(false);
   const { toast } = useToast();
 
   const copyToClipboard = async (text: string) => {
@@ -117,33 +121,47 @@ export const CodePreview = ({
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium">Visualização do Projeto</h2>
-          <div className="flex items-center gap-2">
-            {projectFiles.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={downloadProject}
-                className="gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Download
-              </Button>
-            )}
-            {codeToShow && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => copyToClipboard(codeToShow)}
-                className="gap-2"
-              >
-                {copied ? (
-                  <Check className="w-4 h-4" />
-                ) : (
-                  <Copy className="w-4 h-4" />
-                )}
-                {copied ? 'Copiado!' : 'Copiar'}
-              </Button>
-            )}
+          <div className="flex items-center gap-4">
+            {/* Monaco Editor Toggle */}
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="monaco-editor"
+                checked={useMonacoEditor}
+                onCheckedChange={setUseMonacoEditor}
+              />
+              <Label htmlFor="monaco-editor" className="text-sm">
+                Editor Profissional
+              </Label>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {projectFiles.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadProject}
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download
+                </Button>
+              )}
+              {codeToShow && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(codeToShow)}
+                  className="gap-2"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -160,54 +178,69 @@ export const CodePreview = ({
           </TabsContent>
           
           <TabsContent value="code" className="h-full mt-4 mx-4 mb-4 overflow-hidden">
-            <Card className="h-full overflow-hidden">
-              <ResizablePanelGroup direction="horizontal" className="h-full">
-                {/* Left side - File Tree */}
-                <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
-                  <div className="h-full border-r border-border">
-                    <FileTree 
-                      files={files}
-                      selectedFile={selectedFile?.path}
-                      onFileSelect={onFileSelect}
-                    />
-                  </div>
-                </ResizablePanel>
-                
-                <ResizableHandle />
-                
-                {/* Right side - Code Content */}
-                <ResizablePanel defaultSize={70} minSize={50}>
-                  {codeToShow ? (
-                    <div className="h-full overflow-auto">
-                      <SyntaxHighlighter
-                        language={getFileLanguage(filename)}
-                        style={oneDark}
-                        customStyle={{
-                          margin: 0,
-                          padding: '1rem',
-                          background: 'hsl(var(--muted))',
-                          fontSize: '14px',
-                          lineHeight: '1.5',
-                        }}
-                        showLineNumbers
-                      >
-                        {codeToShow}
-                      </SyntaxHighlighter>
+            {useMonacoEditor ? (
+              <MonacoCodeEditor
+                files={projectFiles}
+                selectedFile={selectedFile ? {
+                  name: selectedFile.path.split('/').pop() || 'file',
+                  type: 'file',
+                  path: selectedFile.path,
+                  content: selectedFile.content
+                } : projectFiles[0]}
+                onFileSelect={(file) => onFileSelect(file.path, file.content || '')}
+                readOnly={false}
+                className="h-full"
+              />
+            ) : (
+              <Card className="h-full overflow-hidden">
+                <ResizablePanelGroup direction="horizontal" className="h-full">
+                  {/* Left side - File Tree */}
+                  <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+                    <div className="h-full border-r border-border">
+                      <FileTree 
+                        files={files}
+                        selectedFile={selectedFile?.path}
+                        onFileSelect={onFileSelect}
+                      />
                     </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-center p-8">
-                      <div>
-                        <Code className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium mb-2">Nenhum código selecionado</h3>
-                        <p className="text-muted-foreground">
-                          Selecione um arquivo da árvore ou gere um novo código para visualizá-lo aqui
-                        </p>
+                  </ResizablePanel>
+                  
+                  <ResizableHandle />
+                  
+                  {/* Right side - Code Content */}
+                  <ResizablePanel defaultSize={70} minSize={50}>
+                    {codeToShow ? (
+                      <div className="h-full overflow-auto">
+                        <SyntaxHighlighter
+                          language={getFileLanguage(filename)}
+                          style={oneDark}
+                          customStyle={{
+                            margin: 0,
+                            padding: '1rem',
+                            background: 'hsl(var(--muted))',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                          }}
+                          showLineNumbers
+                        >
+                          {codeToShow}
+                        </SyntaxHighlighter>
                       </div>
-                    </div>
-                  )}
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </Card>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-center p-8">
+                        <div>
+                          <Code className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium mb-2">Nenhum código selecionado</h3>
+                          <p className="text-muted-foreground">
+                            Selecione um arquivo da árvore ou gere um novo código para visualizá-lo aqui
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
