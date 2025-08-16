@@ -36,6 +36,8 @@ const Index = () => {
   };
 
   const parseProjectStructure = (content: string): FileNode[] => {
+    console.log('🔍 Raw API Response:', content.substring(0, 500) + '...');
+    
     try {
       // Remove any markdown code blocks and clean content
       let cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -46,12 +48,43 @@ const Index = () => {
         cleanContent = jsonMatch[0];
       }
       
+      console.log('🧹 Cleaned JSON:', cleanContent.substring(0, 500) + '...');
+      
+      // Try to fix common JSON issues
+      cleanContent = cleanContent
+        .replace(/\\n/g, '\\\\n')  // Fix newlines
+        .replace(/\\"/g, '\\\\"')  // Fix quotes
+        .replace(/\\'/g, "\\\\'")  // Fix single quotes
+        .replace(/\\\\/g, '\\\\\\\\'); // Fix backslashes
+      
       const parsed = JSON.parse(cleanContent);
+      console.log('✅ Successfully parsed JSON:', parsed);
+      
       return parsed.files || [];
     } catch (error) {
-      console.error('Error parsing project structure:', error);
+      console.error('❌ Error parsing project structure:', error);
+      console.log('🔍 Failed content sample:', content.substring(0, 1000));
       
-      // Fallback: create basic monolithic HTML structure
+      // Fallback: try to extract HTML directly from response
+      try {
+        const htmlMatch = content.match(/<!DOCTYPE html>[\s\S]*<\/html>/i);
+        if (htmlMatch) {
+          console.log('🔄 Found HTML in response, using direct extraction');
+          return [
+            {
+              name: "index.html",
+              type: "file" as const,
+              path: "index.html",
+              content: htmlMatch[0]
+            }
+          ];
+        }
+      } catch (htmlError) {
+        console.error('❌ HTML extraction also failed:', htmlError);
+      }
+      
+      // Final fallback: create basic monolithic HTML structure
+      console.log('🆘 Using fallback structure');
       return [
         {
           name: "index.html",
@@ -117,21 +150,33 @@ const Index = () => {
         button:hover {
             transform: translateY(-2px);
         }
+
+        .error-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Website Monolítico</h1>
-        <p>Aplicação HTML completa gerada com IA</p>
-        <button onclick="showMessage()">Clique Aqui</button>
+        <h1>⚠️ Erro de Geração</h1>
+        <p>Ocorreu um erro ao processar a resposta da IA</p>
+        <button onclick="showDetails()">Ver Detalhes</button>
+        <div id="details" class="error-info" style="display: none;">
+            <p>Erro no parsing JSON da API. Tente gerar novamente ou use um prompt mais simples.</p>
+        </div>
     </div>
 
     <script>
-        function showMessage() {
-            alert('Aplicação HTML monolítica funcionando perfeitamente!');
+        function showDetails() {
+            const details = document.getElementById('details');
+            details.style.display = details.style.display === 'none' ? 'block' : 'none';
         }
 
-        console.log('Website HTML monolítico carregado com sucesso!');
+        console.log('Erro: Falha no parsing da resposta da IA');
     </script>
 </body>
 </html>`
