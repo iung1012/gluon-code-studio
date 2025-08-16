@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { FileNode } from "@/components/FileTree";
 import { ApiKeyInput } from "@/components/ApiKeyInput";
@@ -93,10 +94,10 @@ const Index = () => {
     }];
   };
 
-  const handlePromptSubmit = async (prompt: string, model: string, temperature: number) => {
+  const handlePromptSubmit = async (prompt: string) => {
     let currentService = glmService;
-    if (!glmService || glmService.getModel() !== model) {
-      currentService = new GLMApiService(apiKey, model);
+    if (!glmService) {
+      currentService = new GLMApiService(apiKey);
       setGlmService(currentService);
     }
     
@@ -165,15 +166,15 @@ const Index = () => {
       if (files.length > 0 && files[0].content) {
         const currentFile = files.find(f => f.name === 'index.html');
         if (currentFile?.content) {
-          console.log('🎯 Fazendo edição específica...', { model, temperature });
-          response = await currentService.editSpecificPart(currentFile.content, prompt, streamCallbacks, temperature * 0.5);
+          console.log('🎯 Fazendo edição específica...');
+          response = await currentService.editSpecificPart(currentFile.content, prompt, streamCallbacks);
         } else {
-          console.log('🆕 Gerando novo projeto...', { model, temperature });
-          response = await currentService.generateProjectStructure(prompt, streamCallbacks, temperature);
+          console.log('🆕 Gerando novo projeto...');
+          response = await currentService.generateProjectStructure(prompt, streamCallbacks);
         }
       } else {
-        console.log('🆕 Gerando novo projeto...', { model, temperature });
-        response = await currentService.generateProjectStructure(prompt, streamCallbacks, temperature);
+        console.log('🆕 Gerando novo projeto...');
+        response = await currentService.generateProjectStructure(prompt, streamCallbacks);
       }
       
       clearInterval(progressTimer);
@@ -191,7 +192,7 @@ const Index = () => {
       const isEdit = files.length > 0;
       toast({
         title: isEdit ? "Website Atualizado!" : "Website Gerado!",
-        description: isEdit ? `Alterações aplicadas usando ${model}.` : `Website criado usando ${model}.`,
+        description: isEdit ? "Alterações aplicadas com sucesso." : "Website criado com sucesso.",
       });
     } catch (error) {
       clearInterval(progressTimer);
