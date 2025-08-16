@@ -1,6 +1,7 @@
+
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone, MousePointer } from "lucide-react";
+import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-react";
 import { ChatPanel } from "./ChatPanel";
 import { LivePreview } from "./LivePreview";
 import { FileNode } from "./FileTree";
@@ -20,13 +21,6 @@ interface ChatLayoutProps {
   isLoading: boolean;
 }
 
-interface SelectedElement {
-  tag: string;
-  text: string;
-  selector: string;
-  position: { x: number; y: number };
-}
-
 export const ChatLayout = ({
   files,
   selectedFile,
@@ -39,8 +33,6 @@ export const ChatLayout = ({
 }: ChatLayoutProps) => {
   const [chatVisible, setChatVisible] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedElement, setSelectedElement] = useState<SelectedElement | null>(null);
   const { toast } = useToast();
 
   const downloadHtml = () => {
@@ -119,26 +111,6 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
     }
   };
 
-  const handleElementSelect = (elementInfo: SelectedElement) => {
-    setSelectedElement(elementInfo);
-    setIsSelectionMode(false);
-    toast({
-      title: "Elemento Selecionado",
-      description: `${elementInfo.tag.toUpperCase()}: "${elementInfo.text.substring(0, 50)}${elementInfo.text.length > 50 ? '...' : ''}"`,
-    });
-  };
-
-  const handleSendMessageWithElement = async (message: string) => {
-    let enhancedMessage = message;
-    
-    if (selectedElement) {
-      enhancedMessage = `Modifique o elemento ${selectedElement.tag.toUpperCase()} com o texto "${selectedElement.text}" (seletor: ${selectedElement.selector}). ${message}`;
-      setSelectedElement(null);
-    }
-    
-    await onSendMessage(enhancedMessage);
-  };
-
   const deviceIcons = {
     desktop: Monitor,
     tablet: Tablet,
@@ -152,47 +124,30 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="border-b bg-white/70 backdrop-blur-xl shadow-sm">
+      <div className="border-b bg-card/30 backdrop-blur-sm">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={onBackToInput}
-              className="gap-2 hover:bg-slate-100/80 text-slate-700"
+              className="gap-2 hover:bg-muted/50"
             >
               <ArrowLeft className="w-4 h-4" />
               Voltar ao Início
             </Button>
-            <div className="h-4 w-px bg-slate-200" />
-            <h2 className="font-medium text-slate-800">Website Gerado</h2>
+            <div className="h-4 w-px bg-border/50" />
+            <h2 className="font-medium text-foreground/90">Website Gerado</h2>
           </div>
           
           <div className="flex items-center gap-2">
             <Button
-              variant={isSelectionMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setIsSelectionMode(!isSelectionMode)}
-              className={cn(
-                "gap-2 transition-all",
-                isSelectionMode 
-                  ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md" 
-                  : "bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
-              )}
-            >
-              <MousePointer className="w-4 h-4" />
-              {isSelectionMode ? 'Cancelar Seleção' : 'Selecionar Elemento'}
-            </Button>
-            
-            <div className="h-4 w-px bg-slate-200" />
-            
-            <Button
               variant="outline"
               size="sm"
               onClick={() => setChatVisible(!chatVisible)}
-              className="gap-2 bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
+              className="gap-2 bg-background/50 hover:bg-muted/50"
             >
               {chatVisible ? (
                 <>
@@ -207,11 +162,11 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               )}
             </Button>
             
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="h-4 w-px bg-border/50" />
             
             {/* Device Selector */}
             <Select value={previewDevice} onValueChange={(value: any) => setPreviewDevice(value)}>
-              <SelectTrigger className="w-[120px] bg-white/80 border-slate-200">
+              <SelectTrigger className="w-[120px] bg-background/50">
                 <SelectValue>
                   <div className="flex items-center gap-2">
                     {(() => {
@@ -234,13 +189,13 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               </SelectContent>
             </Select>
             
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="h-4 w-px bg-border/50" />
             
             <Button
               variant="outline"
               size="sm"
               onClick={downloadHtml}
-              className="gap-2 bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
+              className="gap-2 bg-background/50 hover:bg-muted/50"
             >
               <Download className="w-4 h-4" />
               HTML
@@ -249,7 +204,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={downloadZip}
-              className="gap-2 bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
+              className="gap-2 bg-background/50 hover:bg-muted/50"
             >
               <Download className="w-4 h-4" />
               ZIP
@@ -258,7 +213,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={openInNewTab}
-              className="gap-2 bg-white/80 hover:bg-slate-100 text-slate-700 border-slate-200"
+              className="gap-2 bg-background/50 hover:bg-muted/50"
             >
               <ExternalLink className="w-4 h-4" />
               Abrir
@@ -267,7 +222,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               variant="outline"
               size="sm"
               onClick={onNewProject}
-              className="gap-2 text-destructive hover:text-destructive bg-white/80 hover:bg-destructive/10"
+              className="gap-2 text-destructive hover:text-destructive bg-background/50 hover:bg-destructive/10"
             >
               <RotateCcw className="w-4 h-4" />
               Novo Projeto
@@ -276,46 +231,22 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
         </div>
       </div>
 
-      {/* Selected Element Indicator */}
-      {selectedElement && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
-          <div className="flex items-center gap-2 text-sm">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-blue-700 font-medium">Elemento selecionado:</span>
-            <span className="text-blue-600">
-              {selectedElement.tag.toUpperCase()} - "{selectedElement.text.substring(0, 50)}{selectedElement.text.length > 50 ? '...' : ''}"
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedElement(null)}
-              className="ml-auto h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
-            >
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Content */}
       <div className="flex-1 flex overflow-hidden">
         {chatVisible && (
-          <div className="w-80 border-r bg-white/40 backdrop-blur-xl shadow-sm">
+          <div className="w-80 border-r bg-card/20 backdrop-blur-sm">
             <ChatPanel
-              onSendMessage={handleSendMessageWithElement}
+              onSendMessage={onSendMessage}
               isLoading={isLoading}
-              selectedElement={selectedElement}
             />
           </div>
         )}
         
-        <div className="flex-1 bg-slate-50/50">
+        <div className="flex-1 bg-muted/20">
           <LivePreview
             files={files}
             generatedCode={generatedCode}
             device={previewDevice}
-            isSelectionMode={isSelectionMode}
-            onElementSelect={handleElementSelect}
           />
         </div>
       </div>
