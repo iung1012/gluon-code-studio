@@ -1,10 +1,8 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
-import { Label } from "@/components/ui/label";
-import { ArrowUp, Sparkles, Bot, Thermometer } from "lucide-react";
+import { ArrowUp, Sparkles } from "lucide-react";
 
 interface WelcomeScreenProps {
   onSubmit: (prompt: string, model: string, temperature: number) => void;
@@ -13,21 +11,11 @@ interface WelcomeScreenProps {
 
 export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
   const [prompt, setPrompt] = useState("");
-  const [selectedModel, setSelectedModel] = useState("glm-4.5-flash");
-  const [temperature, setTemperature] = useState([0.7]);
-
-  const models = [
-    { value: "glm-4.5", label: "GLM-4.5", description: "Modelo mais poderoso, 355B parâmetros" },
-    { value: "glm-4.5-ar", label: "GLM-4.5-Ar", description: "Leve e robusto, boa relação custo-benefício" },
-    { value: "glm-4.5-x", label: "GLM-4.5-X", description: "Alto desempenho, resposta ultrarrápida" },
-    { value: "glm-4.5-airx", label: "GLM-4.5-AirX", description: "Leve e forte, resposta ultrarrápida" },
-    { value: "glm-4.5-flash", label: "GLM-4.5-Flash", description: "Gratuito, excelente para programação" }
-  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim() && !isLoading) {
-      onSubmit(prompt.trim(), selectedModel, temperature[0]);
+      onSubmit(prompt.trim(), "glm-4.5", 0.4);
     }
   };
 
@@ -54,57 +42,6 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
           <p className="text-lg text-muted-foreground">
             Descreva seu website e eu gero o código HTML completo para você
           </p>
-        </div>
-
-        {/* Model Selection */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Modelo de IA</label>
-          <Select value={selectedModel} onValueChange={setSelectedModel} disabled={isLoading}>
-            <SelectTrigger className="w-full bg-card border-border">
-              <SelectValue placeholder="Selecione o modelo de IA">
-                <div className="flex items-center gap-2">
-                  <Bot className="w-4 h-4 text-primary" />
-                  <span>{models.find(m => m.value === selectedModel)?.label}</span>
-                </div>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent className="bg-card border-border">
-              {models.map((model) => (
-                <SelectItem key={model.value} value={model.value} className="focus:bg-accent">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{model.label}</span>
-                    <span className="text-xs text-muted-foreground">{model.description}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Temperature Control */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Thermometer className="w-4 h-4 text-primary" />
-            <Label className="text-sm font-medium">
-              Criatividade: {temperature[0].toFixed(1)} 
-              <span className="text-xs text-muted-foreground ml-2">
-                ({temperature[0] <= 0.3 ? 'Precisa' : temperature[0] <= 0.7 ? 'Equilibrada' : 'Criativa'})
-              </span>
-            </Label>
-          </div>
-          <Slider
-            value={temperature}
-            onValueChange={setTemperature}
-            max={1}
-            min={0.1}
-            step={0.1}
-            className="w-full"
-            disabled={isLoading}
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Mais Precisa</span>
-            <span>Mais Criativa</span>
-          </div>
         </div>
 
         {/* Input Form */}

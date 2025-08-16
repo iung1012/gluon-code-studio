@@ -30,22 +30,17 @@ interface StreamCallbacks {
 export class GLMApiService {
   private apiKey: string;
   private baseUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
-  private model: string;
+  private model = 'glm-4.5';
 
-  constructor(apiKey: string, model: string = 'glm-4.5-flash') {
+  constructor(apiKey: string) {
     this.apiKey = apiKey;
-    this.model = model;
-  }
-
-  setModel(model: string) {
-    this.model = model;
   }
 
   getModel(): string {
     return this.model;
   }
 
-  async generateProjectStructure(prompt: string, callbacks?: StreamCallbacks, temperature: number = 0.3): Promise<string> {
+  async generateProjectStructure(prompt: string, callbacks?: StreamCallbacks): Promise<string> {
     const messages: GLMMessage[] = [
       {
         role: 'system',
@@ -68,11 +63,11 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
     ];
 
     return callbacks 
-      ? this.callStreamingAPI(messages, temperature, 4500, callbacks) // Reduzido de 6000 para 4500
-      : this.callAPI(messages, temperature, 4500);
+      ? this.callStreamingAPI(messages, callbacks) 
+      : this.callAPI(messages);
   }
 
-  async editSpecificPart(currentCode: string, editRequest: string, callbacks?: StreamCallbacks, temperature: number = 0.1): Promise<string> {
+  async editSpecificPart(currentCode: string, editRequest: string, callbacks?: StreamCallbacks): Promise<string> {
     const messages: GLMMessage[] = [
       {
         role: 'system',
@@ -103,49 +98,33 @@ Retorne o HTML completo modificado agora:`
 
     console.log('📝 Sending edit request:', { 
       editRequest, 
-      currentCodeLength: currentCode.length,
-      hasSystemPrompt: messages[0].content.includes('CRÍTICO'),
-      temperature
+      currentCodeLength: currentCode.length
     });
 
     return callbacks 
-      ? this.callStreamingAPI(messages, temperature, 5500, callbacks) // Reduzido de 8000 para 5500
-      : this.callAPI(messages, temperature, 5500);
+      ? this.callStreamingAPI(messages, callbacks) 
+      : this.callAPI(messages);
   }
 
-  private async callStreamingAPI(
-    messages: GLMMessage[], 
-    temperature: number, 
-    maxTokens: number, 
-    callbacks: StreamCallbacks
-  ): Promise<string> {
-    console.log('🚀 Calling GLM Streaming API with:', { temperature, maxTokens, messagesCount: messages.length });
+  private async callStreamingAPI(messages: GLMMessage[], callbacks: StreamCallbacks): Promise<string> {
+    console.log('🚀 Calling GLM Streaming API');
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // Timeout de 30s (reduzido de implícito)
-
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Accept-Language': 'en-US,en',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: this.model,
           messages,
-          temperature,
-          max_tokens: maxTokens,
-          top_p: 0.8, // Aumentado de 0.7 para 0.8 para mais criatividade
-          frequency_penalty: 0.0,
-          presence_penalty: 0.0,
+          temperature: 0.4,
+          max_tokens: 4000,
+          top_p: 0.8,
           stream: true
-        }),
-        signal: controller.signal
+        })
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -217,33 +196,24 @@ Retorne o HTML completo modificado agora:`
     }
   }
 
-  private async callAPI(messages: GLMMessage[], temperature: number, maxTokens: number): Promise<string> {
-    console.log('🚀 Calling GLM API with:', { temperature, maxTokens, messagesCount: messages.length });
+  private async callAPI(messages: GLMMessage[]): Promise<string> {
+    console.log('🚀 Calling GLM API');
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000); // Timeout de 25s
-
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.apiKey}`,
-          'Accept-Language': 'en-US,en',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           model: this.model,
           messages,
-          temperature,
-          max_tokens: maxTokens,
-          top_p: 0.8,
-          frequency_penalty: 0.0,
-          presence_penalty: 0.0
-        }),
-        signal: controller.signal
+          temperature: 0.4,
+          max_tokens: 4000,
+          top_p: 0.8
+        })
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
