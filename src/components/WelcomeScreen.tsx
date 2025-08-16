@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { GlowCard } from "@/components/ui/glow-card";
 import { ArrowUp, Sparkles } from "lucide-react";
 
 interface WelcomeScreenProps {
@@ -47,27 +48,33 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
           </div>
         </div>
 
-        {/* Input Form */}
+        {/* Input Form with Glow Effect */}
         <div className="space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <Textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Me ajude a construir um website..."
-                className="min-h-[100px] pr-12 text-base resize-none bg-card/50 border-border/40 focus:ring-primary/10 focus:border-primary/40 placeholder:text-muted-foreground/60"
-                disabled={isLoading}
-              />
-              <Button
-                type="submit"
-                size="icon"
-                className="absolute bottom-3 right-3 h-8 w-8 rounded-xl bg-primary hover:bg-primary/90"
-                disabled={!prompt.trim() || isLoading}
-              >
-                <ArrowUp className="w-4 h-4" />
-              </Button>
-            </div>
-          </form>
+          <GlowCard 
+            glowColor="purple" 
+            customSize={true}
+            className="w-full h-auto aspect-auto p-0 bg-transparent border-0 shadow-none backdrop-blur-0"
+          >
+            <form onSubmit={handleSubmit} className="space-y-4 p-6">
+              <div className="relative">
+                <Textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Me ajude a construir um website..."
+                  className="min-h-[100px] pr-12 text-base resize-none bg-card/50 border-0 focus:ring-0 focus:border-0 placeholder:text-muted-foreground/60 backdrop-blur-sm"
+                  disabled={isLoading}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="absolute bottom-3 right-3 h-8 w-8 rounded-xl bg-primary hover:bg-primary/90"
+                  disabled={!prompt.trim() || isLoading}
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </Button>
+              </div>
+            </form>
+          </GlowCard>
 
           {/* Example Prompts */}
           <div className="space-y-3">
