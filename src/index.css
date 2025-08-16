@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -57,6 +58,7 @@ All colors MUST be HSL.
     /* Animation variables */
     --animate-in: slideInFromBottom 0.3s ease-out;
     --animate-pulse: pulse 2s infinite;
+    --animate-float: float 6s ease-in-out infinite;
   }
 }
 
@@ -89,7 +91,7 @@ All colors MUST be HSL.
     background: hsl(var(--accent));
   }
 
-  /* Custom animations */
+  /* Enhanced animations */
   @keyframes slideInFromBottom {
     from {
       opacity: 0;
@@ -110,11 +112,82 @@ All colors MUST be HSL.
     }
   }
 
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
+  @keyframes ping {
+    75%, 100% {
+      transform: scale(2);
+      opacity: 0;
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .animate-slide-in {
     animation: var(--animate-in);
   }
 
   .animate-pulse-slow {
     animation: var(--animate-pulse);
+  }
+
+  .animate-float {
+    animation: var(--animate-float);
+  }
+
+  .animate-bounce {
+    animation: bounce 1s infinite;
+  }
+
+  .animate-ping {
+    animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Hover effects */
+  .hover-scale {
+    transition: var(--transition-smooth);
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+
+  /* Glow effects */
+  .glow-primary {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .elevated {
+    box-shadow: var(--shadow-elevated);
   }
 }
