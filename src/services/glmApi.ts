@@ -29,8 +29,8 @@ interface StreamCallbacks {
 
 export class GLMApiService {
   private apiKey: string;
-  private baseUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
-  private model = 'glm-4.5';
+  private baseUrl = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+  private model = 'glm-4-flash';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -107,7 +107,7 @@ Retorne o HTML completo modificado agora:`
   }
 
   private async callStreamingAPI(messages: GLMMessage[], callbacks: StreamCallbacks): Promise<string> {
-    console.log('🚀 Calling GLM Streaming API');
+    console.log('🚀 Calling GLM Streaming API with model:', this.model);
     
     try {
       const response = await fetch(this.baseUrl, {
@@ -120,15 +120,15 @@ Retorne o HTML completo modificado agora:`
           model: this.model,
           messages,
           temperature: 0.4,
-          max_tokens: 4000,
-          top_p: 0.8,
+          max_tokens: 8000,
+          top_p: 0.7,
           stream: true
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ GLM Streaming API error response:', errorText);
+        console.error('❌ GLM Streaming API error response:', response.status, errorText);
         const error = new Error(`GLM API error: ${response.status} ${response.statusText}`);
         callbacks.onError?.(error);
         throw error;
@@ -143,6 +143,7 @@ Retorne o HTML completo modificado agora:`
 
       let fullContent = '';
       const decoder = new TextDecoder();
+      let buffer = '';
 
       try {
         while (true) {
@@ -155,14 +156,18 @@ Retorne o HTML completo modificado agora:`
             break;
           }
 
-          const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n').filter(line => line.trim() !== '');
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
           for (const line of lines) {
+            if (line.trim() === '') continue;
+            
             if (line.startsWith('data: ')) {
-              const data = line.slice(6);
+              const data = line.slice(6).trim();
               
               if (data === '[DONE]') {
+                console.log('🏁 Received [DONE] signal');
                 continue;
               }
 
@@ -179,13 +184,17 @@ Retorne o HTML completo modificado agora:`
                   console.log('🏁 Stream finished with reason:', parsed.choices[0].finish_reason);
                 }
               } catch (parseError) {
-                console.warn('⚠️ Failed to parse streaming chunk:', data);
+                console.warn('⚠️ Failed to parse streaming chunk:', data.substring(0, 100));
               }
             }
           }
         }
       } finally {
         reader.releaseLock();
+      }
+
+      if (!fullContent || fullContent.trim().length === 0) {
+        throw new Error('API retornou conteúdo vazio');
       }
 
       return fullContent;
@@ -197,7 +206,7 @@ Retorne o HTML completo modificado agora:`
   }
 
   private async callAPI(messages: GLMMessage[]): Promise<string> {
-    console.log('🚀 Calling GLM API');
+    console.log('🚀 Calling GLM API with model:', this.model);
     
     try {
       const response = await fetch(this.baseUrl, {
@@ -210,14 +219,14 @@ Retorne o HTML completo modificado agora:`
           model: this.model,
           messages,
           temperature: 0.4,
-          max_tokens: 4000,
-          top_p: 0.8
+          max_tokens: 8000,
+          top_p: 0.7
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ GLM API error response:', errorText);
+        console.error('❌ GLM API error response:', response.status, errorText);
         throw new Error(`GLM API error: ${response.status} ${response.statusText}`);
       }
 
@@ -233,6 +242,10 @@ Retorne o HTML completo modificado agora:`
 
       const content = data.choices[0].message.content;
       console.log('📄 Content preview:', content.substring(0, 200) + '...');
+      
+      if (!content || content.trim().length === 0) {
+        throw new Error('API retornou conteúdo vazio');
+      }
       
       return content;
     } catch (error) {

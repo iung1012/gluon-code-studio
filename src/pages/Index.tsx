@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { FileNode } from "@/components/FileTree";
 import { ApiKeyInput } from "@/components/ApiKeyInput";
@@ -116,48 +115,31 @@ const Index = () => {
     setShowPreview(true);
     setUseChatLayout(true);
     
-    // Sistema de progresso otimizado
-    let progressTimer: NodeJS.Timeout;
-    let startTime = Date.now();
-    
-    const updateProgress = () => {
-      const elapsed = Date.now() - startTime;
-      const baseProgress = Math.min((elapsed / 15000) * 60, 60); // 60% em 15s
-      setLoadingProgress(baseProgress);
-    };
-    
-    progressTimer = setInterval(updateProgress, 200);
-    
     try {
       const streamCallbacks = {
         onProgress: (content: string, isComplete: boolean) => {
+          console.log(`📡 Stream progress: ${content.length} chars, complete: ${isComplete}`);
           setCurrentStreamContent(content);
           
-          // Progresso baseado em marcos do conteúdo
-          let contentProgress = 0;
-          if (content.includes('<!DOCTYPE')) contentProgress = Math.max(contentProgress, 20);
-          if (content.includes('<head>')) contentProgress = Math.max(contentProgress, 35);
-          if (content.includes('<style>')) contentProgress = Math.max(contentProgress, 50);
-          if (content.includes('<body>')) contentProgress = Math.max(contentProgress, 65);
-          if (content.includes('<script>')) contentProgress = Math.max(contentProgress, 80);
-          if (content.length > 2000) contentProgress = Math.max(contentProgress, 85);
-          if (content.length > 5000) contentProgress = Math.max(contentProgress, 90);
-          if (isComplete) contentProgress = 100;
+          // Progresso baseado no conteúdo recebido
+          let progress = 0;
+          if (content.length > 100) progress = 20;
+          if (content.includes('<!DOCTYPE')) progress = Math.max(progress, 30);
+          if (content.includes('<head>')) progress = Math.max(progress, 45);
+          if (content.includes('<style>')) progress = Math.max(progress, 60);
+          if (content.includes('<body>')) progress = Math.max(progress, 75);
+          if (content.length > 2000) progress = Math.max(progress, 85);
+          if (isComplete) progress = 100;
           
-          // Combinar progresso de tempo e conteúdo
-          const elapsed = Date.now() - startTime;
-          const timeProgress = Math.min((elapsed / 15000) * 70, 70);
-          const finalProgress = Math.max(timeProgress, contentProgress);
-          
-          setLoadingProgress(finalProgress);
+          setLoadingProgress(progress);
         },
         onComplete: (fullContent: string) => {
-          clearInterval(progressTimer);
+          console.log('✅ Stream completed with', fullContent.length, 'characters');
           setLoadingProgress(100);
         },
         onError: (error: Error) => {
-          clearInterval(progressTimer);
-          console.error('Streaming error:', error);
+          console.error('❌ Stream error:', error);
+          setLoadingProgress(0);
         }
       };
       
@@ -177,7 +159,11 @@ const Index = () => {
         response = await currentService.generateProjectStructure(prompt, streamCallbacks);
       }
       
-      clearInterval(progressTimer);
+      if (!response || response.trim().length === 0) {
+        throw new Error('API retornou resposta vazia');
+      }
+      
+      console.log('✅ API response received:', response.length, 'characters');
       
       const parsedFiles = parseProjectStructure(response);
       
@@ -195,8 +181,8 @@ const Index = () => {
         description: isEdit ? "Alterações aplicadas com sucesso." : "Website criado com sucesso.",
       });
     } catch (error) {
-      clearInterval(progressTimer);
-      console.error('Error generating code:', error);
+      console.error('❌ Error generating code:', error);
+      setLoadingProgress(0);
       toast({
         title: "Falha na Geração",
         description: error instanceof Error ? error.message : "Erro ao gerar website. Tente novamente.",
@@ -216,41 +202,28 @@ const Index = () => {
     setLoadingProgress(0);
     setCurrentStreamContent("");
     
-    let progressTimer: NodeJS.Timeout;
-    let startTime = Date.now();
-    
-    const updateProgress = () => {
-      const elapsed = Date.now() - startTime;
-      const baseProgress = Math.min((elapsed / 10000) * 70, 70); // Progresso mais rápido para edições
-      setLoadingProgress(baseProgress);
-    };
-    
-    progressTimer = setInterval(updateProgress, 150);
-    
     try {
       const streamCallbacks = {
         onProgress: (content: string, isComplete: boolean) => {
+          console.log(`📡 Chat stream progress: ${content.length} chars, complete: ${isComplete}`);
           setCurrentStreamContent(content);
           
-          let contentProgress = 0;
-          if (content.includes('<!DOCTYPE')) contentProgress = Math.max(contentProgress, 30);
-          if (content.length > 1000) contentProgress = Math.max(contentProgress, 60);
-          if (content.length > 3000) contentProgress = Math.max(contentProgress, 85);
-          if (isComplete) contentProgress = 100;
+          let progress = 0;
+          if (content.length > 100) progress = 25;
+          if (content.includes('<!DOCTYPE')) progress = Math.max(progress, 40);
+          if (content.length > 1000) progress = Math.max(progress, 60);
+          if (content.length > 3000) progress = Math.max(progress, 80);
+          if (isComplete) progress = 100;
           
-          const elapsed = Date.now() - startTime;
-          const timeProgress = Math.min((elapsed / 10000) * 70, 70);
-          const finalProgress = Math.max(timeProgress, contentProgress);
-          
-          setLoadingProgress(finalProgress);
+          setLoadingProgress(progress);
         },
         onComplete: (fullContent: string) => {
-          clearInterval(progressTimer);
+          console.log('✅ Chat stream completed with', fullContent.length, 'characters');
           setLoadingProgress(100);
         },
         onError: (error: Error) => {
-          clearInterval(progressTimer);
-          console.error('Streaming error:', error);
+          console.error('❌ Chat stream error:', error);
+          setLoadingProgress(0);
         }
       };
       
@@ -264,7 +237,9 @@ const Index = () => {
           
           const response = await glmService.editSpecificPart(currentFile.content, message, streamCallbacks);
           
-          clearInterval(progressTimer);
+          if (!response || response.trim().length === 0) {
+            throw new Error('API retornou resposta vazia');
+          }
           
           const parsedFiles = parseProjectStructure(response);
           
@@ -287,8 +262,8 @@ const Index = () => {
         throw new Error("Nenhum website gerado para editar");
       }
     } catch (error) {
-      clearInterval(progressTimer);
-      console.error('Error processing chat message:', error);
+      console.error('❌ Error processing chat message:', error);
+      setLoadingProgress(0);
       toast({
         title: "Falha na Atualização",
         description: error instanceof Error ? error.message : "Erro ao atualizar website. Tente novamente.",
