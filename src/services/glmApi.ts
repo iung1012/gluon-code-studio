@@ -31,7 +31,7 @@ export class GLMApiService {
   private baseUrl = 'https://api.z.ai/api/paas/v4/chat/completions';
   private model: string;
 
-  constructor(apiKey: string, model: string = 'glm-4-plus') {
+  constructor(apiKey: string, model: string = 'glm-4.5-flash') {
     this.apiKey = apiKey;
     this.model = model;
   }
