@@ -106,69 +106,53 @@ const Index = () => {
 
   const createStreamCallbacks = (isNewProject: boolean = true) => {
     let startTime = Date.now();
-    let lastUpdateTime = startTime;
+    let progressValue = 0;
     
     return {
       onProgress: (content: string, isComplete: boolean) => {
         const currentTime = Date.now();
-        const elapsedTime = currentTime - startTime;
-        const timeSinceLastUpdate = currentTime - lastUpdateTime;
+        const elapsedSeconds = (currentTime - startTime) / 1000;
+        
+        console.log('📊 Stream progress:', { 
+          contentLength: content.length, 
+          elapsedSeconds: elapsedSeconds.toFixed(1),
+          isComplete 
+        });
         
         setCurrentStreamContent(content);
         
-        // Calcular progresso baseado em múltiplos fatores
-        let progress = 0;
-        
-        // 1. Progresso por tempo (máximo 30% nos primeiros 10 segundos)
-        const timeProgress = Math.min((elapsedTime / 10000) * 30, 30);
-        progress = Math.max(progress, timeProgress);
-        
-        // 2. Progresso por comprimento do conteúdo
-        const targetLength = isNewProject ? 8000 : 5000; // Projetos novos são maiores
-        const lengthProgress = Math.min((content.length / targetLength) * 70, 70);
-        progress = Math.max(progress, lengthProgress + 20); // Offset de 20%
-        
-        // 3. Marcos específicos do HTML (boost adicional)
-        if (content.includes('<!DOCTYPE html>')) progress = Math.max(progress, 15);
-        if (content.includes('<head>')) progress = Math.max(progress, 25);
-        if (content.includes('<title>')) progress = Math.max(progress, 30);
-        if (content.includes('<style>')) progress = Math.max(progress, 40);
-        if (content.includes('</style>')) progress = Math.max(progress, 60);
-        if (content.includes('<body>')) progress = Math.max(progress, 65);
-        if (content.includes('<script>')) progress = Math.max(progress, 80);
-        if (content.includes('</script>')) progress = Math.max(progress, 90);
-        if (content.includes('</body>')) progress = Math.max(progress, 95);
-        if (content.includes('</html>')) progress = Math.max(progress, 98);
-        
-        // 4. Se está completo, sempre 100%
         if (isComplete) {
-          progress = 100;
+          progressValue = 100;
         } else {
-          // Nunca permitir 100% se não está completo
-          progress = Math.min(progress, 98);
+          // Progresso baseado no tempo (20% nos primeiros 5 segundos)
+          const timeProgress = Math.min((elapsedSeconds / 5) * 20, 20);
+          
+          // Progresso baseado no conteúdo (60% baseado no tamanho)
+          const expectedSize = isNewProject ? 5000 : 3000;
+          const contentProgress = Math.min((content.length / expectedSize) * 60, 60);
+          
+          // Marcos do HTML (20% adicional)
+          let milestoneProgress = 0;
+          if (content.includes('<!DOCTYPE')) milestoneProgress += 3;
+          if (content.includes('<head>')) milestoneProgress += 3;
+          if (content.includes('<style>')) milestoneProgress += 4;
+          if (content.includes('</style>')) milestoneProgress += 4;
+          if (content.includes('<body>')) milestoneProgress += 3;
+          if (content.includes('</body>')) milestoneProgress += 3;
+          
+          // Somar todos os progressos
+          progressValue = Math.min(timeProgress + contentProgress + milestoneProgress, 98);
+          
+          // Garantir que o progresso sempre aumenta
+          progressValue = Math.max(progressValue, loadingProgress);
         }
         
-        // Suavizar mudanças bruscas de progresso
-        const currentProgress = loadingProgress;
-        const maxIncrease = timeSinceLastUpdate < 500 ? 5 : 15; // Limitar incrementos rápidos
-        
-        if (progress > currentProgress) {
-          progress = Math.min(progress, currentProgress + maxIncrease);
-        }
-        
-        setLoadingProgress(Math.round(progress));
-        lastUpdateTime = currentTime;
-        
-        console.log('📊 Progresso atualizado:', { 
-          progress: Math.round(progress), 
-          contentLength: content.length,
-          elapsedTime: Math.round(elapsedTime / 1000),
-          isComplete 
-        });
+        console.log('📈 Progress updated to:', progressValue);
+        setLoadingProgress(Math.round(progressValue));
       },
       onComplete: (fullContent: string) => {
-        setLoadingProgress(100);
         console.log('🎉 Streaming completo! Conteúdo final:', fullContent.length, 'caracteres');
+        setLoadingProgress(100);
       },
       onError: (error: Error) => {
         console.error('❌ Erro no streaming:', error);
