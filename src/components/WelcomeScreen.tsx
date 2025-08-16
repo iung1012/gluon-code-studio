@@ -11,13 +11,14 @@ interface WelcomeScreenProps {
 
 export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
   const [prompt, setPrompt] = useState("");
-  const [selectedModel, setSelectedModel] = useState("glm-4-0520");
+  const [selectedModel, setSelectedModel] = useState("glm-4-plus");
 
   const models = [
-    { value: "glm-4-0520", label: "GLM-4.5 (Latest)", description: "Mais recente e avançado" },
-    { value: "glm-4-32b-0414-128k", label: "GLM-4 (32B)", description: "Modelo robusto com 128k contexto" },
-    { value: "glm-4-plus", label: "GLM-4 Plus", description: "Versão aprimorada do GLM-4" },
-    { value: "glm-4-air", label: "GLM-4 Air", description: "Versão mais rápida e eficiente" }
+    { value: "glm-4-plus", label: "GLM-4 Plus", description: "Modelo mais avançado e capaz" },
+    { value: "glm-4-air", label: "GLM-4 Air", description: "Versão mais rápida e eficiente" },
+    { value: "glm-4-airx", label: "GLM-4 AirX", description: "Versão otimizada" },
+    { value: "glm-4-flash", label: "GLM-4 Flash", description: "Versão ultra-rápida" },
+    { value: "glm-4-32b-0414-128k", label: "GLM-4 (32B)", description: "Modelo robusto com 128k contexto" }
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
