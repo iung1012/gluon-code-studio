@@ -8,7 +8,7 @@ interface GlowCardProps {
   size?: 'sm' | 'md' | 'lg';
   width?: string | number;
   height?: string | number;
-  customSize?: boolean; // When true, ignores size prop and uses width/height or className
+  customSize?: boolean;
 }
 
 const glowColorMap = {
@@ -28,7 +28,7 @@ const sizeMap = {
 const GlowCard: React.FC<GlowCardProps> = ({ 
   children, 
   className = '', 
-  glowColor = 'blue',
+  glowColor = 'purple',
   size = 'md',
   width,
   height,
@@ -55,43 +55,41 @@ const GlowCard: React.FC<GlowCardProps> = ({
 
   const { base, spread } = glowColorMap[glowColor];
 
-  // Determine sizing
   const getSizeClasses = () => {
     if (customSize) {
-      return ''; // Let className or inline styles handle sizing
+      return '';
     }
     return sizeMap[size];
   };
 
-  const getInlineStyles = () => {
-    const baseStyles = {
+  const getInlineStyles = (): React.CSSProperties => {
+    const baseStyles: React.CSSProperties = {
       '--base': base,
       '--spread': spread,
-      '--radius': '14',
-      '--border': '3',
-      '--backdrop': 'hsl(0 0% 60% / 0.12)',
+      '--radius': '12',
+      '--border': '1',
+      '--backdrop': 'hsl(0 0% 60% / 0.08)',
       '--backup-border': 'var(--backdrop)',
-      '--size': '200',
+      '--size': '150',
       '--outer': '1',
-      '--border-size': 'calc(var(--border, 2) * 1px)',
-      '--spotlight-size': 'calc(var(--size, 150) * 1px)',
+      '--border-size': 'calc(var(--border, 1) * 1px)',
+      '--spotlight-size': 'calc(var(--size, 100) * 1px)',
       '--hue': 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
       backgroundImage: `radial-gradient(
         var(--spotlight-size) var(--spotlight-size) at
         calc(var(--x, 0) * 1px)
         calc(var(--y, 0) * 1px),
-        hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.1)), transparent
+        hsl(var(--hue, 280) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 70) * 1%) / var(--bg-spot-opacity, 0.06)), transparent
       )`,
       backgroundColor: 'var(--backdrop, transparent)',
       backgroundSize: 'calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)))',
       backgroundPosition: '50% 50%',
       backgroundAttachment: 'fixed',
       border: 'var(--border-size) solid var(--backup-border)',
-      position: 'relative' as const,
-      touchAction: 'none' as const,
-    };
+      position: 'relative',
+      touchAction: 'none',
+    } as React.CSSProperties;
 
-    // Add width and height if provided
     if (width !== undefined) {
       baseStyles.width = typeof width === 'number' ? `${width}px` : width;
     }
@@ -122,20 +120,20 @@ const GlowCard: React.FC<GlowCardProps> = ({
     
     [data-glow]::before {
       background-image: radial-gradient(
-        calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
+        calc(var(--spotlight-size) * 0.8) calc(var(--spotlight-size) * 0.8) at
         calc(var(--x, 0) * 1px)
         calc(var(--y, 0) * 1px),
-        hsl(var(--hue, 210) calc(var(--saturation, 100) * 1%) calc(var(--lightness, 50) * 1%) / var(--border-spot-opacity, 1)), transparent 100%
+        hsl(280 100% 70% / var(--border-spot-opacity, 0.4)), transparent 100%
       );
-      filter: brightness(2);
+      filter: brightness(1.5);
     }
     
     [data-glow]::after {
       background-image: radial-gradient(
-        calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
+        calc(var(--spotlight-size) * 0.4) calc(var(--spotlight-size) * 0.4) at
         calc(var(--x, 0) * 1px)
         calc(var(--y, 0) * 1px),
-        hsl(0 100% 100% / var(--border-light-opacity, 1)), transparent 100%
+        hsl(280 100% 90% / var(--border-light-opacity, 0.3)), transparent 100%
       );
     }
     
@@ -145,16 +143,16 @@ const GlowCard: React.FC<GlowCardProps> = ({
       will-change: filter;
       opacity: var(--outer, 1);
       border-radius: calc(var(--radius) * 1px);
-      border-width: calc(var(--border-size) * 20);
-      filter: blur(calc(var(--border-size) * 10));
+      border-width: calc(var(--border-size) * 8);
+      filter: blur(calc(var(--border-size) * 4));
       background: none;
       pointer-events: none;
       border: none;
     }
     
     [data-glow] > [data-glow]::before {
-      inset: -10px;
-      border-width: 10px;
+      inset: -4px;
+      border-width: 4px;
     }
   `;
 
@@ -168,14 +166,14 @@ const GlowCard: React.FC<GlowCardProps> = ({
         className={`
           ${getSizeClasses()}
           ${!customSize ? 'aspect-[3/4]' : ''}
-          rounded-2xl 
+          rounded-xl
           relative 
           grid 
           grid-rows-[1fr_auto] 
-          shadow-[0_1rem_2rem_-1rem_black] 
+          shadow-lg
           p-4 
           gap-4 
-          backdrop-blur-[5px]
+          backdrop-blur-sm
           ${className}
         `}
       >
