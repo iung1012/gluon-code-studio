@@ -36,137 +36,51 @@ const Index = () => {
   };
 
   const parseProjectStructure = (content: string): FileNode[] => {
-    console.log('🔍 Raw API Response:', content.substring(0, 500) + '...');
+    console.log('🔍 Parsing HTML monolith from content:', content.substring(0, 200) + '...');
     
-    try {
-      // Remove any markdown code blocks and clean content
-      let cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    // Since API now returns HTML directly, just use it as-is
+    const cleanContent = content.trim();
+    
+    // Validate it's HTML
+    if (cleanContent.includes('<!DOCTYPE html>') || cleanContent.includes('<html')) {
+      console.log('✅ Valid HTML monolith detected');
       
-      // Try to extract JSON from the response
-      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        cleanContent = jsonMatch[0];
-      }
-      
-      console.log('🧹 Cleaned JSON:', cleanContent.substring(0, 500) + '...');
-      
-      const parsed = JSON.parse(cleanContent);
-      console.log('✅ Successfully parsed JSON:', parsed);
-      
-      return parsed.files || [];
-    } catch (error) {
-      console.error('❌ Error parsing project structure:', error);
-      console.log('🔍 Failed content sample:', content.substring(0, 1000));
-      
-      // Fallback: try to extract HTML directly from response
-      console.log('🔄 Starting HTML extraction fallback...');
-      
-      try {
-        let htmlContent = '';
-        
-        // Method 1: Try to extract content field value from JSON string
-        console.log('📝 Method 1: Extracting content field...');
-        const contentMatch = content.match(/"content":\s*"((?:[^"\\]|\\.)*)"/);
-        if (contentMatch) {
-          htmlContent = contentMatch[1];
-          console.log('✅ Found content field, length:', htmlContent.length);
-          
-          // Properly unescape the HTML
-          htmlContent = htmlContent
-            .replace(/\\n/g, '\n')           // Convert \\n to actual newlines
-            .replace(/\\"/g, '"')            // Convert \\" to quotes  
-            .replace(/\\'/g, "'")            // Convert \\' to single quotes
-            .replace(/\\\\/g, '\\')          // Convert \\\\ to single backslash
-            .replace(/\\t/g, '\t')           // Convert \\t to tabs
-            .replace(/\\r/g, '\r');          // Convert \\r to carriage returns
-          
-          console.log('🎯 Unescaped HTML preview:', htmlContent.substring(0, 300));
-        }
-        
-        // Method 2: Try direct HTML extraction if method 1 failed
-        if (!htmlContent || !htmlContent.includes('<!DOCTYPE html>')) {
-          console.log('📝 Method 2: Direct HTML extraction...');
-          const htmlMatch = content.match(/<!DOCTYPE html>[\s\S]*?<\/html>/i);
-          if (htmlMatch) {
-            htmlContent = htmlMatch[0];
-            console.log('✅ Method 2 successful, length:', htmlContent.length);
-          }
-        }
-        
-        if (htmlContent && htmlContent.includes('<!DOCTYPE html>')) {
-          console.log('🎉 HTML extraction successful! Creating file node...');
-          return [
-            {
-              name: "index.html",
-              type: "file" as const,
-              path: "index.html",
-              content: htmlContent
-            }
-          ];
-        }
-      } catch (htmlError) {
-        console.error('❌ HTML extraction error:', htmlError);
-      }
-      
-      // Final fallback: create error page
-      console.log('🆘 Using error fallback structure');
-      return [
-        {
-          name: "index.html",
-          type: "file" as const,
-          path: "index.html",
-          content: `<!DOCTYPE html>
+      return [{
+        name: 'index.html',
+        type: 'file',
+        path: 'index.html',
+        content: cleanContent,
+        children: []
+      }];
+    }
+    
+    console.error('❌ Invalid HTML content received');
+    return [{
+      name: 'index.html',
+      type: 'file',
+      path: 'index.html',
+      content: `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erro de Parsing</title>
+    <title>Erro de Conteúdo</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 3rem;
-            text-align: center;
-            color: white;
-            max-width: 500px;
-        }
-        h1 { font-size: 2.5rem; margin-bottom: 1rem; }
-        p { font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9; }
-        button {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            font-weight: 600;
-            transition: transform 0.3s ease;
-        }
-        button:hover { transform: translateY(-2px); }
+        body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
+        .error { background: #fee; padding: 20px; border: 1px solid #fcc; border-radius: 8px; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; text-align: left; overflow: auto; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>⚠️ Erro de Parsing</h1>
-        <p>A resposta da IA não pôde ser processada corretamente</p>
-        <button onclick="alert('Tente gerar novamente com um prompt mais simples')">Mais Info</button>
+    <div class="error">
+        <h1>❌ Conteúdo HTML Inválido</h1>
+        <p>A API não retornou HTML válido:</p>
+        <pre>${content.substring(0, 1000)}...</pre>
     </div>
 </body>
-</html>`
-        }
-      ];
-    }
+</html>`,
+      children: []
+    }];
   };
 
   const handlePromptSubmit = async (prompt: string) => {

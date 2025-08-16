@@ -26,28 +26,14 @@ export class GLMApiService {
         content: `Você é um desenvolvedor JavaScript especialista. Regras OBRIGATÓRIAS:
 
 1. SEMPRE escreva código JavaScript MONOLITO (arquivo HTML único)
-2. NUNCA modifique código existente - APENAS edite o que o usuário solicitar
-3. Estrutura obrigatória:
+2. Estrutura obrigatória:
    - HTML completo com DOCTYPE
    - CSS dentro de <style> no <head>
    - JavaScript dentro de <script> antes do </body>
-4. Para edições: identifique EXATAMENTE o que alterar e mantenha resto igual
-5. Sempre forneça código completo funcional
-6. Use apenas HTML, CSS e JavaScript vanilla
+3. Sempre forneça código completo funcional
+4. Use apenas HTML, CSS e JavaScript vanilla
 
-FORMATO DE RESPOSTA JSON OBRIGATÓRIO - ESCAPE CORRETAMENTE:
-{
-  "files": [
-    {
-      "name": "index.html",
-      "type": "file", 
-      "path": "index.html",
-      "content": "[COLOQUE TODO O HTML AQUI COM ESCAPE CORRETO]"
-    }
-  ]
-}
-
-IMPORTANTE: Use \\n para quebras de linha e \\" para aspas dentro do content!`
+IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações, sem formatação adicional. Apenas o código HTML puro que funciona diretamente no navegador.`
       },
       {
         role: 'user',
@@ -70,26 +56,7 @@ IMPORTANTE: Use \\n para quebras de linha e \\" para aspas dentro do content!`
 4. Mantenha TODO o resto do código EXATAMENTE igual
 5. Retorne o arquivo HTML completo com APENAS a mudança específica
 
-IMPORTANTE:
-- NÃO reescreva o código inteiro
-- NÃO mude estilos não solicitados  
-- NÃO adicione funcionalidades extras
-- NÃO modifique a estrutura geral
-- Mantenha formatting e indentação originais
-
-FORMATO DE RESPOSTA JSON - ESCAPE CORRETAMENTE:
-{
-  "files": [
-    {
-      "name": "index.html",
-      "type": "file",
-      "path": "index.html", 
-      "content": "[HTML COMPLETO COM APENAS A ALTERAÇÃO ESPECÍFICA - USE \\n E \\"]"
-    }
-  ]
-}
-
-ESCAPE OBRIGATÓRIO: Use \\n para quebras de linha e \\" para aspas!`
+IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações, sem formatação adicional. Apenas o código HTML puro que funciona diretamente no navegador.`
       },
       {
         role: 'user',
