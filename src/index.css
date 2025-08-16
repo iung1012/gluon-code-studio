@@ -59,7 +59,6 @@ All colors MUST be HSL.
     --animate-pulse: pulse 2s infinite;
   }
 }
-}
 
 @layer base {
   * {
