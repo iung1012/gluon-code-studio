@@ -104,6 +104,79 @@ const Index = () => {
     }];
   };
 
+  const createStreamCallbacks = (isNewProject: boolean = true) => {
+    let startTime = Date.now();
+    let lastUpdateTime = startTime;
+    
+    return {
+      onProgress: (content: string, isComplete: boolean) => {
+        const currentTime = Date.now();
+        const elapsedTime = currentTime - startTime;
+        const timeSinceLastUpdate = currentTime - lastUpdateTime;
+        
+        setCurrentStreamContent(content);
+        
+        // Calcular progresso baseado em múltiplos fatores
+        let progress = 0;
+        
+        // 1. Progresso por tempo (máximo 30% nos primeiros 10 segundos)
+        const timeProgress = Math.min((elapsedTime / 10000) * 30, 30);
+        progress = Math.max(progress, timeProgress);
+        
+        // 2. Progresso por comprimento do conteúdo
+        const targetLength = isNewProject ? 8000 : 5000; // Projetos novos são maiores
+        const lengthProgress = Math.min((content.length / targetLength) * 70, 70);
+        progress = Math.max(progress, lengthProgress + 20); // Offset de 20%
+        
+        // 3. Marcos específicos do HTML (boost adicional)
+        if (content.includes('<!DOCTYPE html>')) progress = Math.max(progress, 15);
+        if (content.includes('<head>')) progress = Math.max(progress, 25);
+        if (content.includes('<title>')) progress = Math.max(progress, 30);
+        if (content.includes('<style>')) progress = Math.max(progress, 40);
+        if (content.includes('</style>')) progress = Math.max(progress, 60);
+        if (content.includes('<body>')) progress = Math.max(progress, 65);
+        if (content.includes('<script>')) progress = Math.max(progress, 80);
+        if (content.includes('</script>')) progress = Math.max(progress, 90);
+        if (content.includes('</body>')) progress = Math.max(progress, 95);
+        if (content.includes('</html>')) progress = Math.max(progress, 98);
+        
+        // 4. Se está completo, sempre 100%
+        if (isComplete) {
+          progress = 100;
+        } else {
+          // Nunca permitir 100% se não está completo
+          progress = Math.min(progress, 98);
+        }
+        
+        // Suavizar mudanças bruscas de progresso
+        const currentProgress = loadingProgress;
+        const maxIncrease = timeSinceLastUpdate < 500 ? 5 : 15; // Limitar incrementos rápidos
+        
+        if (progress > currentProgress) {
+          progress = Math.min(progress, currentProgress + maxIncrease);
+        }
+        
+        setLoadingProgress(Math.round(progress));
+        lastUpdateTime = currentTime;
+        
+        console.log('📊 Progresso atualizado:', { 
+          progress: Math.round(progress), 
+          contentLength: content.length,
+          elapsedTime: Math.round(elapsedTime / 1000),
+          isComplete 
+        });
+      },
+      onComplete: (fullContent: string) => {
+        setLoadingProgress(100);
+        console.log('🎉 Streaming completo! Conteúdo final:', fullContent.length, 'caracteres');
+      },
+      onError: (error: Error) => {
+        console.error('❌ Erro no streaming:', error);
+        setLoadingProgress(0);
+      }
+    };
+  };
+
   const handlePromptSubmit = async (prompt: string, model: string, temperature: number) => {
     // Create or update GLM service with selected model
     let currentService = glmService;
@@ -129,45 +202,8 @@ const Index = () => {
     
     try {
       let response: string;
-      
-      const streamCallbacks = {
-        onProgress: (content: string, isComplete: boolean) => {
-          setCurrentStreamContent(content);
-          
-          // Calcular progresso real baseado no conteúdo HTML streaming
-          let progress = 0;
-          
-          if (content.includes('<!DOCTYPE html>')) progress = Math.max(progress, 10);
-          if (content.includes('<head>')) progress = Math.max(progress, 20);
-          if (content.includes('<title>')) progress = Math.max(progress, 25);
-          if (content.includes('<style>')) progress = Math.max(progress, 35);
-          if (content.includes('</style>')) progress = Math.max(progress, 55);
-          if (content.includes('<body>')) progress = Math.max(progress, 65);
-          if (content.includes('<script>')) progress = Math.max(progress, 80);
-          if (content.includes('</script>')) progress = Math.max(progress, 90);
-          if (content.includes('</body>')) progress = Math.max(progress, 95);
-          if (content.includes('</html>')) progress = 100;
-          
-          // Se não temos marcadores específicos, usar comprimento
-          if (progress === 0 && content.length > 0) {
-            // Estimar baseado no comprimento (HTML típico tem 2000-10000 chars)
-            const estimatedLength = files.length > 0 ? 5000 : 8000; // Edições são menores
-            progress = Math.min((content.length / estimatedLength) * 100, 95);
-          }
-          
-          if (isComplete) progress = 100;
-          
-          setLoadingProgress(Math.round(progress));
-        },
-        onComplete: (fullContent: string) => {
-          setLoadingProgress(100);
-          console.log('🎉 Streaming completo! Conteúdo final:', fullContent.length, 'caracteres');
-        },
-        onError: (error: Error) => {
-          console.error('❌ Erro no streaming:', error);
-          setLoadingProgress(0);
-        }
-      };
+      const isNewProject = files.length === 0;
+      const streamCallbacks = createStreamCallbacks(isNewProject);
       
       // Se já existem arquivos, usa edição específica
       if (files.length > 0 && files[0].content) {
@@ -222,39 +258,7 @@ const Index = () => {
     setCurrentStreamContent("");
     
     try {
-      const streamCallbacks = {
-        onProgress: (content: string, isComplete: boolean) => {
-          setCurrentStreamContent(content);
-          
-          // Calcular progresso real para edições
-          let progress = 0;
-          
-          if (content.includes('<!DOCTYPE html>')) progress = Math.max(progress, 15);
-          if (content.includes('<head>')) progress = Math.max(progress, 25);
-          if (content.includes('<style>')) progress = Math.max(progress, 40);
-          if (content.includes('</style>')) progress = Math.max(progress, 60);
-          if (content.includes('<body>')) progress = Math.max(progress, 70);
-          if (content.includes('<script>')) progress = Math.max(progress, 85);
-          if (content.includes('</html>')) progress = 100;
-          
-          // Fallback para comprimento se não temos marcadores
-          if (progress === 0 && content.length > 0) {
-            progress = Math.min((content.length / 4000) * 100, 95);
-          }
-          
-          if (isComplete) progress = 100;
-          
-          setLoadingProgress(Math.round(progress));
-        },
-        onComplete: (fullContent: string) => {
-          setLoadingProgress(100);
-          console.log('🎉 Edição completa! Conteúdo final:', fullContent.length, 'caracteres');
-        },
-        onError: (error: Error) => {
-          console.error('❌ Erro no streaming da edição:', error);
-          setLoadingProgress(0);
-        }
-      };
+      const streamCallbacks = createStreamCallbacks(false); // Edições são menores
       
       // Always use edit mode for chat messages
       if (files.length > 0 && files[0].content) {
