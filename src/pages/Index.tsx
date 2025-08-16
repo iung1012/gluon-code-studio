@@ -111,7 +111,7 @@ const Index = () => {
     <div className="h-screen bg-background">
       <ResizablePanelGroup direction="horizontal" className="h-full">
         {/* Left Panel - Prompt Input */}
-        <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+        <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
           <div className="h-full border-r border-border">
             <PromptInput onSubmit={handlePromptSubmit} isLoading={isLoading} />
           </div>
@@ -119,23 +119,12 @@ const Index = () => {
         
         <ResizableHandle />
         
-        {/* Middle Panel - File Tree */}
-        <ResizablePanel defaultSize={25} minSize={15} maxSize={35}>
-          <div className="h-full border-r border-border">
-            <FileTree 
-              files={files} 
-              selectedFile={selectedFile?.path}
-              onFileSelect={handleFileSelect}
-            />
-          </div>
-        </ResizablePanel>
-        
-        <ResizableHandle />
-        
-        {/* Right Panel - Code Preview */}
-        <ResizablePanel defaultSize={50} minSize={30}>
+        {/* Right Panel - Preview with File Tree */}
+        <ResizablePanel defaultSize={70} minSize={55}>
           <CodePreview 
+            files={files}
             selectedFile={selectedFile}
+            onFileSelect={handleFileSelect}
             generatedCode={!selectedFile ? generatedCode : undefined}
           />
         </ResizablePanel>
