@@ -20,67 +20,73 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
   };
 
   const examples = [
-    "Crie um portfólio moderno e profissional",
-    "Desenvolva uma landing page para produto SaaS", 
-    "Construa um site de menu para restaurante"
+    "Portfólio moderno e profissional",
+    "Landing page para produto SaaS", 
+    "Site de menu para restaurante"
   ];
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-2xl mx-auto space-y-8">
-        {/* Logo */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-6">
-            <Sparkles className="w-8 h-8 text-primary-foreground" />
+      <div className="w-full max-w-xl mx-auto space-y-12">
+        {/* Hero Section */}
+        <div className="text-center space-y-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-3xl mb-8">
+            <Sparkles className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight">
-            O que posso te ajudar a{" "}
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              construir?
-            </span>
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Descreva seu website e eu gero o código HTML completo para você
-          </p>
+          
+          <div className="space-y-4">
+            <h1 className="text-4xl font-light tracking-tight leading-tight">
+              O que posso te ajudar a{" "}
+              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent font-normal">
+                construir?
+              </span>
+            </h1>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-md mx-auto">
+              Descreva seu website e eu gero o código completo para você
+            </p>
+          </div>
         </div>
 
         {/* Input Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <Textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Me ajude a construir um website..."
-              className="min-h-[120px] pr-12 text-base resize-none bg-card border-border focus:ring-primary focus:border-primary"
-              disabled={isLoading}
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="absolute bottom-3 right-3 h-8 w-8 rounded-lg"
-              disabled={!prompt.trim() || isLoading}
-            >
-              <ArrowUp className="w-4 h-4" />
-            </Button>
-          </div>
-        </form>
-
-        {/* Example Prompts */}
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground text-center">Experimente estes exemplos:</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {examples.map((example, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                onClick={() => setPrompt(example)}
+        <div className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="relative">
+              <Textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Me ajude a construir um website..."
+                className="min-h-[100px] pr-12 text-base resize-none bg-card/50 border-border/40 focus:ring-primary/10 focus:border-primary/40 placeholder:text-muted-foreground/60"
                 disabled={isLoading}
-                className="text-xs h-8 px-3 bg-card hover:bg-accent border-border"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="absolute bottom-3 right-3 h-8 w-8 rounded-xl bg-primary hover:bg-primary/90"
+                disabled={!prompt.trim() || isLoading}
               >
-                {example}
+                <ArrowUp className="w-4 h-4" />
               </Button>
-            ))}
+            </div>
+          </form>
+
+          {/* Example Prompts */}
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground/80 text-center font-medium uppercase tracking-wide">
+              Experimente estes exemplos
+            </p>
+            <div className="flex flex-col gap-2">
+              {examples.map((example, index) => (
+                <Button
+                  key={index}
+                  variant="ghost"
+                  onClick={() => setPrompt(example)}
+                  disabled={isLoading}
+                  className="h-auto p-3 text-sm text-left justify-start bg-muted/20 hover:bg-muted/40 border border-border/20 hover:border-border/40 font-normal text-muted-foreground hover:text-foreground"
+                >
+                  {example}
+                </Button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
