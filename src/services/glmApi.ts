@@ -71,19 +71,30 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
 2. Identifique EXATAMENTE a parte que o usuário quer alterar
 3. Faça APENAS a alteração solicitada
 4. Mantenha TODO o resto do código EXATAMENTE igual
-5. Retorne o arquivo HTML completo com APENAS a mudança específica
+5. SEMPRE retorne o arquivo HTML completo funcional
+
+CRÍTICO: NUNCA responda com explicações ou perguntas. SEMPRE retorne HTML completo válido.
+Se não entender a solicitação, faça uma interpretação inteligente e aplique a mudança.
+NUNCA pergunte o que fazer - sempre execute a alteração solicitada.
 
 IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações, sem formatação adicional. Apenas o código HTML puro que funciona diretamente no navegador.`
       },
       {
         role: 'user',
-        content: `CÓDIGO ATUAL:\n${currentCode}`
-      },
-      {
-        role: 'user',
-        content: `ALTERAÇÃO ESPECÍFICA: ${editRequest}`
+        content: `CÓDIGO HTML ATUAL COMPLETO:
+${currentCode}
+
+INSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${editRequest}
+
+Retorne o HTML completo modificado agora:`
       }
     ];
+
+    console.log('📝 Sending edit request:', { 
+      editRequest, 
+      currentCodeLength: currentCode.length,
+      hasSystemPrompt: messages[0].content.includes('CRÍTICO')
+    });
 
     return callbacks 
       ? this.callStreamingAPI(messages, 0.1, 8000, callbacks)

@@ -41,12 +41,18 @@ const Index = () => {
   };
 
   const parseProjectStructure = (content: string): FileNode[] => {
-    console.log('🔍 Parsing HTML monolith from content:', content.substring(0, 200) + '...');
+    console.log('🔍 Parsing content from API:', content.substring(0, 200) + '...');
+    console.log('📊 Content stats:', { 
+      length: content.length, 
+      includesDoctype: content.includes('<!DOCTYPE'), 
+      includesHtml: content.includes('<html'),
+      startsWithHtml: content.trim().startsWith('<')
+    });
     
-    // Since API now returns HTML directly, just use it as-is
+    // Limpar conteúdo
     const cleanContent = content.trim();
     
-    // Validate it's HTML
+    // Verificar se é HTML válido
     if (cleanContent.includes('<!DOCTYPE html>') || cleanContent.includes('<html')) {
       console.log('✅ Valid HTML monolith detected');
       
@@ -57,6 +63,17 @@ const Index = () => {
         content: cleanContent,
         children: []
       }];
+    }
+    
+    // Se não é HTML, verificar se é uma resposta explicativa da API
+    if (cleanContent.includes('Por favor') || 
+        cleanContent.includes('preciso') || 
+        cleanContent.includes('não entendi') ||
+        cleanContent.length < 500) {
+      console.error('❌ API retornou texto explicativo em vez de HTML:', cleanContent.substring(0, 300));
+      
+      // Retornar erro mais específico
+      throw new Error(`A API não executou a alteração solicitada. Resposta: "${cleanContent.substring(0, 100)}..."`);
     }
     
     console.error('❌ Invalid HTML content received');
@@ -191,7 +208,11 @@ const Index = () => {
       if (files.length > 0 && files[0].content) {
         const currentFile = files.find(f => f.name === 'index.html');
         if (currentFile?.content) {
-          console.log('🎯 Fazendo edição via chat...');
+          console.log('🎯 Fazendo edição via chat...', { 
+            messageLength: message.length, 
+            currentCodeLength: currentFile.content.length 
+          });
+          
           const response = await glmService.editSpecificPart(currentFile.content, message, streamCallbacks);
           
           const parsedFiles = parseProjectStructure(response);
@@ -209,7 +230,11 @@ const Index = () => {
             title: "Website Updated!",
             description: "Your changes have been applied successfully.",
           });
+        } else {
+          throw new Error("Arquivo atual não encontrado para edição");
         }
+      } else {
+        throw new Error("Nenhum website gerado para editar");
       }
     } catch (error) {
       console.error('Error processing chat message:', error);
