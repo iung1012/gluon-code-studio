@@ -140,39 +140,56 @@ export const PromptInput = ({ onSubmit, isLoading, className }: PromptInputProps
         {/* Input Area */}
         <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
           <div className="p-4 border-t border-border">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm">Gerador de Sites IA</h3>
-                <p className="text-xs text-muted-foreground">Descreva seu site e deixe a IA criar</p>
-              </div>
-            </div>
+            {messages.length === 0 ? (
+              // Initial welcome state with examples
+              <>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Gerador de Sites IA</h3>
+                    <p className="text-xs text-muted-foreground">Descreva seu site e deixe a IA criar</p>
+                  </div>
+                </div>
 
-            <div className="space-y-3 mb-4">
-              {[
-                "Crie um dashboard moderno com gráficos interativos",
-                "Site de portfólio para desenvolvedor com dark theme",
-                "E-commerce de produtos tecnológicos com carrinho",
-              ].map((example, index) => (
-                <Card 
-                  key={index}
-                  className="p-3 cursor-pointer hover:bg-accent/50 transition-colors border-border/50 text-xs"
-                  onClick={() => setPrompt(example)}
-                >
-                  {example}
-                </Card>
-              ))}
-            </div>
+                <div className="space-y-3 mb-4">
+                  {[
+                    "Crie um dashboard moderno com gráficos interativos",
+                    "Site de portfólio para desenvolvedor com dark theme",
+                    "E-commerce de produtos tecnológicos com carrinho",
+                  ].map((example, index) => (
+                    <Card 
+                      key={index}
+                      className="p-3 cursor-pointer hover:bg-accent/50 transition-colors border-border/50 text-xs"
+                      onClick={() => setPrompt(example)}
+                    >
+                      {example}
+                    </Card>
+                  ))}
+                </div>
+              </>
+            ) : (
+              // Active conversation state - simplified header
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-primary-foreground" />
+                </div>
+                <h3 className="font-medium text-sm">Continue a conversa</h3>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-3">
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Descreva detalhadamente o site que você quer criar..."
+                placeholder={
+                  messages.length === 0 
+                    ? "Descreva detalhadamente o site que você quer criar..."
+                    : "Digite sua mensagem aqui para continuar a conversa..."
+                }
                 className="resize-none bg-muted/30 border-border/50 focus:border-primary/50 transition-colors text-sm"
-                rows={3}
+                rows={messages.length === 0 ? 3 : 2}
                 disabled={isLoading}
               />
               
@@ -185,12 +202,12 @@ export const PromptInput = ({ onSubmit, isLoading, className }: PromptInputProps
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Gerando...
+                    {messages.length === 0 ? "Gerando..." : "Respondendo..."}
                   </>
                 ) : (
                   <>
                     <Send className="w-4 h-4 mr-2" />
-                    Gerar Site
+                    {messages.length === 0 ? "Gerar Site" : "Enviar"}
                   </>
                 )}
               </Button>
