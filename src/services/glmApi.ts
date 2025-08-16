@@ -1,3 +1,4 @@
+
 interface GLMMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -67,8 +68,8 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
     ];
 
     return callbacks 
-      ? this.callStreamingAPI(messages, temperature, 6000, callbacks)
-      : this.callAPI(messages, temperature, 6000);
+      ? this.callStreamingAPI(messages, temperature, 4500, callbacks) // Reduzido de 6000 para 4500
+      : this.callAPI(messages, temperature, 4500);
   }
 
   async editSpecificPart(currentCode: string, editRequest: string, callbacks?: StreamCallbacks, temperature: number = 0.1): Promise<string> {
@@ -108,8 +109,8 @@ Retorne o HTML completo modificado agora:`
     });
 
     return callbacks 
-      ? this.callStreamingAPI(messages, temperature, 8000, callbacks)
-      : this.callAPI(messages, temperature, 8000);
+      ? this.callStreamingAPI(messages, temperature, 5500, callbacks) // Reduzido de 8000 para 5500
+      : this.callAPI(messages, temperature, 5500);
   }
 
   private async callStreamingAPI(
@@ -121,6 +122,9 @@ Retorne o HTML completo modificado agora:`
     console.log('🚀 Calling GLM Streaming API with:', { temperature, maxTokens, messagesCount: messages.length });
     
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // Timeout de 30s (reduzido de implícito)
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
@@ -133,12 +137,15 @@ Retorne o HTML completo modificado agora:`
           messages,
           temperature,
           max_tokens: maxTokens,
-          top_p: 0.7,
+          top_p: 0.8, // Aumentado de 0.7 para 0.8 para mais criatividade
           frequency_penalty: 0.0,
           presence_penalty: 0.0,
           stream: true
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -214,6 +221,9 @@ Retorne o HTML completo modificado agora:`
     console.log('🚀 Calling GLM API with:', { temperature, maxTokens, messagesCount: messages.length });
     
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000); // Timeout de 25s
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
@@ -226,11 +236,14 @@ Retorne o HTML completo modificado agora:`
           messages,
           temperature,
           max_tokens: maxTokens,
-          top_p: 0.7,
+          top_p: 0.8,
           frequency_penalty: 0.0,
           presence_penalty: 0.0
-        })
+        }),
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
