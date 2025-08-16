@@ -95,18 +95,17 @@ export default Component;
     const messages: GLMMessage[] = [
       {
         role: 'system',
-        content: `Você é um desenvolvedor JavaScript especialista. Siga estas regras RIGOROSAMENTE:
+        content: `Você é um desenvolvedor JavaScript especialista. Regras OBRIGATÓRIAS:
 
-1. SEMPRE escreva código JavaScript MONOLITO (tudo em um único arquivo HTML)
-2. NUNCA modifique código existente, APENAS adicione ou edite o que o usuário solicitar especificamente
-3. Mantenha toda funcionalidade existente intacta
-4. Use apenas HTML, CSS inline/interno e JavaScript vanilla
-5. Estrutura obrigatória:
+1. SEMPRE escreva código JavaScript MONOLITO (arquivo HTML único)
+2. NUNCA modifique código existente - APENAS edite o que o usuário solicitar
+3. Estrutura obrigatória:
    - HTML completo com DOCTYPE
    - CSS dentro de <style> no <head>
    - JavaScript dentro de <script> antes do </body>
-6. Quando o usuário pedir mudanças, identifique EXATAMENTE o que alterar e mantenha o resto igual
-7. Sempre forneça o código completo funcional em um único arquivo
+4. Para edições: identifique EXATAMENTE o que alterar e mantenha resto igual
+5. Sempre forneça código completo funcional
+6. Use apenas HTML, CSS e JavaScript vanilla
 
 FORMATO DE RESPOSTA JSON OBRIGATÓRIO:
 {
@@ -138,7 +137,7 @@ FORMATO DE RESPOSTA JSON OBRIGATÓRIO:
           model: 'glm-4-32b-0414-128k',
           messages,
           temperature: 0.3,
-          max_tokens: 8192
+          max_tokens: 4000
         })
       });
 
