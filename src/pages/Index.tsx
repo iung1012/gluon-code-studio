@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { PromptInput } from "@/components/PromptInput";
-import { FileTree, FileNode } from "@/components/FileTree";
-import { CodePreview } from "@/components/CodePreview";
+import { FileNode } from "@/components/FileTree";
 import { ApiKeyInput } from "@/components/ApiKeyInput";
+import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { GeneratedPreview } from "@/components/GeneratedPreview";
 import { GLMApiService } from "@/services/glmApi";
 import { useToast } from "@/hooks/use-toast";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 const Index = () => {
   const [apiKey, setApiKey] = useState<string>("");
@@ -14,6 +14,7 @@ const Index = () => {
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -87,6 +88,8 @@ const Index = () => {
     if (!glmService) return;
 
     setIsLoading(true);
+    setShowPreview(true);
+    
     try {
       let response: string;
       
@@ -118,14 +121,14 @@ const Index = () => {
 
       const isEdit = files.length > 0;
       toast({
-        title: isEdit ? "Alteração Aplicada!" : "Website Gerado!",
-        description: isEdit ? "Sua alteração específica foi aplicada com sucesso." : "Sua estrutura de website foi criada com sucesso.",
+        title: isEdit ? "Website Updated!" : "Website Generated!",
+        description: isEdit ? "Your changes have been applied successfully." : "Your website has been created successfully.",
       });
     } catch (error) {
       console.error('Error generating code:', error);
       toast({
-        title: "Falha na Geração",
-        description: error instanceof Error ? error.message : "Falha ao gerar website. Tente novamente.",
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate website. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -150,10 +153,15 @@ const Index = () => {
     setFiles([]);
     setSelectedFile(undefined);
     setGeneratedCode("");
+    setShowPreview(false);
     toast({
-      title: "Novo Projeto",
-      description: "Projeto limpo criado. Agora você pode gerar um novo website.",
+      title: "New Project",
+      description: "Project cleared. You can now generate a new website.",
     });
+  };
+
+  const handleBackToInput = () => {
+    setShowPreview(false);
   };
 
   const handleFileSelect = (path: string, content: string) => {
@@ -164,34 +172,30 @@ const Index = () => {
     return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
   }
 
+  if (showPreview && files.length > 0) {
+    return (
+      <>
+        <LoadingScreen isVisible={isLoading} />
+        <GeneratedPreview
+          files={files}
+          selectedFile={selectedFile}
+          onFileSelect={handleFileSelect}
+          onBackToInput={handleBackToInput}
+          onNewProject={handleNewProject}
+          generatedCode={!selectedFile ? generatedCode : undefined}
+        />
+      </>
+    );
+  }
+
   return (
-    <div className="h-screen bg-background">
-      <ResizablePanelGroup direction="horizontal" className="h-full">
-        {/* Left Panel - Prompt Input */}
-        <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
-          <div className="h-full border-r border-border">
-            <PromptInput 
-              onSubmit={handlePromptSubmit} 
-              isLoading={isLoading}
-              hasExistingFiles={files.length > 0}
-              onNewProject={handleNewProject}
-            />
-          </div>
-        </ResizablePanel>
-        
-        <ResizableHandle />
-        
-        {/* Right Panel - Preview with File Tree */}
-        <ResizablePanel defaultSize={70} minSize={55}>
-          <CodePreview 
-            files={files}
-            selectedFile={selectedFile}
-            onFileSelect={handleFileSelect}
-            generatedCode={!selectedFile ? generatedCode : undefined}
-          />
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
+    <>
+      <LoadingScreen isVisible={isLoading} />
+      <WelcomeScreen 
+        onSubmit={handlePromptSubmit} 
+        isLoading={isLoading}
+      />
+    </>
   );
 };
 
