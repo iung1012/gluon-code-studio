@@ -1,11 +1,13 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-react";
 import { ChatPanel } from "./ChatPanel";
-import { CodePreview } from "./CodePreview";
+import { LivePreview } from "./LivePreview";
 import { FileNode } from "./FileTree";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import JSZip from 'jszip';
 
 interface ChatLayoutProps {
   files: FileNode[];
@@ -29,6 +31,8 @@ export const ChatLayout = ({
   isLoading
 }: ChatLayoutProps) => {
   const [chatVisible, setChatVisible] = useState(true);
+  const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const { toast } = useToast();
 
   const downloadHtml = () => {
     if (files.length > 0 && files[0].content) {
@@ -44,6 +48,59 @@ export const ChatLayout = ({
     }
   };
 
+  const downloadZip = async () => {
+    if (files.length === 0 || !files[0].content) {
+      toast({
+        title: "Erro",
+        description: "Nenhum arquivo para baixar",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const zip = new JSZip();
+      
+      // Add the main HTML file
+      zip.file("index.html", files[0].content);
+      
+      // Add a README
+      zip.file("README.md", `# Website Gerado
+      
+Este website foi gerado automaticamente usando IA.
+
+## Como usar:
+1. Abra o arquivo \`index.html\` em qualquer navegador
+2. O código HTML, CSS e JavaScript estão todos em um único arquivo
+3. Personalize conforme necessário
+
+Gerado em: ${new Date().toLocaleDateString('pt-BR')}
+`);
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'website-gerado.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Download Concluído",
+        description: "Website baixado em formato ZIP com sucesso!",
+      });
+    } catch (error) {
+      console.error('Erro ao criar ZIP:', error);
+      toast({
+        title: "Erro no Download",
+        description: "Falha ao criar o arquivo ZIP. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const openInNewTab = () => {
     if (files.length > 0 && files[0].content) {
       const blob = new Blob([files[0].content], { type: 'text/html' });
@@ -51,6 +108,18 @@ export const ChatLayout = ({
       window.open(url, '_blank');
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
+  };
+
+  const deviceIcons = {
+    desktop: Monitor,
+    tablet: Tablet,
+    mobile: Smartphone
+  };
+
+  const deviceLabels = {
+    desktop: "Desktop",
+    tablet: "Tablet", 
+    mobile: "Celular"
   };
 
   return (
@@ -66,10 +135,10 @@ export const ChatLayout = ({
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Input
+              Voltar ao Início
             </Button>
             <div className="h-6 w-px bg-border" />
-            <h2 className="font-semibold">Generated Website</h2>
+            <h2 className="font-semibold">Website Gerado</h2>
           </div>
           
           <div className="flex items-center gap-2">
@@ -82,16 +151,45 @@ export const ChatLayout = ({
               {chatVisible ? (
                 <>
                   <X className="w-4 h-4" />
-                  Hide Chat
+                  Ocultar Chat
                 </>
               ) : (
                 <>
                   <MessageSquare className="w-4 h-4" />
-                  Show Chat
+                  Mostrar Chat
                 </>
               )}
             </Button>
+            
             <div className="h-6 w-px bg-border" />
+            
+            {/* Device Selector */}
+            <Select value={previewDevice} onValueChange={(value: any) => setPreviewDevice(value)}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue>
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const Icon = deviceIcons[previewDevice];
+                      return <Icon className="w-4 h-4" />;
+                    })()}
+                    <span className="text-xs">{deviceLabels[previewDevice]}</span>
+                  </div>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(deviceIcons).map(([device, Icon]) => (
+                  <SelectItem key={device} value={device}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-4 h-4" />
+                      <span>{deviceLabels[device as keyof typeof deviceLabels]}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <div className="h-6 w-px bg-border" />
+            
             <Button
               variant="outline"
               size="sm"
@@ -99,7 +197,16 @@ export const ChatLayout = ({
               className="gap-2"
             >
               <Download className="w-4 h-4" />
-              Download
+              HTML
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadZip}
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" />
+              ZIP
             </Button>
             <Button
               variant="outline"
@@ -108,7 +215,7 @@ export const ChatLayout = ({
               className="gap-2"
             >
               <ExternalLink className="w-4 h-4" />
-              Open
+              Abrir
             </Button>
             <Button
               variant="outline"
@@ -117,42 +224,30 @@ export const ChatLayout = ({
               className="gap-2 text-destructive hover:text-destructive"
             >
               <RotateCcw className="w-4 h-4" />
-              New Project
+              Novo Projeto
             </Button>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1">
-        {chatVisible ? (
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={30} minSize={25} maxSize={45}>
-              <ChatPanel
-                onSendMessage={onSendMessage}
-                isLoading={isLoading}
-              />
-            </ResizablePanel>
-            
-            <ResizableHandle className="w-1 bg-border hover:bg-accent transition-colors" />
-            
-            <ResizablePanel defaultSize={70} minSize={55}>
-              <CodePreview
-                files={files}
-                selectedFile={selectedFile}
-                onFileSelect={onFileSelect}
-                generatedCode={generatedCode}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : (
-          <CodePreview
-            files={files}
-            selectedFile={selectedFile}
-            onFileSelect={onFileSelect}
-            generatedCode={generatedCode}
-          />
+      <div className="flex-1 flex">
+        {chatVisible && (
+          <div className="w-80 border-r border-border">
+            <ChatPanel
+              onSendMessage={onSendMessage}
+              isLoading={isLoading}
+            />
+          </div>
         )}
+        
+        <div className="flex-1">
+          <LivePreview
+            files={files}
+            generatedCode={generatedCode}
+            device={previewDevice}
+          />
+        </div>
       </div>
     </div>
   );

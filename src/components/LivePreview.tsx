@@ -1,25 +1,22 @@
 import { useEffect, useRef } from 'react';
-import { FileNode } from './FileTree';
+import { cn } from "@/lib/utils";
+import { FileNode } from "./FileTree";
 
 interface LivePreviewProps {
   files: FileNode[];
+  selectedFile?: { path: string; content: string };
+  onFileSelect?: (path: string, content: string) => void;
+  generatedCode?: string;
+  device?: 'desktop' | 'tablet' | 'mobile';
 }
 
-export const LivePreview = ({ files }: LivePreviewProps) => {
+export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePreviewProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
+  
+  const htmlContent = files.length > 0 && files[0].content ? files[0].content : generatedCode || "";
+  
   useEffect(() => {
-    if (!iframeRef.current || files.length === 0) return;
-
-    // Find the main HTML file (index.html for monolithic architecture)
-    const htmlFile = files.find(file => 
-      (file.name === 'index.html' || file.name.endsWith('.html')) && file.type === 'file'
-    );
-
-    if (!htmlFile?.content) return;
-
-    // Use the HTML content directly since it's already complete
-    const htmlContent = htmlFile.content;
+    if (!iframeRef.current || !htmlContent) return;
 
     // Write the content to iframe
     const iframe = iframeRef.current;
@@ -30,12 +27,12 @@ export const LivePreview = ({ files }: LivePreviewProps) => {
       iframeDoc.write(htmlContent);
       iframeDoc.close();
     }
-  }, [files]);
-
-  if (files.length === 0) {
+  }, [htmlContent]);
+  
+  if (!htmlContent) {
     return (
-      <div className="h-full flex items-center justify-center text-center p-8">
-        <div>
+      <div className="h-full flex items-center justify-center text-muted-foreground">
+        <div className="text-center">
           <div className="w-16 h-16 bg-muted rounded-lg mx-auto mb-4 flex items-center justify-center">
             <span className="text-2xl">⚡</span>
           </div>
@@ -48,12 +45,29 @@ export const LivePreview = ({ files }: LivePreviewProps) => {
     );
   }
 
+  const deviceStyles = {
+    desktop: "w-full h-full",
+    tablet: "w-[768px] h-[1024px] mx-auto border border-border rounded-lg shadow-lg",
+    mobile: "w-[375px] h-[667px] mx-auto border border-border rounded-lg shadow-lg"
+  };
+
+  const containerStyles = {
+    desktop: "w-full h-full",
+    tablet: "w-full h-full flex items-center justify-center p-4 bg-muted/10",
+    mobile: "w-full h-full flex items-center justify-center p-4 bg-muted/10"
+  };
+
   return (
-    <iframe
-      ref={iframeRef}
-      className="w-full h-full border-0 rounded-lg bg-white"
-      title="Live Preview"
-      sandbox="allow-scripts allow-same-origin"
-    />
+    <div className={cn("bg-background", containerStyles[device])}>
+      <iframe
+        ref={iframeRef}
+        className={cn("border-0 bg-white", deviceStyles[device])}
+        title="Preview do Website"
+        sandbox="allow-scripts allow-same-origin allow-forms"
+        style={{
+          minHeight: device === 'desktop' ? '100%' : 'auto'
+        }}
+      />
+    </div>
   );
 };

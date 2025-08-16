@@ -35,8 +35,8 @@ const Index = () => {
     localStorage.setItem("glm-api-key", key);
     // Default model will be set when first prompt is submitted
     toast({
-      title: "API Key Saved",
-      description: "You can now start generating websites!",
+      title: "Chave API Salva",
+      description: "Agora você pode começar a gerar websites!",
     });
   };
 
@@ -105,7 +105,7 @@ const Index = () => {
     }];
   };
 
-  const handlePromptSubmit = async (prompt: string, model: string) => {
+  const handlePromptSubmit = async (prompt: string, model: string, temperature: number) => {
     // Create or update GLM service with selected model
     let currentService = glmService;
     if (!glmService || glmService.getModel() !== model) {
@@ -115,8 +115,8 @@ const Index = () => {
     
     if (!currentService) {
       toast({
-        title: "Service Error",
-        description: "Failed to initialize GLM service. Please try again.",
+        title: "Erro no Serviço",
+        description: "Falha ao inicializar serviço GLM. Tente novamente.",
         variant: "destructive"
       });
       return;
@@ -152,15 +152,15 @@ const Index = () => {
       if (files.length > 0 && files[0].content) {
         const currentFile = files.find(f => f.name === 'index.html');
         if (currentFile?.content) {
-          console.log('🎯 Fazendo edição específica...', { model });
-          response = await currentService.editSpecificPart(currentFile.content, prompt, streamCallbacks);
+          console.log('🎯 Fazendo edição específica...', { model, temperature });
+          response = await currentService.editSpecificPart(currentFile.content, prompt, streamCallbacks, temperature * 0.5);
         } else {
-          console.log('🆕 Gerando novo projeto...', { model });
-          response = await currentService.generateProjectStructure(prompt, streamCallbacks);
+          console.log('🆕 Gerando novo projeto...', { model, temperature });
+          response = await currentService.generateProjectStructure(prompt, streamCallbacks, temperature);
         }
       } else {
-        console.log('🆕 Gerando novo projeto...', { model });
-        response = await currentService.generateProjectStructure(prompt, streamCallbacks);
+        console.log('🆕 Gerando novo projeto...', { model, temperature });
+        response = await currentService.generateProjectStructure(prompt, streamCallbacks, temperature);
       }
       
       const parsedFiles = parseProjectStructure(response);
@@ -176,14 +176,14 @@ const Index = () => {
 
       const isEdit = files.length > 0;
       toast({
-        title: isEdit ? "Website Updated!" : "Website Generated!",
-        description: isEdit ? `Your changes have been applied using ${model}.` : `Your website has been created using ${model}.`,
+        title: isEdit ? "Website Atualizado!" : "Website Gerado!",
+        description: isEdit ? `Alterações aplicadas usando ${model}.` : `Website criado usando ${model}.`,
       });
     } catch (error) {
       console.error('Error generating code:', error);
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate website. Please try again.",
+        title: "Falha na Geração",
+        description: error instanceof Error ? error.message : "Erro ao gerar website. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -241,8 +241,8 @@ const Index = () => {
           }
 
           toast({
-            title: "Website Updated!",
-            description: "Your changes have been applied successfully.",
+            title: "Website Atualizado!",
+            description: "Suas alterações foram aplicadas com sucesso.",
           });
         } else {
           throw new Error("Arquivo atual não encontrado para edição");
@@ -253,8 +253,8 @@ const Index = () => {
     } catch (error) {
       console.error('Error processing chat message:', error);
       toast({
-        title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update website. Please try again.",
+        title: "Falha na Atualização",
+        description: error instanceof Error ? error.message : "Erro ao atualizar website. Tente novamente.",
         variant: "destructive"
       });
       throw error; // Re-throw to let ChatPanel handle the error message
@@ -285,8 +285,8 @@ const Index = () => {
     setShowPreview(false);
     setUseChatLayout(false);
     toast({
-      title: "New Project",
-      description: "Project cleared. You can now generate a new website.",
+      title: "Novo Projeto",
+      description: "Projeto limpo. Você pode gerar um novo website agora.",
     });
   };
 

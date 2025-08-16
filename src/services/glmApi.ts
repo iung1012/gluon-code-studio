@@ -44,7 +44,7 @@ export class GLMApiService {
     return this.model;
   }
 
-  async generateProjectStructure(prompt: string, callbacks?: StreamCallbacks): Promise<string> {
+  async generateProjectStructure(prompt: string, callbacks?: StreamCallbacks, temperature: number = 0.3): Promise<string> {
     const messages: GLMMessage[] = [
       {
         role: 'system',
@@ -67,11 +67,11 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
     ];
 
     return callbacks 
-      ? this.callStreamingAPI(messages, 0.3, 6000, callbacks)
-      : this.callAPI(messages, 0.3, 6000);
+      ? this.callStreamingAPI(messages, temperature, 6000, callbacks)
+      : this.callAPI(messages, temperature, 6000);
   }
 
-  async editSpecificPart(currentCode: string, editRequest: string, callbacks?: StreamCallbacks): Promise<string> {
+  async editSpecificPart(currentCode: string, editRequest: string, callbacks?: StreamCallbacks, temperature: number = 0.1): Promise<string> {
     const messages: GLMMessage[] = [
       {
         role: 'system',
@@ -103,12 +103,13 @@ Retorne o HTML completo modificado agora:`
     console.log('📝 Sending edit request:', { 
       editRequest, 
       currentCodeLength: currentCode.length,
-      hasSystemPrompt: messages[0].content.includes('CRÍTICO')
+      hasSystemPrompt: messages[0].content.includes('CRÍTICO'),
+      temperature
     });
 
     return callbacks 
-      ? this.callStreamingAPI(messages, 0.1, 8000, callbacks)
-      : this.callAPI(messages, 0.1, 8000);
+      ? this.callStreamingAPI(messages, temperature, 8000, callbacks)
+      : this.callAPI(messages, temperature, 8000);
   }
 
   private async callStreamingAPI(

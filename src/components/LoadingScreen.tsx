@@ -13,10 +13,10 @@ export const LoadingScreen = ({ isVisible, progress: externalProgress, currentCo
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-    { icon: Sparkles, text: "Connecting to AI...", duration: 10 },
-    { icon: Code, text: "Generating HTML structure...", duration: 40 },
-    { icon: Palette, text: "Designing beautiful styles...", duration: 35 },
-    { icon: Zap, text: "Adding final touches...", duration: 15 }
+    { icon: Sparkles, text: "Conectando à IA...", duration: 10 },
+    { icon: Code, text: "Gerando estrutura HTML...", duration: 40 },
+    { icon: Palette, text: "Criando estilos visuais...", duration: 35 },
+    { icon: Zap, text: "Finalizando detalhes...", duration: 15 }
   ];
 
   // Use external progress if provided, otherwise use internal progress
@@ -84,9 +84,9 @@ export const LoadingScreen = ({ isVisible, progress: externalProgress, currentCo
         {/* Progress */}
         <div className="space-y-4">
           <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Creating your website</h2>
+            <h2 className="text-xl font-semibold mb-2">Criando seu website</h2>
             <p className="text-muted-foreground text-sm">
-              {steps[currentStep]?.text || "Processing..."}
+              {steps[currentStep]?.text || "Processando..."}
             </p>
           </div>
           
@@ -94,7 +94,7 @@ export const LoadingScreen = ({ isVisible, progress: externalProgress, currentCo
           
           <div className="text-center">
             <span className="text-sm text-muted-foreground">
-              {Math.round(currentProgress)}% complete
+              {Math.round(currentProgress)}% concluído
             </span>
           </div>
         </div>

@@ -54,7 +54,7 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
       // Add AI response (this will be handled by the parent component)
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Website updated successfully!",
+        content: "Website atualizado com sucesso!",
         sender: 'ai',
         timestamp: new Date()
       };
@@ -63,7 +63,7 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Sorry, I couldn't process your request. Please try again.",
+        content: "Desculpe, não consegui processar sua solicitação. Tente novamente.",
         sender: 'ai',
         timestamp: new Date()
       };
@@ -80,7 +80,7 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
   };
 
   return (
-    <div className="h-full flex flex-col bg-card border-r border-border">
+    <div className="h-full flex flex-col bg-card">
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-2">
@@ -88,8 +88,8 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
             <Bot className="w-4 h-4 text-primary-foreground" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm">AI Assistant</h3>
-            <p className="text-xs text-muted-foreground">Ask me to modify your website</p>
+            <h3 className="font-semibold text-sm">Assistente IA</h3>
+            <p className="text-xs text-muted-foreground">Peça para modificar seu website</p>
           </div>
         </div>
       </div>
@@ -100,8 +100,8 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <Bot className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-              <p className="text-sm">Start a conversation!</p>
-              <p className="text-xs mt-1">Ask me to modify colors, text, layout, or add new features.</p>
+              <p className="text-sm">Inicie uma conversa!</p>
+              <p className="text-xs mt-1">Peça para modificar cores, textos, layout ou adicionar recursos.</p>
             </div>
           ) : (
             messages.map((message) => (
@@ -128,7 +128,7 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
                 >
                   <p className="whitespace-pre-wrap break-words">{message.content}</p>
                   <p className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
 
@@ -167,7 +167,7 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask me to modify your website..."
+              placeholder="Peça para modificar seu website..."
               className="min-h-[60px] max-h-[120px] pr-12 text-sm resize-none bg-background border-border focus:ring-primary focus:border-primary"
               disabled={isLoading}
             />
@@ -181,7 +181,7 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Press Enter to send, Shift+Enter for new line
+            Enter para enviar, Shift+Enter para nova linha
           </p>
         </form>
       </div>
