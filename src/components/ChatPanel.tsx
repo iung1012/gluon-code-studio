@@ -1,9 +1,8 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, Image, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -11,10 +10,11 @@ interface Message {
   content: string;
   sender: 'user' | 'ai';
   timestamp: Date;
+  images?: string[];
 }
 
 interface ChatPanelProps {
-  onSendMessage: (message: string) => Promise<void>;
+  onSendMessage: (message: string, images?: string[]) => Promise<void>;
   isLoading: boolean;
   initialMessages?: Message[];
 }
@@ -22,8 +22,10 @@ interface ChatPanelProps {
 export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto scroll to bottom when new messages are added
   useEffect(() => {
@@ -43,22 +45,44 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
     }
   }, [inputValue]);
 
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          setSelectedImages(prev => [...prev, result]);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+    if ((!inputValue.trim() && selectedImages.length === 0) || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       content: inputValue.trim(),
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
+      images: selectedImages.length > 0 ? [...selectedImages] : undefined
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
+    setSelectedImages([]);
 
     try {
-      await onSendMessage(userMessage.content);
+      await onSendMessage(userMessage.content, userMessage.images);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -151,7 +175,20 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
                         : "bg-muted text-muted-foreground"
                     )}
                   >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    {/* Images */}
+                    {message.images && message.images.length > 0 && (
+                      <div className="mb-2 space-y-2">
+                        {message.images.map((image, index) => (
+                          <img
+                            key={index}
+                            src={image}
+                            alt={`Imagem ${index + 1}`}
+                            className="max-w-[200px] rounded-md"
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {message.timestamp.toLocaleTimeString('pt-BR', { 
@@ -182,9 +219,31 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
         </div>
       </ScrollArea>
 
-      {/* Input Area - Clean Design */}
+      {/* Input Area */}
       <div className="p-4 border-t border-border">
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Image Preview */}
+          {selectedImages.length > 0 && (
+            <div className="flex flex-wrap gap-2 p-2 bg-muted/30 rounded-lg">
+              {selectedImages.map((image, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={image}
+                    alt={`Preview ${index + 1}`}
+                    className="w-16 h-16 object-cover rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:bg-destructive/80"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="relative">
             <Textarea
               ref={textareaRef}
@@ -192,18 +251,30 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Digite sua mensagem..."
-              className="min-h-[60px] pr-12 resize-none bg-background border-border focus:border-primary focus:ring-primary/20"
+              className="min-h-[44px] pr-20 resize-none bg-background border-border focus:border-primary focus:ring-primary/20"
               disabled={isLoading}
               rows={1}
             />
-            <Button
-              type="submit"
-              size="sm"
-              className="absolute bottom-2 right-2 h-8 w-8 p-0"
-              disabled={!inputValue.trim() || isLoading}
-            >
-              <Send className="w-4 h-4" />
-            </Button>
+            <div className="absolute bottom-2 right-2 flex items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 hover:bg-muted"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+              >
+                <Image className="w-4 h-4" />
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={(!inputValue.trim() && selectedImages.length === 0) || isLoading}
+              >
+                <Send className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
           
           <div className="text-center">
@@ -212,6 +283,15 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
             </p>
           </div>
         </form>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImageSelect}
+          className="hidden"
+        />
       </div>
     </div>
   );

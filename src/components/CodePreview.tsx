@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,9 +17,18 @@ interface CodePreviewProps {
   };
   onFileSelect: (path: string, content: string) => void;
   generatedCode?: string;
+  isGenerating?: boolean;
+  generationProgress?: number;
 }
 
-export const CodePreview = ({ files, selectedFile, onFileSelect, generatedCode }: CodePreviewProps) => {
+export const CodePreview = ({ 
+  files, 
+  selectedFile, 
+  onFileSelect, 
+  generatedCode,
+  isGenerating = false,
+  generationProgress
+}: CodePreviewProps) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("preview");
 
@@ -59,7 +67,14 @@ export const CodePreview = ({ files, selectedFile, onFileSelect, generatedCode }
 
   const renderPreview = () => {
     console.log('CodePreview - Rendering preview with files:', files.length);
-    return <LivePreview files={files} generatedCode={generatedCode} />;
+    return (
+      <LivePreview 
+        files={files} 
+        generatedCode={generatedCode}
+        isGenerating={isGenerating}
+        generationProgress={generationProgress}
+      />
+    );
   };
 
   const codeToShow = selectedFile?.content || generatedCode || "";

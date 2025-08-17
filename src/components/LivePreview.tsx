@@ -1,8 +1,8 @@
-
 import { useEffect, useRef, useState } from 'react';
 import { cn } from "@/lib/utils";
 import { FileNode } from "./FileTree";
 import { AlertCircle, Monitor, Tablet, Smartphone, Eye } from "lucide-react";
+import { PreviewLoading } from "./PreviewLoading";
 
 interface LivePreviewProps {
   files: FileNode[];
@@ -10,9 +10,17 @@ interface LivePreviewProps {
   onFileSelect?: (path: string, content: string) => void;
   generatedCode?: string;
   device?: 'desktop' | 'tablet' | 'mobile';
+  isGenerating?: boolean;
+  generationProgress?: number;
 }
 
-export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePreviewProps) => {
+export const LivePreview = ({ 
+  files, 
+  generatedCode, 
+  device = 'desktop',
+  isGenerating = false,
+  generationProgress
+}: LivePreviewProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,10 +29,6 @@ export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePr
   const htmlContent = files.length > 0 && files[0]?.content 
     ? files[0].content 
     : generatedCode || "";
-  
-  console.log('LivePreview - htmlContent length:', htmlContent?.length);
-  console.log('LivePreview - files count:', files.length);
-  console.log('LivePreview - generatedCode length:', generatedCode?.length);
   
   useEffect(() => {
     if (!iframeRef.current) {
@@ -92,6 +96,11 @@ export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePr
       setIsLoading(false);
     }
   }, [htmlContent]);
+
+  // Show generation loading when generating
+  if (isGenerating) {
+    return <PreviewLoading progress={generationProgress} />;
+  }
   
   if (!htmlContent) {
     return (
