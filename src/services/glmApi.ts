@@ -1,3 +1,4 @@
+
 interface GLMMessage {
   role: 'system' | 'user' | 'assistant';
   content: string | Array<{
@@ -35,17 +36,27 @@ interface StreamCallbacks {
 export class GLMApiService {
   private apiKey: string;
   private baseUrl = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-  private model = 'glm-4.5';
+  private defaultModel = 'glm-4.5';
+  private visionModel = 'glm-4.5v';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
   }
 
   getModel(): string {
-    return this.model;
+    return this.defaultModel;
+  }
+
+  private selectModel(hasImages: boolean): string {
+    return hasImages ? this.visionModel : this.defaultModel;
   }
 
   async generateProjectStructure(prompt: string, images?: string[], callbacks?: StreamCallbacks): Promise<string> {
+    const hasImages = images && images.length > 0;
+    const selectedModel = this.selectModel(hasImages);
+    
+    console.log(`🎯 Using model: ${selectedModel} (images: ${hasImages})`);
+
     const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
       {
         type: 'text',
@@ -54,13 +65,13 @@ export class GLMApiService {
     ];
 
     // Adicionar imagens se fornecidas
-    if (images && images.length > 0) {
+    if (hasImages) {
       content.push({
         type: 'text',
         text: '\n\nImagens fornecidas pelo usuário (integre-as no código HTML):'
       });
       
-      images.forEach((image, index) => {
+      images!.forEach((image, index) => {
         content.push({
           type: 'image_url',
           image_url: {
@@ -97,11 +108,16 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
     ];
 
     return callbacks 
-      ? this.callStreamingAPI(messages, callbacks) 
-      : this.callAPI(messages);
+      ? this.callStreamingAPI(messages, callbacks, selectedModel) 
+      : this.callAPI(messages, selectedModel);
   }
 
   async editSpecificPart(currentCode: string, editRequest: string, images?: string[], callbacks?: StreamCallbacks): Promise<string> {
+    const hasImages = images && images.length > 0;
+    const selectedModel = this.selectModel(hasImages);
+    
+    console.log(`🎯 Using model: ${selectedModel} (images: ${hasImages})`);
+
     const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
       {
         type: 'text',
@@ -113,13 +129,13 @@ INSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${editRequest}`
     ];
 
     // Adicionar imagens se fornecidas
-    if (images && images.length > 0) {
+    if (hasImages) {
       content.push({
         type: 'text',
         text: '\n\nImagens fornecidas pelo usuário (integre-as conforme solicitado):'
       });
       
-      images.forEach((image, index) => {
+      images!.forEach((image, index) => {
         content.push({
           type: 'image_url',
           image_url: {
@@ -165,20 +181,21 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
     console.log('📝 Sending edit request:', { 
       editRequest, 
       currentCodeLength: currentCode.length,
-      imagesCount: images?.length || 0
+      imagesCount: images?.length || 0,
+      selectedModel
     });
 
     return callbacks 
-      ? this.callStreamingAPI(messages, callbacks) 
-      : this.callAPI(messages);
+      ? this.callStreamingAPI(messages, callbacks, selectedModel) 
+      : this.callAPI(messages, selectedModel);
   }
 
-  private async callStreamingAPI(messages: GLMMessage[], callbacks: StreamCallbacks): Promise<string> {
-    console.log('🚀 Calling GLM Streaming API with model:', this.model);
+  private async callStreamingAPI(messages: GLMMessage[], callbacks: StreamCallbacks, model: string): Promise<string> {
+    console.log('🚀 Calling GLM Streaming API with model:', model);
     
     try {
       const requestBody = {
-        model: this.model,
+        model,
         messages,
         temperature: 0.4,
         max_tokens: 4000,
@@ -290,12 +307,12 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
     }
   }
 
-  private async callAPI(messages: GLMMessage[]): Promise<string> {
-    console.log('🚀 Calling GLM API with model:', this.model);
+  private async callAPI(messages: GLMMessage[], model: string): Promise<string> {
+    console.log('🚀 Calling GLM API with model:', model);
     
     try {
       const requestBody = {
-        model: this.model,
+        model,
         messages,
         temperature: 0.4,
         max_tokens: 4000,
