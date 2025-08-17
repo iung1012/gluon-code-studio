@@ -1,6 +1,12 @@
 interface GLMMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | Array<{
+    type: 'text' | 'image_url';
+    text?: string;
+    image_url?: {
+      url: string;
+    };
+  }>;
 }
 
 interface GLMResponse {
@@ -39,7 +45,35 @@ export class GLMApiService {
     return this.model;
   }
 
-  async generateProjectStructure(prompt: string, callbacks?: StreamCallbacks): Promise<string> {
+  async generateProjectStructure(prompt: string, images?: string[], callbacks?: StreamCallbacks): Promise<string> {
+    const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
+      {
+        type: 'text',
+        text: `Crie um website completo HTML monolítico para: ${prompt}`
+      }
+    ];
+
+    // Adicionar imagens se fornecidas
+    if (images && images.length > 0) {
+      content.push({
+        type: 'text',
+        text: '\n\nImagens fornecidas pelo usuário (integre-as no código HTML):'
+      });
+      
+      images.forEach((image, index) => {
+        content.push({
+          type: 'image_url',
+          image_url: {
+            url: image
+          }
+        });
+        content.push({
+          type: 'text',
+          text: `Imagem ${index + 1} (integre esta imagem no HTML usando a tag <img> com src como data URL)`
+        });
+      });
+    }
+
     const messages: GLMMessage[] = [
       {
         role: 'system',
@@ -52,12 +86,13 @@ export class GLMApiService {
    - JavaScript dentro de <script> antes do </body>
 3. Sempre forneça código completo funcional
 4. Use apenas HTML, CSS e JavaScript vanilla
+5. Se imagens forem fornecidas, integre-as diretamente no HTML usando as data URLs fornecidas
 
 IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações, sem formatação adicional. Apenas o código HTML puro que funciona diretamente no navegador.`
       },
       {
         role: 'user',
-        content: `Crie um website completo HTML monolítico para: ${prompt}`
+        content: content
       }
     ];
 
@@ -66,7 +101,43 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
       : this.callAPI(messages);
   }
 
-  async editSpecificPart(currentCode: string, editRequest: string, callbacks?: StreamCallbacks): Promise<string> {
+  async editSpecificPart(currentCode: string, editRequest: string, images?: string[], callbacks?: StreamCallbacks): Promise<string> {
+    const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
+      {
+        type: 'text',
+        text: `CÓDIGO HTML ATUAL COMPLETO:
+${currentCode}
+
+INSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${editRequest}`
+      }
+    ];
+
+    // Adicionar imagens se fornecidas
+    if (images && images.length > 0) {
+      content.push({
+        type: 'text',
+        text: '\n\nImagens fornecidas pelo usuário (integre-as conforme solicitado):'
+      });
+      
+      images.forEach((image, index) => {
+        content.push({
+          type: 'image_url',
+          image_url: {
+            url: image
+          }
+        });
+        content.push({
+          type: 'text',
+          text: `Imagem ${index + 1} (use esta imagem conforme a instrução do usuário)`
+        });
+      });
+    }
+
+    content.push({
+      type: 'text',
+      text: '\nRetorne o HTML completo modificado agora:'
+    });
+
     const messages: GLMMessage[] = [
       {
         role: 'system',
@@ -77,6 +148,7 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
 3. Faça APENAS a alteração solicitada
 4. Mantenha TODO o resto do código EXATAMENTE igual
 5. SEMPRE retorne o arquivo HTML completo funcional
+6. Se imagens forem fornecidas, integre-as conforme a instrução do usuário usando as data URLs
 
 CRÍTICO: NUNCA responda com explicações ou perguntas. SEMPRE retorne HTML completo válido.
 Se não entender a solicitação, faça uma interpretação inteligente e aplique a mudança.
@@ -86,18 +158,14 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
       },
       {
         role: 'user',
-        content: `CÓDIGO HTML ATUAL COMPLETO:
-${currentCode}
-
-INSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${editRequest}
-
-Retorne o HTML completo modificado agora:`
+        content: content
       }
     ];
 
     console.log('📝 Sending edit request:', { 
       editRequest, 
-      currentCodeLength: currentCode.length
+      currentCodeLength: currentCode.length,
+      imagesCount: images?.length || 0
     });
 
     return callbacks 

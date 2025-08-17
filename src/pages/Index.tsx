@@ -149,14 +149,14 @@ const Index = () => {
         const currentFile = files.find(f => f.name === 'index.html');
         if (currentFile?.content) {
           console.log('🎯 Fazendo edição específica...');
-          response = await currentService.editSpecificPart(currentFile.content, prompt, streamCallbacks);
+          response = await currentService.editSpecificPart(currentFile.content, prompt, undefined, streamCallbacks);
         } else {
           console.log('🆕 Gerando novo projeto...');
-          response = await currentService.generateProjectStructure(prompt, streamCallbacks);
+          response = await currentService.generateProjectStructure(prompt, undefined, streamCallbacks);
         }
       } else {
         console.log('🆕 Gerando novo projeto...');
-        response = await currentService.generateProjectStructure(prompt, streamCallbacks);
+        response = await currentService.generateProjectStructure(prompt, undefined, streamCallbacks);
       }
       
       if (!response || response.trim().length === 0) {
@@ -195,7 +195,7 @@ const Index = () => {
     }
   };
 
-  const handleChatMessage = async (message: string) => {
+  const handleChatMessage = async (message: string, images?: string[]) => {
     if (!glmService) return;
 
     setIsLoading(true);
@@ -232,10 +232,11 @@ const Index = () => {
         if (currentFile?.content) {
           console.log('🎯 Fazendo edição via chat...', { 
             messageLength: message.length, 
-            currentCodeLength: currentFile.content.length 
+            currentCodeLength: currentFile.content.length,
+            imagesCount: images?.length || 0
           });
           
-          const response = await glmService.editSpecificPart(currentFile.content, message, streamCallbacks);
+          const response = await glmService.editSpecificPart(currentFile.content, message, images, streamCallbacks);
           
           if (!response || response.trim().length === 0) {
             throw new Error('API retornou resposta vazia');
