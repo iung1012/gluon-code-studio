@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Image, X } from "lucide-react";
+import { Send, Bot, User, Image, X, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VersionButton } from "./VersionButton";
 
@@ -24,7 +24,7 @@ interface Message {
 }
 
 interface ChatPanelProps {
-  onSendMessage: (message: string, images?: string[]) => Promise<void>;
+  onSendMessage: (message: string, images?: string[], model?: 'basic' | 'pro') => Promise<void>;
   isLoading: boolean;
   initialMessages?: Message[];
   websiteVersions?: WebsiteVersion[];
@@ -43,6 +43,7 @@ export const ChatPanel = ({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [modelType, setModelType] = useState<'basic' | 'pro'>('basic');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +52,15 @@ export const ChatPanel = ({
   useEffect(() => {
     if (websiteVersions.length > messages.filter(m => m.websiteVersion).length) {
       // New version was created, add it to the last AI message
-      const lastAiMessageIndex = messages.findLastIndex(m => m.sender === 'ai');
+      // Using reverse iteration instead of findLastIndex for compatibility
+      let lastAiMessageIndex = -1;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].sender === 'ai') {
+          lastAiMessageIndex = i;
+          break;
+        }
+      }
+      
       if (lastAiMessageIndex >= 0) {
         const latestVersion = websiteVersions[websiteVersions.length - 1];
         setMessages(prev => {
@@ -121,7 +130,7 @@ export const ChatPanel = ({
     setSelectedImages([]);
 
     try {
-      await onSendMessage(userMessage.content, userMessage.images);
+      await onSendMessage(userMessage.content, userMessage.images, modelType);
       
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -333,7 +342,20 @@ export const ChatPanel = ({
             </div>
           </div>
           
-          <div className="text-center">
+          {/* Model Selection and Keyboard Shortcuts */}
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant={modelType === 'pro' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setModelType(modelType === 'basic' ? 'pro' : 'basic')}
+              className="gap-2 text-xs"
+              disabled={isLoading}
+            >
+              <Zap className="w-3 h-3" />
+              {modelType === 'pro' ? 'PRO' : 'PRO'}
+            </Button>
+            
             <p className="text-xs text-muted-foreground">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Enter</kbd> para enviar • <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Shift + Enter</kbd> para nova linha
             </p>
