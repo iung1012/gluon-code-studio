@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +23,12 @@ interface CodePreviewProps {
 export const CodePreview = ({ files, selectedFile, onFileSelect, generatedCode }: CodePreviewProps) => {
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState("preview");
+
+  console.log('CodePreview - Received props:', {
+    filesCount: files.length,
+    selectedFile: selectedFile?.path,
+    generatedCodeLength: generatedCode?.length
+  });
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -51,17 +58,19 @@ export const CodePreview = ({ files, selectedFile, onFileSelect, generatedCode }
   };
 
   const renderPreview = () => {
-    return <LivePreview files={files} />;
+    console.log('CodePreview - Rendering preview with files:', files.length);
+    return <LivePreview files={files} generatedCode={generatedCode} />;
   };
 
   const codeToShow = selectedFile?.content || generatedCode || "";
   const filename = selectedFile?.path || "index.html";
 
   useEffect(() => {
-    if (generatedCode) {
-      setActiveTab("code");
+    // Always start with preview tab when there's content to show
+    if (generatedCode || (files.length > 0 && files[0]?.content)) {
+      setActiveTab("preview");
     }
-  }, [generatedCode]);
+  }, [generatedCode, files]);
 
   return (
     <div className="h-full flex flex-col">
@@ -94,7 +103,7 @@ export const CodePreview = ({ files, selectedFile, onFileSelect, generatedCode }
           </TabsList>
           
           <TabsContent value="preview" className="h-full mt-4 mx-4 mb-4">
-            <Card className="h-full">
+            <Card className="h-full overflow-hidden">
               {renderPreview()}
             </Card>
           </TabsContent>

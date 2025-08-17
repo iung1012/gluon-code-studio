@@ -17,11 +17,24 @@ export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePr
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const htmlContent = files.length > 0 && files[0].content ? files[0].content : generatedCode || "";
+  // Get HTML content from files or generatedCode
+  const htmlContent = files.length > 0 && files[0]?.content 
+    ? files[0].content 
+    : generatedCode || "";
+  
+  console.log('LivePreview - htmlContent length:', htmlContent?.length);
+  console.log('LivePreview - files count:', files.length);
+  console.log('LivePreview - generatedCode length:', generatedCode?.length);
   
   useEffect(() => {
-    if (!iframeRef.current || !htmlContent) {
+    if (!iframeRef.current) {
       setIsLoading(false);
+      return;
+    }
+
+    if (!htmlContent) {
+      setIsLoading(false);
+      setPreviewError(null);
       return;
     }
 
@@ -31,36 +44,50 @@ export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePr
     try {
       const iframe = iframeRef.current;
       
-      // Create a blob URL for the HTML content
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
+      // Clean up previous content
+      iframe.src = 'about:blank';
       
-      // Set up load event listener
-      const handleLoad = () => {
-        setIsLoading(false);
-        URL.revokeObjectURL(url);
-      };
+      setTimeout(() => {
+        try {
+          // Write content directly to iframe
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+          if (iframeDoc) {
+            iframeDoc.open();
+            iframeDoc.write(htmlContent);
+            iframeDoc.close();
+            setIsLoading(false);
+            console.log('LivePreview - Content written to iframe successfully');
+          } else {
+            // Fallback to blob URL if direct write fails
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            iframe.src = url;
+            
+            const handleLoad = () => {
+              setIsLoading(false);
+              URL.revokeObjectURL(url);
+              console.log('LivePreview - Blob URL loaded successfully');
+            };
+            
+            const handleError = () => {
+              setIsLoading(false);
+              setPreviewError('Erro ao carregar o preview');
+              URL.revokeObjectURL(url);
+              console.error('LivePreview - Error loading blob URL');
+            };
+            
+            iframe.addEventListener('load', handleLoad, { once: true });
+            iframe.addEventListener('error', handleError, { once: true });
+          }
+        } catch (error) {
+          console.error('LivePreview - Error writing to iframe:', error);
+          setPreviewError('Erro ao renderizar o preview');
+          setIsLoading(false);
+        }
+      }, 100);
       
-      const handleError = () => {
-        setIsLoading(false);
-        setPreviewError('Erro ao carregar o preview');
-        URL.revokeObjectURL(url);
-      };
-      
-      iframe.addEventListener('load', handleLoad);
-      iframe.addEventListener('error', handleError);
-      
-      // Set the iframe source
-      iframe.src = url;
-      
-      // Cleanup
-      return () => {
-        iframe.removeEventListener('load', handleLoad);
-        iframe.removeEventListener('error', handleError);
-        URL.revokeObjectURL(url);
-      };
     } catch (error) {
-      console.error('Error setting up preview:', error);
+      console.error('LivePreview - Error setting up preview:', error);
       setPreviewError('Erro ao configurar o preview');
       setIsLoading(false);
     }
@@ -148,7 +175,7 @@ export const LivePreview = ({ files, generatedCode, device = 'desktop' }: LivePr
           isLoading && "opacity-0"
         )}
         title="Preview do Website"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-modals"
         style={{
           minHeight: device === 'desktop' ? '100%' : 'auto'
         }}
