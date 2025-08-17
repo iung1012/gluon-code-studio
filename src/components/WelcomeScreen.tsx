@@ -52,33 +52,29 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
         {/* Input Form */}
         <div className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Model Selection */}
-            <div className="flex items-center justify-between">
+            <div className="relative">
+              <Textarea
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Me ajude a construir um website..."
+                className="min-h-[100px] pl-3 pr-12 pb-12 text-base resize-none bg-card/50 border-border/40 focus:ring-primary/10 focus:border-primary/40 placeholder:text-muted-foreground/60"
+                disabled={isLoading}
+              />
+              
+              {/* Model Selection Button - Inside input, bottom left */}
               <Button
                 type="button"
                 variant={modelType === 'pro' ? "default" : "outline"}
                 size="sm"
                 onClick={() => setModelType(modelType === 'basic' ? 'pro' : 'basic')}
-                className="gap-2 text-xs h-7"
+                className="absolute bottom-3 left-3 gap-2 text-xs h-7"
                 disabled={isLoading}
               >
                 <Zap className="w-3 h-3" />
                 {modelType === 'pro' ? 'PRO' : 'BASIC'}
               </Button>
               
-              <p className="text-xs text-muted-foreground">
-                {modelType === 'basic' ? 'GLM-4.5' : 'GLM-4.5-X'}
-              </p>
-            </div>
-
-            <div className="relative">
-              <Textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Me ajude a construir um website..."
-                className="min-h-[100px] pr-12 text-base resize-none bg-card/50 border-border/40 focus:ring-primary/10 focus:border-primary/40 placeholder:text-muted-foreground/60"
-                disabled={isLoading}
-              />
+              {/* Submit Button - Inside input, bottom right */}
               <Button
                 type="submit"
                 size="icon"
