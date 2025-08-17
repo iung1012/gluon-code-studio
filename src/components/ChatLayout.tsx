@@ -1,6 +1,6 @@
-
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-react";
 import { ChatPanel } from "./ChatPanel";
 import { LivePreview } from "./LivePreview";
@@ -16,7 +16,7 @@ interface ChatLayoutProps {
   onFileSelect: (path: string, content: string) => void;
   onBackToInput: () => void;
   onNewProject: () => void;
-  onSendMessage: (message: string) => Promise<void>;
+  onSendMessage: (message: string, images?: string[]) => Promise<void>;
   generatedCode?: string;
   isLoading: boolean;
 }
@@ -62,10 +62,8 @@ export const ChatLayout = ({
     try {
       const zip = new JSZip();
       
-      // Add the main HTML file
       zip.file("index.html", files[0].content);
       
-      // Add a README
       zip.file("README.md", `# Website Gerado
       
 Este website foi gerado automaticamente usando IA.
@@ -231,24 +229,45 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {chatVisible && (
-          <div className="w-80 border-r bg-card/20 backdrop-blur-sm">
-            <ChatPanel
-              onSendMessage={onSendMessage}
-              isLoading={isLoading}
+      {/* Content with Resizable Panels */}
+      <div className="flex-1 overflow-hidden">
+        {chatVisible ? (
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel
+              defaultSize={25}
+              minSize={20}
+              maxSize={50}
+              className="bg-card/20 backdrop-blur-sm"
+            >
+              <ChatPanel
+                onSendMessage={onSendMessage}
+                isLoading={isLoading}
+              />
+            </ResizablePanel>
+            
+            <ResizableHandle withHandle className="w-2 bg-border/50 hover:bg-border/80 transition-colors" />
+            
+            <ResizablePanel
+              defaultSize={75}
+              minSize={50}
+              className="bg-muted/20"
+            >
+              <LivePreview
+                files={files}
+                generatedCode={generatedCode}
+                device={previewDevice}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          <div className="h-full bg-muted/20">
+            <LivePreview
+              files={files}
+              generatedCode={generatedCode}
+              device={previewDevice}
             />
           </div>
         )}
-        
-        <div className="flex-1 bg-muted/20">
-          <LivePreview
-            files={files}
-            generatedCode={generatedCode}
-            device={previewDevice}
-          />
-        </div>
       </div>
     </div>
   );
