@@ -308,6 +308,25 @@ export const ChatPanel = ({
             </div>
           )}
 
+          {/* Model Selection - positioned above textarea */}
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant={modelType === 'pro' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setModelType(modelType === 'basic' ? 'pro' : 'basic')}
+              className="gap-2 text-xs h-7"
+              disabled={isLoading}
+            >
+              <Zap className="w-3 h-3" />
+              {modelType === 'pro' ? 'PRO' : 'BASIC'}
+            </Button>
+            
+            <p className="text-xs text-muted-foreground">
+              {modelType === 'basic' ? 'GLM-4.5' : 'GLM-4.5-X'}
+            </p>
+          </div>
+
           <div className="relative">
             <Textarea
               ref={textareaRef}
@@ -341,20 +360,8 @@ export const ChatPanel = ({
             </div>
           </div>
           
-          {/* Model Selection and Keyboard Shortcuts */}
-          <div className="flex items-center justify-between">
-            <Button
-              type="button"
-              variant={modelType === 'pro' ? "default" : "outline"}
-              size="sm"
-              onClick={() => setModelType(modelType === 'basic' ? 'pro' : 'basic')}
-              className="gap-2 text-xs"
-              disabled={isLoading}
-            >
-              <Zap className="w-3 h-3" />
-              {modelType === 'pro' ? 'PRO' : 'BASIC'}
-            </Button>
-            
+          {/* Keyboard Shortcuts */}
+          <div className="flex justify-end">
             <p className="text-xs text-muted-foreground">
               <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Enter</kbd> para enviar • <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Shift + Enter</kbd> para nova linha
             </p>
