@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { FileNode } from "@/components/FileTree";
 import { ApiKeyInput } from "@/components/ApiKeyInput";
@@ -193,14 +192,14 @@ const Index = () => {
         const currentFile = files.find(f => f.name === 'index.html');
         if (currentFile?.content) {
           console.log('🎯 Fazendo edição específica...');
-          response = await currentService.editSpecificPart(currentFile.content, prompt, undefined, streamCallbacks);
+          response = await currentService.editSpecificPart(currentFile.content, prompt, undefined, streamCallbacks, 'basic');
         } else {
           console.log('🆕 Gerando novo projeto...');
-          response = await currentService.generateProjectStructure(prompt, undefined, streamCallbacks);
+          response = await currentService.generateProjectStructure(prompt, undefined, streamCallbacks, 'basic');
         }
       } else {
         console.log('🆕 Gerando novo projeto...');
-        response = await currentService.generateProjectStructure(prompt, undefined, streamCallbacks);
+        response = await currentService.generateProjectStructure(prompt, undefined, streamCallbacks, 'basic');
       }
       
       if (!response || response.trim().length === 0) {
@@ -242,7 +241,7 @@ const Index = () => {
     }
   };
 
-  const handleChatMessage = async (message: string, images?: string[]) => {
+  const handleChatMessage = async (message: string, images?: string[], model: 'basic' | 'pro' = 'basic') => {
     if (!glmService) return;
 
     setIsLoading(true);
@@ -280,10 +279,11 @@ const Index = () => {
           console.log('🎯 Fazendo edição via chat...', { 
             messageLength: message.length, 
             currentCodeLength: currentFile.content.length,
-            imagesCount: images?.length || 0
+            imagesCount: images?.length || 0,
+            modelType: model
           });
           
-          const response = await glmService.editSpecificPart(currentFile.content, message, images, streamCallbacks);
+          const response = await glmService.editSpecificPart(currentFile.content, message, images, streamCallbacks, model);
           
           if (!response || response.trim().length === 0) {
             throw new Error('API retornou resposta vazia');

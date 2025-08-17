@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -353,7 +352,7 @@ export const ChatPanel = ({
               disabled={isLoading}
             >
               <Zap className="w-3 h-3" />
-              {modelType === 'pro' ? 'PRO' : 'PRO'}
+              {modelType === 'pro' ? 'PRO' : 'BASIC'}
             </Button>
             
             <p className="text-xs text-muted-foreground">

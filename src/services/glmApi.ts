@@ -36,7 +36,8 @@ interface StreamCallbacks {
 export class GLMApiService {
   private apiKey: string;
   private baseUrl = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-  private defaultModel = 'glm-4.5';
+  private basicModel = 'glm-4.5';
+  private proModel = 'glm-4.5-x';
   private visionModel = 'glm-4.5v';
 
   constructor(apiKey: string) {
@@ -44,18 +45,21 @@ export class GLMApiService {
   }
 
   getModel(): string {
-    return this.defaultModel;
+    return this.basicModel;
   }
 
-  private selectModel(hasImages: boolean): string {
-    return hasImages ? this.visionModel : this.defaultModel;
+  private selectModel(hasImages: boolean, modelType: 'basic' | 'pro' = 'basic'): string {
+    if (hasImages) {
+      return this.visionModel;
+    }
+    return modelType === 'pro' ? this.proModel : this.basicModel;
   }
 
-  async generateProjectStructure(prompt: string, images?: string[], callbacks?: StreamCallbacks): Promise<string> {
+  async generateProjectStructure(prompt: string, images?: string[], callbacks?: StreamCallbacks, modelType: 'basic' | 'pro' = 'basic'): Promise<string> {
     const hasImages = images && images.length > 0;
-    const selectedModel = this.selectModel(hasImages);
+    const selectedModel = this.selectModel(hasImages, modelType);
     
-    console.log(`🎯 Using model: ${selectedModel} (images: ${hasImages})`);
+    console.log(`🎯 Using model: ${selectedModel} (images: ${hasImages}, mode: ${modelType})`);
 
     const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
       {
@@ -112,11 +116,11 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
       : this.callAPI(messages, selectedModel);
   }
 
-  async editSpecificPart(currentCode: string, editRequest: string, images?: string[], callbacks?: StreamCallbacks): Promise<string> {
+  async editSpecificPart(currentCode: string, editRequest: string, images?: string[], callbacks?: StreamCallbacks, modelType: 'basic' | 'pro' = 'basic'): Promise<string> {
     const hasImages = images && images.length > 0;
-    const selectedModel = this.selectModel(hasImages);
+    const selectedModel = this.selectModel(hasImages, modelType);
     
-    console.log(`🎯 Using model: ${selectedModel} (images: ${hasImages})`);
+    console.log(`🎯 Using model: ${selectedModel} (images: ${hasImages}, mode: ${modelType})`);
 
     const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
       {
@@ -182,7 +186,8 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
       editRequest, 
       currentCodeLength: currentCode.length,
       imagesCount: images?.length || 0,
-      selectedModel
+      selectedModel,
+      modelType
     });
 
     return callbacks 
