@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Image, Paperclip } from "lucide-react";
+import { Send, Bot, User, Image, Paperclip, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -198,59 +198,82 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
         </div>
       </ScrollArea>
 
-      {/* Apple-style Input Area */}
-      <div className="p-4 border-t border-border/10 bg-card/10 backdrop-blur-sm">
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="relative bg-background/60 backdrop-blur-sm rounded-2xl ring-1 ring-border/20 focus-within:ring-2 focus-within:ring-primary/30 transition-all duration-200">
-            <div className="flex items-end gap-2 p-3">
-              {/* Attachment Button */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="flex-shrink-0 w-8 h-8 p-0 rounded-full hover:bg-muted/40 transition-colors"
-              >
-                <Paperclip className="w-4 h-4 text-muted-foreground" />
-              </Button>
-              
-              {/* Image Button */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="flex-shrink-0 w-8 h-8 p-0 rounded-full hover:bg-muted/40 transition-colors"
-              >
-                <Image className="w-4 h-4 text-muted-foreground" />
-              </Button>
-              
-              {/* Textarea */}
-              <textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Digite sua mensagem..."
-                className="flex-1 bg-transparent border-0 outline-none resize-none text-sm placeholder:text-muted-foreground/60 min-h-[24px] max-h-[120px] py-1 leading-6 font-medium"
-                disabled={isLoading}
-                rows={1}
-              />
-              
-              {/* Send Button */}
-              <Button
-                type="submit"
-                size="sm"
-                className="flex-shrink-0 w-8 h-8 p-0 rounded-full bg-primary hover:bg-primary/90 transition-all duration-200 disabled:opacity-40"
-                disabled={!inputValue.trim() || isLoading}
-              >
-                <Send className="w-4 h-4" />
-              </Button>
+      {/* Modern Apple-style Input Area */}
+      <div className="p-6 border-t border-border/5 bg-gradient-to-t from-card/30 to-card/10 backdrop-blur-sm">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Main Input Container */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-primary/3 to-primary/5 rounded-3xl blur-xl opacity-0 group-focus-within:opacity-100 transition-all duration-500" />
+            <div className="relative bg-background/90 backdrop-blur-xl rounded-3xl border border-border/30 shadow-lg transition-all duration-300 hover:shadow-xl focus-within:shadow-xl focus-within:border-primary/40 focus-within:bg-background/95 group">
+              <div className="flex items-end p-4 gap-3">
+                {/* Action Buttons */}
+                <div className="flex gap-2 items-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-9 h-9 p-0 rounded-full bg-muted/40 hover:bg-muted/60 border border-border/20 transition-all duration-200 hover:scale-105 active:scale-95"
+                  >
+                    <Plus className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-9 h-9 p-0 rounded-full bg-muted/40 hover:bg-muted/60 border border-border/20 transition-all duration-200 hover:scale-105 active:scale-95"
+                  >
+                    <Image className="w-4 h-4 text-muted-foreground" />
+                  </Button>
+                </div>
+                
+                {/* Enhanced Textarea */}
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={textareaRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Digite sua mensagem..."
+                    className="w-full bg-transparent border-0 outline-none resize-none text-base placeholder:text-muted-foreground/50 min-h-[28px] max-h-[120px] py-2 px-1 leading-7 font-medium text-foreground selection:bg-primary/20"
+                    disabled={isLoading}
+                    rows={1}
+                    style={{ 
+                      height: 'auto',
+                      lineHeight: '1.75rem'
+                    }}
+                  />
+                </div>
+                
+                {/* Enhanced Send Button */}
+                <Button
+                  type="submit"
+                  size="sm"
+                  className={cn(
+                    "w-10 h-10 p-0 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 border-0",
+                    inputValue.trim() && !isLoading
+                      ? "bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-primary/25"
+                      : "bg-muted/60 text-muted-foreground cursor-not-allowed opacity-50"
+                  )}
+                  disabled={!inputValue.trim() || isLoading}
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
           
-          {/* Hint Text */}
-          <p className="text-xs text-muted-foreground/50 text-center font-medium">
-            Pressione Enter para enviar • Shift + Enter para quebrar linha
-          </p>
+          {/* Enhanced Hint Text */}
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/60">
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted/30 rounded-md border border-border/20 font-mono text-xs">⏎</kbd>
+              <span>Enviar</span>
+            </div>
+            <span className="text-muted-foreground/40">•</span>
+            <div className="flex items-center gap-1">
+              <kbd className="px-2 py-1 bg-muted/30 rounded-md border border-border/20 font-mono text-xs">⇧⏎</kbd>
+              <span>Nova linha</span>
+            </div>
+          </div>
         </form>
       </div>
     </div>
