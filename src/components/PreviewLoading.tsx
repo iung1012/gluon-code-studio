@@ -58,27 +58,27 @@ export const PreviewLoading = ({ progress: externalProgress }: PreviewLoadingPro
   }, [currentProgress]);
 
   return (
-    <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
+    <div className="h-full flex items-center justify-center bg-gray-900/80 backdrop-blur-md">
       <div className="w-full max-w-sm mx-auto p-8 text-center">
         {/* Central Loading Animation */}
         <div className="relative mb-8">
           <div className="w-16 h-16 mx-auto relative">
-            <div className="absolute inset-0 rounded-full border-2 border-primary/20"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-white/30"></div>
             <div 
-              className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"
+              className="absolute inset-0 rounded-full border-2 border-white border-t-transparent animate-spin"
               style={{ animationDuration: '1s' }}
             ></div>
-            <div className="absolute inset-2 rounded-full bg-primary/10 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            <div className="absolute inset-2 rounded-full bg-white/10 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-white animate-pulse" />
             </div>
           </div>
         </div>
 
-        <h3 className="text-xl font-medium text-foreground mb-2">
+        <h3 className="text-xl font-medium text-white mb-2">
           Atualizando website
         </h3>
         
-        <div className="text-sm text-muted-foreground mb-8">
+        <div className="text-sm text-white/70 mb-8">
           <span className="font-medium">{Math.round(currentProgress)}%</span> completo
         </div>
 
@@ -93,16 +93,16 @@ export const PreviewLoading = ({ progress: externalProgress }: PreviewLoadingPro
               <div 
                 key={index}
                 className={`flex items-center gap-3 transition-all duration-300 ${
-                  isActive ? 'opacity-100' : isCompleted ? 'opacity-60' : 'opacity-30'
+                  isActive ? 'opacity-100' : isCompleted ? 'opacity-80' : 'opacity-40'
                 }`}
               >
                 <div className={`
                   w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300
                   ${isCompleted 
-                    ? 'bg-primary/20 text-primary' 
+                    ? 'bg-white/20 text-white' 
                     : isActive 
-                      ? 'bg-primary/10 text-primary animate-pulse' 
-                      : 'bg-muted/30 text-muted-foreground'
+                      ? 'bg-white/15 text-white animate-pulse' 
+                      : 'bg-white/10 text-white/60'
                   }
                 `}>
                   <Icon className="w-4 h-4" />
@@ -110,12 +110,12 @@ export const PreviewLoading = ({ progress: externalProgress }: PreviewLoadingPro
                 
                 <div className="flex-1 text-left">
                   <h4 className={`font-medium text-sm ${
-                    isCompleted || isActive ? 'text-foreground' : 'text-muted-foreground'
+                    isCompleted || isActive ? 'text-white' : 'text-white/60'
                   }`}>
                     {step.text}
                   </h4>
                   <p className={`text-xs ${
-                    isCompleted || isActive ? 'text-muted-foreground' : 'text-muted-foreground/50'
+                    isCompleted || isActive ? 'text-white/70' : 'text-white/40'
                   }`}>
                     {step.subtext}
                   </p>
@@ -127,9 +127,9 @@ export const PreviewLoading = ({ progress: externalProgress }: PreviewLoadingPro
 
         {/* Progress Bar */}
         <div className="mt-8">
-          <div className="w-full bg-muted/20 rounded-full h-1 overflow-hidden">
+          <div className="w-full bg-white/20 rounded-full h-1 overflow-hidden">
             <div 
-              className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+              className="h-full bg-white rounded-full transition-all duration-500 ease-out"
               style={{ width: `${currentProgress}%` }}
             />
           </div>
