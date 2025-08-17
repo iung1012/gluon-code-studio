@@ -17,6 +17,7 @@ interface WebsiteVersion {
 
 const Index = () => {
   const [apiKey, setApiKey] = useState<string>("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [glmService, setGlmService] = useState<GLMApiService | null>(null);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
@@ -41,11 +42,21 @@ const Index = () => {
 
   const handleApiKeySubmit = (key: string) => {
     setApiKey(key);
+    setGlmService(new GLMApiService(key));
     localStorage.setItem("api-key", key);
+    setShowApiKeyInput(false);
     toast({
       title: "Chave API Salva",
       description: "Agora você pode começar a gerar websites!",
     });
+  };
+
+  const checkApiKeyAndProceed = (prompt: string, model: string, temperature: number) => {
+    if (!apiKey) {
+      setShowApiKeyInput(true);
+      return;
+    }
+    handlePromptSubmit(prompt, model, temperature);
   };
 
   const createNewVersion = (content: string): WebsiteVersion => {
@@ -136,7 +147,7 @@ const Index = () => {
     }];
   };
 
-  const handlePromptSubmit = async (prompt: string) => {
+  const handlePromptSubmit = async (prompt: string, model: string = "glm-4.5", temperature: number = 0.4) => {
     let currentService = glmService;
     if (!glmService) {
       currentService = new GLMApiService(apiKey);
@@ -364,7 +375,8 @@ const Index = () => {
     setSelectedFile({ path, content });
   };
 
-  if (!apiKey) {
+  // Show API key input only when explicitly requested
+  if (showApiKeyInput) {
     return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
   }
 
@@ -412,7 +424,7 @@ const Index = () => {
         currentContent={currentStreamContent}
       />
       <WelcomeScreen 
-        onSubmit={handlePromptSubmit} 
+        onSubmit={checkApiKeyAndProceed} 
         isLoading={isLoading}
       />
     </>
