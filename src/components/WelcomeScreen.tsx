@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp, Sparkles, Zap } from "lucide-react";
 
 interface WelcomeScreenProps {
   onSubmit: (prompt: string, model: string, temperature: number) => void;
@@ -11,11 +11,13 @@ interface WelcomeScreenProps {
 
 export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
   const [prompt, setPrompt] = useState("");
+  const [modelType, setModelType] = useState<'basic' | 'pro'>('basic');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (prompt.trim() && !isLoading) {
-      onSubmit(prompt.trim(), "glm-4.5", 0.4);
+      const modelName = modelType === 'basic' ? "glm-4.5" : "glm-4.5-x";
+      onSubmit(prompt.trim(), modelName, 0.4);
     }
   };
 
@@ -50,6 +52,25 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
         {/* Input Form */}
         <div className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Model Selection */}
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant={modelType === 'pro' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setModelType(modelType === 'basic' ? 'pro' : 'basic')}
+                className="gap-2 text-xs h-7"
+                disabled={isLoading}
+              >
+                <Zap className="w-3 h-3" />
+                {modelType === 'pro' ? 'PRO' : 'BASIC'}
+              </Button>
+              
+              <p className="text-xs text-muted-foreground">
+                {modelType === 'basic' ? 'GLM-4.5' : 'GLM-4.5-X'}
+              </p>
+            </div>
+
             <div className="relative">
               <Textarea
                 value={prompt}
