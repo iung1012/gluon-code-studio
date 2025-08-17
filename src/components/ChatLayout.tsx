@@ -10,6 +10,13 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import JSZip from 'jszip';
 
+interface WebsiteVersion {
+  id: string;
+  content: string;
+  timestamp: Date;
+  versionNumber: number;
+}
+
 interface ChatLayoutProps {
   files: FileNode[];
   selectedFile?: { path: string; content: string };
@@ -19,6 +26,9 @@ interface ChatLayoutProps {
   onSendMessage: (message: string, images?: string[]) => Promise<void>;
   generatedCode?: string;
   isLoading: boolean;
+  websiteVersions?: WebsiteVersion[];
+  currentVersionId?: string;
+  onRestoreVersion?: (versionId: string) => void;
 }
 
 export const ChatLayout = ({
@@ -29,7 +39,10 @@ export const ChatLayout = ({
   onNewProject,
   onSendMessage,
   generatedCode,
-  isLoading
+  isLoading,
+  websiteVersions = [],
+  currentVersionId,
+  onRestoreVersion
 }: ChatLayoutProps) => {
   const [chatVisible, setChatVisible] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
@@ -138,6 +151,14 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
             </Button>
             <div className="h-4 w-px bg-border/50" />
             <h2 className="font-medium text-foreground/90">Website Gerado</h2>
+            {websiteVersions.length > 0 && (
+              <>
+                <div className="h-4 w-px bg-border/50" />
+                <span className="text-sm text-muted-foreground">
+                  Versão {websiteVersions.find(v => v.id === currentVersionId)?.versionNumber || websiteVersions.length}
+                </span>
+              </>
+            )}
           </div>
           
           <div className="flex items-center gap-2">
@@ -242,6 +263,9 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               <ChatPanel
                 onSendMessage={onSendMessage}
                 isLoading={isLoading}
+                websiteVersions={websiteVersions}
+                currentVersionId={currentVersionId}
+                onRestoreVersion={onRestoreVersion}
               />
             </ResizablePanel>
             

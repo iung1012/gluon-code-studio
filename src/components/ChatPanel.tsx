@@ -1,9 +1,18 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Bot, User, Image, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VersionButton } from "./VersionButton";
+
+interface WebsiteVersion {
+  id: string;
+  content: string;
+  timestamp: Date;
+  versionNumber: number;
+}
 
 interface Message {
   id: string;
@@ -11,21 +20,51 @@ interface Message {
   sender: 'user' | 'ai';
   timestamp: Date;
   images?: string[];
+  websiteVersion?: WebsiteVersion;
 }
 
 interface ChatPanelProps {
   onSendMessage: (message: string, images?: string[]) => Promise<void>;
   isLoading: boolean;
   initialMessages?: Message[];
+  websiteVersions?: WebsiteVersion[];
+  currentVersionId?: string;
+  onRestoreVersion?: (versionId: string) => void;
 }
 
-export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: ChatPanelProps) => {
+export const ChatPanel = ({ 
+  onSendMessage, 
+  isLoading, 
+  initialMessages = [],
+  websiteVersions = [],
+  currentVersionId,
+  onRestoreVersion
+}: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update messages when new website version is created
+  useEffect(() => {
+    if (websiteVersions.length > messages.filter(m => m.websiteVersion).length) {
+      // New version was created, add it to the last AI message
+      const lastAiMessageIndex = messages.findLastIndex(m => m.sender === 'ai');
+      if (lastAiMessageIndex >= 0) {
+        const latestVersion = websiteVersions[websiteVersions.length - 1];
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[lastAiMessageIndex] = {
+            ...updated[lastAiMessageIndex],
+            websiteVersion: latestVersion
+          };
+          return updated;
+        });
+      }
+    }
+  }, [websiteVersions, messages]);
 
   // Auto scroll to bottom when new messages are added
   useEffect(() => {
@@ -111,6 +150,12 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
     }
   };
 
+  const handleRestoreVersion = (versionId: string) => {
+    if (onRestoreVersion) {
+      onRestoreVersion(versionId);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-background border-r border-border">
       {/* Header */}
@@ -190,6 +235,17 @@ export const ChatPanel = ({ onSendMessage, isLoading, initialMessages = [] }: Ch
                     )}
                     {message.content && <p className="whitespace-pre-wrap">{message.content}</p>}
                   </div>
+                  
+                  {/* Version Button for AI messages */}
+                  {message.sender === 'ai' && message.websiteVersion && (
+                    <VersionButton
+                      versionNumber={message.websiteVersion.versionNumber}
+                      isActive={currentVersionId === message.websiteVersion.id}
+                      onRestore={() => handleRestoreVersion(message.websiteVersion!.id)}
+                      timestamp={message.websiteVersion.timestamp}
+                    />
+                  )}
+                  
                   <p className="text-xs text-muted-foreground mt-1">
                     {message.timestamp.toLocaleTimeString('pt-BR', { 
                       hour: '2-digit', 

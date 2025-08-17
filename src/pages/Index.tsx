@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { FileNode } from "@/components/FileTree";
 import { ApiKeyInput } from "@/components/ApiKeyInput";
@@ -7,6 +8,13 @@ import { GeneratedPreview } from "@/components/GeneratedPreview";
 import { ChatLayout } from "@/components/ChatLayout";
 import { GLMApiService } from "@/services/glmApi";
 import { useToast } from "@/hooks/use-toast";
+
+interface WebsiteVersion {
+  id: string;
+  content: string;
+  timestamp: Date;
+  versionNumber: number;
+}
 
 const Index = () => {
   const [apiKey, setApiKey] = useState<string>("");
@@ -19,6 +27,8 @@ const Index = () => {
   const [currentStreamContent, setCurrentStreamContent] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [useChatLayout, setUseChatLayout] = useState(false);
+  const [websiteVersions, setWebsiteVersions] = useState<WebsiteVersion[]>([]);
+  const [currentVersionId, setCurrentVersionId] = useState<string>("");
   const { toast } = useToast();
 
   // Load API key from localStorage on mount
@@ -36,6 +46,40 @@ const Index = () => {
     toast({
       title: "Chave API Salva",
       description: "Agora você pode começar a gerar websites!",
+    });
+  };
+
+  const createNewVersion = (content: string): WebsiteVersion => {
+    const newVersion: WebsiteVersion = {
+      id: `version-${Date.now()}`,
+      content,
+      timestamp: new Date(),
+      versionNumber: websiteVersions.length + 1
+    };
+    
+    setWebsiteVersions(prev => [...prev, newVersion]);
+    setCurrentVersionId(newVersion.id);
+    
+    return newVersion;
+  };
+
+  const handleRestoreVersion = (versionId: string) => {
+    const version = websiteVersions.find(v => v.id === versionId);
+    if (!version) return;
+
+    const parsedFiles = parseProjectStructure(version.content);
+    setFiles(parsedFiles);
+    setGeneratedCode(version.content);
+    setCurrentVersionId(versionId);
+    
+    const firstFile = findFirstFile(parsedFiles);
+    if (firstFile) {
+      setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
+    }
+
+    toast({
+      title: "Versão Restaurada",
+      description: `Versão ${version.versionNumber} foi restaurada com sucesso.`,
     });
   };
 
@@ -167,6 +211,9 @@ const Index = () => {
       
       const parsedFiles = parseProjectStructure(response);
       
+      // Create new version
+      createNewVersion(response);
+      
       setFiles(parsedFiles);
       setGeneratedCode(response);
       
@@ -244,6 +291,9 @@ const Index = () => {
           
           const parsedFiles = parseProjectStructure(response);
           
+          // Create new version
+          createNewVersion(response);
+          
           setFiles(parsedFiles);
           setGeneratedCode(response);
           
@@ -297,6 +347,8 @@ const Index = () => {
     setGeneratedCode("");
     setShowPreview(false);
     setUseChatLayout(false);
+    setWebsiteVersions([]);
+    setCurrentVersionId("");
     toast({
       title: "Novo Projeto",
       description: "Projeto limpo. Você pode gerar um novo website agora.",
@@ -334,6 +386,9 @@ const Index = () => {
             onSendMessage={handleChatMessage}
             generatedCode={!selectedFile ? generatedCode : undefined}
             isLoading={isLoading}
+            websiteVersions={websiteVersions}
+            currentVersionId={currentVersionId}
+            onRestoreVersion={handleRestoreVersion}
           />
         ) : (
           <GeneratedPreview
