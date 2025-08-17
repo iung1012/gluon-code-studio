@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Key, Eye, EyeOff } from "lucide-react";
+import { Key, Eye, EyeOff, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ApiKeyInputProps {
@@ -19,7 +20,7 @@ export const ApiKeyInput = ({ onApiKeySubmit }: ApiKeyInputProps) => {
     if (!apiKey.trim()) {
       toast({
         title: "API Key Required",
-        description: "Please enter your GLM API key to continue.",
+        description: "Please enter your API key to continue.",
         variant: "destructive"
       });
       return;
@@ -34,9 +35,9 @@ export const ApiKeyInput = ({ onApiKeySubmit }: ApiKeyInputProps) => {
           <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center mx-auto mb-4">
             <Key className="w-6 h-6 text-primary-foreground" />
           </div>
-          <CardTitle className="text-2xl">GLM API Key</CardTitle>
+          <CardTitle className="text-2xl">API Key</CardTitle>
           <CardDescription>
-            Enter your GLM API key to start generating websites with AI
+            Enter your API key to start generating websites with AI
           </CardDescription>
         </CardHeader>
         
@@ -48,7 +49,7 @@ export const ApiKeyInput = ({ onApiKeySubmit }: ApiKeyInputProps) => {
                   type={showKey ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your GLM API key..."
+                  placeholder="Enter your API key..."
                   className="pr-10"
                 />
                 <Button
@@ -79,14 +80,15 @@ export const ApiKeyInput = ({ onApiKeySubmit }: ApiKeyInputProps) => {
             </Button>
             
             <div className="text-center">
-              <a 
-                href="https://api.z.ai" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => window.open('https://t.me/coder_ai1', '_blank')}
               >
-                Don't have an API key? Get one here
-              </a>
+                <MessageCircle className="w-4 h-4" />
+                Precisa de ajuda? Fale comigo no Telegram
+              </Button>
             </div>
           </form>
         </CardContent>
