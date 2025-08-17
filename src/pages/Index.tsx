@@ -32,7 +32,7 @@ const Index = () => {
 
   // Load API key from localStorage on mount
   useEffect(() => {
-    const savedApiKey = localStorage.getItem("glm-api-key");
+    const savedApiKey = localStorage.getItem("api-key");
     if (savedApiKey) {
       setApiKey(savedApiKey);
       setGlmService(new GLMApiService(savedApiKey));
@@ -41,7 +41,7 @@ const Index = () => {
 
   const handleApiKeySubmit = (key: string) => {
     setApiKey(key);
-    localStorage.setItem("glm-api-key", key);
+    localStorage.setItem("api-key", key);
     toast({
       title: "Chave API Salva",
       description: "Agora você pode começar a gerar websites!",

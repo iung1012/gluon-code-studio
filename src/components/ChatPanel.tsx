@@ -323,7 +323,7 @@ export const ChatPanel = ({
             </Button>
             
             <p className="text-xs text-muted-foreground">
-              {modelType === 'basic' ? 'GLM-4.5' : 'GLM-4.5-X'}
+              {modelType === 'basic' ? 'Modelo Padrão' : 'Modelo Avançado'}
             </p>
           </div>
 
