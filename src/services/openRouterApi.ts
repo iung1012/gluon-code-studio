@@ -1,5 +1,5 @@
 
-interface GLMMessage {
+interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
   content: string | Array<{
     type: 'text' | 'image_url';
@@ -10,7 +10,7 @@ interface GLMMessage {
   }>;
 }
 
-interface GLMResponse {
+interface OpenRouterResponse {
   choices: Array<{
     message: {
       content: string;
@@ -18,7 +18,7 @@ interface GLMResponse {
   }>;
 }
 
-interface GLMStreamResponse {
+interface OpenRouterStreamResponse {
   choices: Array<{
     delta: {
       content?: string;
@@ -33,7 +33,7 @@ interface StreamCallbacks {
   onError?: (error: Error) => void;
 }
 
-export class GLMApiService {
+export class OpenRouterApiService {
   private apiKey: string;
   private baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
   private basicModel = 'moonshotai/kimi-k2:free';
@@ -89,7 +89,7 @@ export class GLMApiService {
       });
     }
 
-    const messages: GLMMessage[] = [
+    const messages: OpenRouterMessage[] = [
       {
         role: 'system',
         content: `Você é um desenvolvedor JavaScript especialista. Regras OBRIGATÓRIAS:
@@ -158,7 +158,7 @@ INSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${editRequest}`
       text: '\nRetorne o HTML completo modificado agora:'
     });
 
-    const messages: GLMMessage[] = [
+    const messages: OpenRouterMessage[] = [
       {
         role: 'system',
         content: `Você é um desenvolvedor JavaScript especialista. REGRAS CRÍTICAS:
@@ -195,8 +195,8 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
       : this.callAPI(messages, selectedModel);
   }
 
-  private async callStreamingAPI(messages: GLMMessage[], callbacks: StreamCallbacks, model: string): Promise<string> {
-    console.log('🚀 Calling GLM Streaming API with model:', model);
+  private async callStreamingAPI(messages: OpenRouterMessage[], callbacks: StreamCallbacks, model: string): Promise<string> {
+    console.log('🚀 Calling OpenRouter Streaming API with model:', model);
     
     try {
       const requestBody = {
@@ -224,13 +224,13 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ GLM Streaming API error response:', response.status, errorText);
+        console.error('❌ OpenRouter Streaming API error response:', response.status, errorText);
         
-        let errorMessage = `GLM API error: ${response.status} ${response.statusText}`;
+        let errorMessage = `OpenRouter API error: ${response.status} ${response.statusText}`;
         try {
           const errorData = JSON.parse(errorText);
           if (errorData.error?.message) {
-            errorMessage = `GLM API error: ${errorData.error.message}`;
+            errorMessage = `OpenRouter API error: ${errorData.error.message}`;
           }
         } catch (e) {
           // Keep original error message if JSON parsing fails
@@ -279,7 +279,7 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
               }
 
               try {
-                const parsed: GLMStreamResponse = JSON.parse(data);
+                const parsed: OpenRouterStreamResponse = JSON.parse(data);
                 const deltaContent = parsed.choices?.[0]?.delta?.content;
                 
                 if (deltaContent) {
@@ -306,14 +306,14 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
 
       return fullContent;
     } catch (error) {
-      console.error('❌ Error calling GLM Streaming API:', error);
+      console.error('❌ Error calling OpenRouter Streaming API:', error);
       callbacks.onError?.(error as Error);
       throw error;
     }
   }
 
-  private async callAPI(messages: GLMMessage[], model: string): Promise<string> {
-    console.log('🚀 Calling GLM API with model:', model);
+  private async callAPI(messages: OpenRouterMessage[], model: string): Promise<string> {
+    console.log('🚀 Calling OpenRouter API with model:', model);
     
     try {
       const requestBody = {
@@ -339,13 +339,13 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ GLM API error response:', response.status, errorText);
+        console.error('❌ OpenRouter API error response:', response.status, errorText);
         
-        let errorMessage = `GLM API error: ${response.status} ${response.statusText}`;
+        let errorMessage = `OpenRouter API error: ${response.status} ${response.statusText}`;
         try {
           const errorData = JSON.parse(errorText);
           if (errorData.error?.message) {
-            errorMessage = `GLM API error: ${errorData.error.message}`;
+            errorMessage = `OpenRouter API error: ${errorData.error.message}`;
           }
         } catch (e) {
           // Keep original error message if JSON parsing fails
@@ -354,14 +354,14 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
         throw new Error(errorMessage);
       }
 
-      const data: GLMResponse = await response.json();
-      console.log('✅ GLM API response received:', { 
+      const data: OpenRouterResponse = await response.json();
+      console.log('✅ OpenRouter API response received:', { 
         hasChoices: !!data.choices,
         choicesCount: data.choices?.length || 0
       });
       
       if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response from GLM API');
+        throw new Error('No response from OpenRouter API');
       }
 
       const content = data.choices[0].message.content;
@@ -373,7 +373,7 @@ IMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações,
       
       return content;
     } catch (error) {
-      console.error('❌ Error calling GLM API:', error);
+      console.error('❌ Error calling OpenRouter API:', error);
       throw error;
     }
   }

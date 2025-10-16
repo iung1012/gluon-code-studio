@@ -5,7 +5,7 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GeneratedPreview } from "@/components/GeneratedPreview";
 import { ChatLayout } from "@/components/ChatLayout";
-import { GLMApiService } from "@/services/glmApi";
+import { OpenRouterApiService } from "@/services/openRouterApi";
 import { useToast } from "@/hooks/use-toast";
 
 interface WebsiteVersion {
@@ -18,7 +18,7 @@ interface WebsiteVersion {
 const Index = () => {
   const [apiKey, setApiKey] = useState<string>("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [glmService, setGlmService] = useState<GLMApiService | null>(null);
+  const [apiService, setApiService] = useState<OpenRouterApiService | null>(null);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -36,13 +36,13 @@ const Index = () => {
     const savedApiKey = localStorage.getItem("api-key");
     if (savedApiKey) {
       setApiKey(savedApiKey);
-      setGlmService(new GLMApiService(savedApiKey));
+      setApiService(new OpenRouterApiService(savedApiKey));
     }
   }, []);
 
   const handleApiKeySubmit = (key: string) => {
     setApiKey(key);
-    setGlmService(new GLMApiService(key));
+    setApiService(new OpenRouterApiService(key));
     localStorage.setItem("api-key", key);
     setShowApiKeyInput(false);
     toast({
@@ -147,17 +147,17 @@ const Index = () => {
     }];
   };
 
-  const handlePromptSubmit = async (prompt: string, model: string = "glm-4.5", temperature: number = 0.4) => {
-    let currentService = glmService;
-    if (!glmService) {
-      currentService = new GLMApiService(apiKey);
-      setGlmService(currentService);
+  const handlePromptSubmit = async (prompt: string, model: string = "moonshotai/kimi-k2:free", temperature: number = 0.4) => {
+    let currentService = apiService;
+    if (!apiService) {
+      currentService = new OpenRouterApiService(apiKey);
+      setApiService(currentService);
     }
     
     if (!currentService) {
       toast({
         title: "Erro no Serviço",
-        description: "Falha ao inicializar serviço GLM. Tente novamente.",
+        description: "Falha ao inicializar serviço OpenRouter. Tente novamente.",
         variant: "destructive"
       });
       return;
@@ -253,7 +253,7 @@ const Index = () => {
   };
 
   const handleChatMessage = async (message: string, images?: string[], model: 'basic' | 'pro' = 'basic') => {
-    if (!glmService) return;
+    if (!apiService) return;
 
     setIsLoading(true);
     setLoadingProgress(0);
@@ -294,7 +294,7 @@ const Index = () => {
             modelType: model
           });
           
-          const response = await glmService.editSpecificPart(currentFile.content, message, images, streamCallbacks, model);
+          const response = await apiService.editSpecificPart(currentFile.content, message, images, streamCallbacks, model);
           
           if (!response || response.trim().length === 0) {
             throw new Error('API retornou resposta vazia');
