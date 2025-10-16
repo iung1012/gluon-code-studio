@@ -217,6 +217,14 @@ const Index = () => {
 
       if (error) {
         console.error('Edge function error:', error);
+        
+        // If 401 error, likely API key issue
+        if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('inválida')) {
+          setHasApiKey(false);
+          setShowApiKeyInput(true);
+          throw new Error('Chave API inválida ou expirada. Por favor, configure novamente.');
+        }
+        
         throw new Error(error.message || 'Erro ao chamar Edge Function');
       }
 
@@ -340,6 +348,14 @@ const Index = () => {
 
       if (error) {
         console.error('Edge function error:', error);
+        
+        // If 401 error, likely API key issue
+        if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('inválida')) {
+          setHasApiKey(false);
+          setShowApiKeyInput(true);
+          throw new Error('Chave API inválida ou expirada. Por favor, configure novamente.');
+        }
+        
         throw new Error(error.message || 'Erro ao chamar Edge Function');
       }
 

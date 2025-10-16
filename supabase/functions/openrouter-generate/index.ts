@@ -165,13 +165,15 @@ serve(async (req) => {
       ];
     }
 
+    console.log('🔑 Using API key (first 10 chars):', profile.openrouter_api_key.substring(0, 10) + '...');
+    
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${profile.openrouter_api_key}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': Deno.env.get('SUPABASE_URL') ?? '',
-        'X-Title': 'Gluon Code Studio'
+        'X-Title': 'CoderIA'
       },
       body: JSON.stringify({
         model: selectedModel,
@@ -195,6 +197,11 @@ serve(async (req) => {
         }
       } catch (e) {
         // Keep original error message
+      }
+      
+      // Special handling for 401 errors
+      if (response.status === 401) {
+        errorMessage = 'Chave API inválida ou expirada. Por favor, verifique sua chave OpenRouter nas configurações.';
       }
       
       return new Response(
