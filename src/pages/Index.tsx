@@ -37,7 +37,7 @@ const Index = () => {
   const [currentVersionId, setCurrentVersionId] = useState<string>("");
   const { toast } = useToast();
 
-  // Check authentication
+  // Check authentication (but don't redirect)
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
@@ -51,13 +51,6 @@ const Index = () => {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -406,16 +399,6 @@ const Index = () => {
   // Show API key input only when explicitly requested
   if (showApiKeyInput) {
     return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
-  }
-
-  // Show loading while checking auth
-  if (loading) {
-    return <LoadingScreen isVisible={true} />;
-  }
-
-  // Don't render if not authenticated
-  if (!user) {
-    return null;
   }
 
   if (showPreview && files.length > 0) {
