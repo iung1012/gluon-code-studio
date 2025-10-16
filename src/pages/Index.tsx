@@ -7,6 +7,9 @@ import { GeneratedPreview } from "@/components/GeneratedPreview";
 import { ChatLayout } from "@/components/ChatLayout";
 import { OpenRouterApiService } from "@/services/openRouterApi";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 interface WebsiteVersion {
   id: string;
@@ -16,6 +19,9 @@ interface WebsiteVersion {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [apiKey, setApiKey] = useState<string>("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const [apiService, setApiService] = useState<OpenRouterApiService | null>(null);
@@ -30,6 +36,28 @@ const Index = () => {
   const [websiteVersions, setWebsiteVersions] = useState<WebsiteVersion[]>([]);
   const [currentVersionId, setCurrentVersionId] = useState<string>("");
   const { toast } = useToast();
+
+  // Check authentication
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -378,6 +406,16 @@ const Index = () => {
   // Show API key input only when explicitly requested
   if (showApiKeyInput) {
     return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
+  }
+
+  // Show loading while checking auth
+  if (loading) {
+    return <LoadingScreen isVisible={true} />;
+  }
+
+  // Don't render if not authenticated
+  if (!user) {
+    return null;
   }
 
   if (showPreview && files.length > 0) {
