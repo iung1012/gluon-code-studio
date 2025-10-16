@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
+import logo from "@/assets/logo.png";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -51,8 +52,12 @@ export default function Auth() {
       <div className="flex-1 flex items-center justify-center p-6 pt-24">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-semibold">
-              Entrar no <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">2code</span>
+            <h1 className="text-4xl font-semibold flex items-center justify-center gap-3">
+              Entrar no 
+              <span className="flex items-center gap-2">
+                <img src={logo} alt="2code Logo" className="h-10 w-auto" />
+                <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">2code</span>
+              </span>
             </h1>
             <p className="text-lg text-muted-foreground">
               Faça login para começar a gerar websites com IA
