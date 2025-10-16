@@ -32,9 +32,6 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
       <div className="w-full max-w-xl mx-auto space-y-12">
         {/* Hero Section */}
         <div className="text-center space-y-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-3xl mb-8">
-            <Sparkles className="w-8 h-8 text-primary" />
-          </div>
           
           <div className="space-y-4">
             <h1 className="text-4xl font-light tracking-tight leading-tight">
