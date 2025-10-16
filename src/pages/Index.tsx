@@ -142,7 +142,17 @@ const Index = () => {
   const parseProjectStructure = (content: string): FileNode[] => {
     console.log('📄 Parsing content from API:', content.substring(0, 200) + '...');
     
-    const cleanContent = content.trim();
+    let cleanContent = content.trim();
+    
+    // Remove markdown code blocks if present
+    const codeBlockMatch = cleanContent.match(/```(?:html)?\s*\n?([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      cleanContent = codeBlockMatch[1].trim();
+      console.log('🧹 Removed markdown code block wrapper');
+    }
+    
+    // Remove leading/trailing backticks
+    cleanContent = cleanContent.replace(/^`+|`+$/g, '').trim();
     
     if (cleanContent.includes('<!DOCTYPE html>') || cleanContent.includes('<html')) {
       console.log('✅ Valid HTML monolith detected');

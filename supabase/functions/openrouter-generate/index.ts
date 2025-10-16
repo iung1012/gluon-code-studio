@@ -48,10 +48,10 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile?.openrouter_api_key) {
-      console.error('Profile error:', profileError);
+      console.error('❌ API key not configured for user:', user.id, 'Error:', profileError);
       return new Response(
-        JSON.stringify({ error: 'API key not configured. Please add your OpenRouter API key in settings.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Chave API não configurada. Por favor, configure sua chave OpenRouter nas configurações.' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -120,7 +120,23 @@ serve(async (req) => {
       messages = [
         {
           role: 'system',
-          content: `Você é um desenvolvedor JavaScript especialista. REGRAS CRÍTICAS:\n\n1. Receba o código HTML monolítico atual completo\n2. Identifique EXATAMENTE a parte que o usuário quer alterar\n3. Faça APENAS a alteração solicitada\n4. Mantenha TODO o resto do código EXATAMENTE igual\n5. SEMPRE retorne o arquivo HTML completo funcional\n6. Se imagens forem fornecidas, integre-as conforme a instrução do usuário usando as data URLs\n\nCRÍTICO: NUNCA responda com explicações ou perguntas. SEMPRE retorne HTML completo válido.\nSe não entender a solicitação, faça uma interpretação inteligente e aplique a mudança.\nNUNCA pergunte o que fazer - sempre execute a alteração solicitada.\n\nIMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações, sem formatação adicional. Apenas o código HTML puro que funciona diretamente no navegador.`
+          content: `Você é um desenvolvedor JavaScript especialista. REGRAS CRÍTICAS:
+
+1. Receba o código HTML monolítico atual completo
+2. Identifique EXATAMENTE a parte que o usuário quer alterar
+3. Faça APENAS a alteração solicitada
+4. Mantenha TODO o resto do código EXATAMENTE igual
+5. SEMPRE retorne o arquivo HTML completo funcional
+6. Se imagens forem fornecidas, integre-as conforme a instrução do usuário usando as data URLs
+
+FORMATO DE RESPOSTA OBRIGATÓRIO:
+- Retorne APENAS o código HTML puro
+- NÃO use blocos de código markdown (sem \`\`\`html ou \`\`\`)
+- NÃO adicione explicações, comentários ou texto adicional
+- NÃO faça perguntas - sempre execute a alteração solicitada
+- Se não entender, faça uma interpretação inteligente e aplique
+
+IMPORTANTE: Sua resposta deve começar diretamente com <!DOCTYPE html> e terminar com </html>`
         },
         {
           role: 'user',
@@ -156,7 +172,23 @@ serve(async (req) => {
       messages = [
         {
           role: 'system',
-          content: `Você é um desenvolvedor JavaScript especialista. Regras OBRIGATÓRIAS:\n\n1. SEMPRE escreva código JavaScript MONOLITO (arquivo HTML único)\n2. Estrutura obrigatória:\n   - HTML completo com DOCTYPE\n   - CSS dentro de <style> no <head>\n   - JavaScript dentro de <script> antes do </body>\n3. Sempre forneça código completo funcional\n4. Use apenas HTML, CSS e JavaScript vanilla\n5. Se imagens forem fornecidas, integre-as diretamente no HTML usando as data URLs fornecidas\n\nIMPORTANTE: Retorne APENAS o código HTML completo, sem JSON, sem explicações, sem formatação adicional. Apenas o código HTML puro que funciona diretamente no navegador.`
+          content: `Você é um desenvolvedor JavaScript especialista. Regras OBRIGATÓRIAS:
+
+1. SEMPRE escreva código JavaScript MONOLITO (arquivo HTML único)
+2. Estrutura obrigatória:
+   - HTML completo com DOCTYPE
+   - CSS dentro de <style> no <head>
+   - JavaScript dentro de <script> antes do </body>
+3. Sempre forneça código completo funcional
+4. Use apenas HTML, CSS e JavaScript vanilla
+5. Se imagens forem fornecidas, integre-as diretamente no HTML usando as data URLs fornecidas
+
+FORMATO DE RESPOSTA OBRIGATÓRIO:
+- Retorne APENAS o código HTML puro
+- NÃO use blocos de código markdown (sem \`\`\`html ou \`\`\`)
+- NÃO adicione explicações, comentários ou texto adicional
+- NÃO use JSON ou qualquer outro formato
+- Sua resposta deve começar diretamente com <!DOCTYPE html> e terminar com </html>`
         },
         {
           role: 'user',
