@@ -46,7 +46,9 @@ const Index = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       
-      if (session?.user) {
+      if (!session?.user) {
+        navigate('/auth');
+      } else {
         setTimeout(() => {
           checkUserApiKey(session.user.id);
         }, 0);
@@ -57,13 +59,15 @@ const Index = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       
-      if (session?.user) {
+      if (!session?.user) {
+        navigate('/auth');
+      } else {
         checkUserApiKey(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const checkUserApiKey = async (userId: string) => {
     try {
