@@ -49,15 +49,14 @@ export const LivePreview = ({
     return result;
   };
 
-  const htmlFile = findFile(files, 'index.html') || files.find(f => f.type === 'file' && f.name.endsWith('.html'));
-  const htmlContent = htmlFile?.content || generatedCode || "";
-  const allFiles = getAllFiles(files);
-  
   useEffect(() => {
     if (!iframeRef.current) {
       setIsLoading(false);
       return;
     }
+
+    const htmlFile = findFile(files, 'index.html') || files.find(f => f.type === 'file' && f.name.endsWith('.html'));
+    const htmlContent = htmlFile?.content || generatedCode || "";
 
     if (!htmlContent) {
       setIsLoading(false);
@@ -70,6 +69,7 @@ export const LivePreview = ({
 
     try {
       const iframe = iframeRef.current;
+      const allFiles = getAllFiles(files);
       
       // Clean up previous content
       iframe.src = 'about:blank';
@@ -144,12 +144,15 @@ export const LivePreview = ({
       setPreviewError('Erro ao configurar o preview');
       setIsLoading(false);
     }
-  }, [htmlContent, allFiles]);
+  }, [files, generatedCode]);
 
   // Show generation loading when generating
   if (isGenerating) {
     return <PreviewLoading progress={generationProgress} />;
   }
+
+  const htmlFile = findFile(files, 'index.html') || files.find(f => f.type === 'file' && f.name.endsWith('.html'));
+  const htmlContent = htmlFile?.content || generatedCode || "";
   
   if (!htmlContent) {
     return (
