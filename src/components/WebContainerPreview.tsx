@@ -1,10 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { WebContainer } from '@webcontainer/api';
-import type { FileSystemTree } from '@webcontainer/api';
+import { useEffect, useState } from 'react';
+import { Sandpack, SandpackFiles } from '@codesandbox/sandpack-react';
 import { FileNode, FileTree } from './FileTree';
-import { AlertCircle, Terminal as TerminalIcon, Monitor, Code2, Eye } from 'lucide-react';
+import { Code2, Eye } from 'lucide-react';
 import { PreviewLoading } from './PreviewLoading';
-import { cn } from '@/lib/utils';
 import Editor from '@monaco-editor/react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -20,19 +18,9 @@ export const WebContainerPreview = ({
   isGenerating = false,
   generationProgress 
 }: WebContainerPreviewProps) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [container, setContainer] = useState<WebContainer | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-  const [logs, setLogs] = useState<string[]>([]);
-  const [isBooting, setIsBooting] = useState(true);
-  const [showTerminal, setShowTerminal] = useState(true); // Auto-open terminal for debugging
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
-
-  const addLog = (message: string) => {
-    setLogs(prev => [...prev.slice(-50), `[${new Date().toLocaleTimeString()}] ${message}`]);
-  };
+  const [sandpackFiles, setSandpackFiles] = useState<SandpackFiles>({});
 
   const getFileLanguage = (filename: string): string => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -64,195 +52,57 @@ export const WebContainerPreview = ({
     setSelectedFile(file);
   };
 
-  useEffect(() => {
-    if (files.length > 0 && !selectedFile) {
-      const findFirstFile = (nodes: FileNode[]): FileNode | null => {
-        for (const node of nodes) {
-          if (node.type === 'file') return node;
-          if (node.children) {
-            const found = findFirstFile(node.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const firstFile = findFirstFile(files);
-      if (firstFile) setSelectedFile(firstFile);
-    }
-  }, [files, selectedFile]);
-
-  // Convert FileNode[] to WebContainer file structure
-  const buildFileTree = (nodes: FileNode[]): FileSystemTree => {
-    const result: FileSystemTree = {};
+  // Convert FileNode[] to Sandpack file structure
+  const buildSandpackFiles = (nodes: FileNode[], parentPath = ''): SandpackFiles => {
+    const result: SandpackFiles = {};
     
     for (const node of nodes) {
+      const fullPath = parentPath ? `${parentPath}/${node.name}` : `/${node.name}`;
+      
       if (node.type === 'file' && node.content) {
-        result[node.name] = {
-          file: {
-            contents: node.content
-          }
+        result[fullPath] = {
+          code: node.content
         };
       } else if (node.type === 'folder' && node.children) {
-        result[node.name] = {
-          directory: buildFileTree(node.children)
-        };
+        Object.assign(result, buildSandpackFiles(node.children, fullPath));
       }
     }
     
     return result;
   };
 
-  // Initialize WebContainer
   useEffect(() => {
-    let mounted = true;
-    
-    const bootContainer = async () => {
-      try {
-        // Ensure the page is cross-origin isolated before booting WebContainer
-        if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
-          addLog('⚠️ Ambiente sem isolamento (COOP/COEP). Registrando Service Worker e aguardando recarga...');
-          setError('Para executar o preview, precisamos ativar o isolamento do navegador. Atualize a página e tente novamente.');
-          return;
-        }
-
-        addLog('🚀 Booting WebContainer...');
-        const instance = await WebContainer.boot();
-        
-        if (!mounted) return;
-        
-        setContainer(instance);
-        addLog('✅ WebContainer ready');
-        setIsBooting(false);
-      } catch (err) {
-        console.error('WebContainer boot error:', err);
-        setError('Failed to initialize WebContainer');
-        addLog(`❌ Boot error: ${err}`);
-        setIsBooting(false);
+    if (files.length > 0) {
+      const sandpackFileStructure = buildSandpackFiles(files);
+      setSandpackFiles(sandpackFileStructure);
+      
+      // Select first file for code view
+      if (!selectedFile) {
+        const findFirstFile = (nodes: FileNode[]): FileNode | null => {
+          for (const node of nodes) {
+            if (node.type === 'file') return node;
+            if (node.children) {
+              const found = findFirstFile(node.children);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const firstFile = findFirstFile(files);
+        if (firstFile) setSelectedFile(firstFile);
       }
-    };
-
-    bootContainer();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // Mount files and start dev server
-  useEffect(() => {
-    if (!container || files.length === 0 || isBooting) return;
-
-    let mounted = true;
-    let devProcess: any = null;
-
-    const setupProject = async () => {
-      try {
-        addLog('📁 Mounting files...');
-        const fileTree = buildFileTree(files);
-        console.log('File tree structure:', JSON.stringify(fileTree, null, 2));
-        await container.mount(fileTree);
-        addLog('✅ Files mounted');
-
-        // Set up server-ready listener BEFORE starting server
-        container.on('server-ready', (port, url) => {
-          console.log('Server ready event:', { port, url });
-          if (mounted) {
-            setPreviewUrl(url);
-            addLog(`✅ Server ready on port ${port} at ${url}`);
-          }
-        });
-
-        // Install dependencies
-        addLog('📦 Installing dependencies...');
-        const installProcess = await container.spawn('npm', ['install']);
-        
-        installProcess.output.pipeTo(new WritableStream({
-          write(data) {
-            addLog(data);
-          }
-        }));
-
-        const installExit = await installProcess.exit;
-        
-        if (installExit !== 0) {
-          throw new Error(`npm install failed with code ${installExit}`);
-        }
-        
-        addLog('✅ Dependencies installed');
-
-        // Start dev server
-        addLog('🚀 Starting dev server...');
-        devProcess = await container.spawn('npm', ['run', 'dev']);
-        
-        devProcess.output.pipeTo(new WritableStream({
-          write(data) {
-            const log = String(data);
-            addLog(log);
-            console.log('Dev server output:', log);
-          }
-        }));
-
-        // Monitor dev process exit
-        devProcess.exit.then((code: number) => {
-          if (code !== 0) {
-            addLog(`⚠️ Dev server exited with code ${code}`);
-            console.warn('Dev server exited unexpectedly:', code);
-          }
-        });
-
-      } catch (err) {
-        console.error('Setup error:', err);
-        setError(`Setup failed: ${err}`);
-        addLog(`❌ Error: ${err}`);
-      }
-    };
-
-    setupProject();
-
-    return () => {
-      mounted = false;
-      // Cleanup: kill dev process if running
-      if (devProcess) {
-        devProcess.kill?.();
-      }
-    };
-  }, [container, files, isBooting]);
+    }
+  }, [files, selectedFile]);
 
   if (isGenerating) {
     return <PreviewLoading progress={generationProgress} />;
   }
 
-  if (isBooting) {
+  if (Object.keys(sandpackFiles).length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
         <div className="text-center max-w-md mx-auto p-8">
-          <div className="w-20 h-20 bg-primary/10 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-            <Monitor className="w-10 h-10 text-primary/60 animate-pulse" />
-          </div>
-          <h3 className="text-xl font-medium mb-3 text-foreground">Inicializando WebContainer</h3>
-          <p className="text-muted-foreground leading-relaxed">
-            Preparando ambiente de desenvolvimento...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="w-16 h-16 bg-destructive/10 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-destructive/60" />
-          </div>
-          <h3 className="text-lg font-medium mb-2 text-foreground">Erro no WebContainer</h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-          >
-            Recarregar Página
-          </button>
+          <p className="text-muted-foreground">Aguardando arquivos...</p>
         </div>
       </div>
     );
@@ -261,7 +111,7 @@ export const WebContainerPreview = ({
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/20">
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'code')} className="h-full flex flex-col">
-        <div className="border-b bg-card/30 backdrop-blur-sm px-4 flex items-center justify-between">
+        <div className="border-b bg-card/30 backdrop-blur-sm px-4">
           <TabsList className="bg-transparent h-12">
             <TabsTrigger value="preview" className="gap-2 data-[state=active]:bg-background/60">
               <Eye className="w-4 h-4" />
@@ -272,43 +122,27 @@ export const WebContainerPreview = ({
               Código
             </TabsTrigger>
           </TabsList>
-
-          <button
-            onClick={() => setShowTerminal(!showTerminal)}
-            className="flex items-center gap-2 px-3 py-2 bg-background/80 backdrop-blur-sm border border-border/40 rounded-lg hover:bg-background transition-colors text-sm"
-          >
-            <TerminalIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">{showTerminal ? 'Ocultar' : 'Mostrar'} Terminal</span>
-          </button>
         </div>
 
-        {showTerminal && (
-          <div className="w-full h-48 bg-black/90 text-green-400 font-mono text-xs p-4 overflow-y-auto border-b border-border/40">
-            {logs.map((log, i) => (
-              <div key={i} className="whitespace-pre-wrap">{log}</div>
-            ))}
-          </div>
-        )}
-
         <TabsContent value="preview" className="flex-1 m-0 data-[state=inactive]:hidden">
-          <div className="h-full relative">
-            {!previewUrl ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-12 h-12 border-2 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Aguardando servidor de desenvolvimento...</p>
-                </div>
-              </div>
-            ) : (
-              <iframe
-                ref={iframeRef}
-                src={previewUrl}
-                className="w-full h-full border-0 bg-white"
-                title="React App Preview"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-              />
-            )}
-          </div>
+          <Sandpack
+            template="react"
+            files={sandpackFiles}
+            theme="dark"
+            options={{
+              showNavigator: false,
+              showTabs: false,
+              showLineNumbers: true,
+              editorHeight: "100%",
+              editorWidthPercentage: 0,
+            }}
+            customSetup={{
+              dependencies: {
+                "react": "^18.3.1",
+                "react-dom": "^18.3.1"
+              }
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="code" className="flex-1 m-0 data-[state=inactive]:hidden">
