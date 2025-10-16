@@ -139,13 +139,61 @@ const Index = () => {
     });
   };
 
+  const buildFileTree = (files: { path: string; content: string }[]): FileNode[] => {
+    const root: { [key: string]: FileNode } = {};
+    
+    files.forEach(file => {
+      const parts = file.path.split('/');
+      let current: any = root;
+      
+      parts.forEach((part, index) => {
+        const isFile = index === parts.length - 1;
+        
+        if (isFile) {
+          current[part] = {
+            name: part,
+            type: 'file',
+            path: file.path,
+            content: file.content,
+            children: []
+          };
+        } else {
+          if (!current[part]) {
+            current[part] = {
+              name: part,
+              type: 'folder',
+              path: parts.slice(0, index + 1).join('/'),
+              children: []
+            };
+          }
+          if (!current[part].childrenMap) {
+            current[part].childrenMap = {};
+          }
+          current = current[part].childrenMap;
+        }
+      });
+    });
+    
+    const convertToArray = (obj: any): FileNode[] => {
+      return Object.values(obj).map((node: any) => {
+        if (node.childrenMap) {
+          node.children = convertToArray(node.childrenMap);
+          delete node.childrenMap;
+        }
+        return node;
+      });
+    };
+    
+    return convertToArray(root);
+  };
+
   const parseProjectStructure = (content: string): FileNode[] => {
     console.log('📄 Parsing content from API:', content.substring(0, 200) + '...');
     
     let cleanContent = content.trim();
     
     // Remove markdown code blocks if present
-    const codeBlockMatch = cleanContent.match(/```(?:html)?\s*\n?([\s\S]*?)```/);
+    const codeBlockMatch = cleanContent.match(/```(?:json|html)?\s*\n?([\s\S]*?)```/);
     if (codeBlockMatch) {
       cleanContent = codeBlockMatch[1].trim();
       console.log('🧹 Removed markdown code block wrapper');
@@ -154,6 +202,22 @@ const Index = () => {
     // Remove leading/trailing backticks
     cleanContent = cleanContent.replace(/^`+|`+$/g, '').trim();
     
+    // Try to parse as JSON multi-file response
+    if (cleanContent.startsWith('{') || cleanContent.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(cleanContent);
+        
+        // Check if it's the multi-file format
+        if (parsed.files && Array.isArray(parsed.files)) {
+          console.log('✅ Multi-file JSON detected:', parsed.files.length, 'files');
+          return buildFileTree(parsed.files);
+        }
+      } catch (e) {
+        console.log('⚠️ JSON parse failed, falling back to HTML monolith');
+      }
+    }
+    
+    // Fallback to HTML monolith
     if (cleanContent.includes('<!DOCTYPE html>') || cleanContent.includes('<html')) {
       console.log('✅ Valid HTML monolith detected');
       
@@ -174,7 +238,7 @@ const Index = () => {
       throw new Error(`A API não executou a alteração solicitada. Resposta: "${cleanContent.substring(0, 100)}..."`);
     }
     
-    console.error('❌ Invalid HTML content received');
+    console.error('❌ Invalid content received');
     return [{
       name: 'index.html',
       type: 'file',
@@ -193,8 +257,8 @@ const Index = () => {
 </head>
 <body>
     <div class="error">
-        <h1>❌ Conteúdo HTML Inválido</h1>
-        <p>A API não retornou HTML válido:</p>
+        <h1>❌ Conteúdo Inválido</h1>
+        <p>A API não retornou conteúdo válido:</p>
         <pre>${content.substring(0, 1000)}...</pre>
     </div>
 </body>

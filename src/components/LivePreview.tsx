@@ -25,10 +25,33 @@ export const LivePreview = ({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Get HTML content from files or generatedCode
-  const htmlContent = files.length > 0 && files[0]?.content 
-    ? files[0].content 
-    : generatedCode || "";
+  // Find the main HTML file
+  const findFile = (nodes: FileNode[], name: string): FileNode | undefined => {
+    for (const node of nodes) {
+      if (node.type === 'file' && node.name === name) return node;
+      if (node.type === 'folder' && node.children) {
+        const found = findFile(node.children, name);
+        if (found) return found;
+      }
+    }
+    return undefined;
+  };
+
+  const getAllFiles = (nodes: FileNode[]): FileNode[] => {
+    let result: FileNode[] = [];
+    for (const node of nodes) {
+      if (node.type === 'file') {
+        result.push(node);
+      } else if (node.type === 'folder' && node.children) {
+        result = result.concat(getAllFiles(node.children));
+      }
+    }
+    return result;
+  };
+
+  const htmlFile = findFile(files, 'index.html') || files.find(f => f.type === 'file' && f.name.endsWith('.html'));
+  const htmlContent = htmlFile?.content || generatedCode || "";
+  const allFiles = getAllFiles(files);
   
   useEffect(() => {
     if (!iframeRef.current) {
@@ -53,17 +76,43 @@ export const LivePreview = ({
       
       setTimeout(() => {
         try {
+          let processedHtml = htmlContent;
+          
+          // Inject external CSS files
+          const cssFiles = allFiles.filter(f => f.path.endsWith('.css') && f.content);
+          if (cssFiles.length > 0) {
+            const cssLinks = cssFiles.map(cssFile => {
+              const blob = new Blob([cssFile.content!], { type: 'text/css' });
+              const url = URL.createObjectURL(blob);
+              return `<link rel="stylesheet" href="${url}">`;
+            }).join('\n');
+            
+            processedHtml = processedHtml.replace('</head>', `${cssLinks}\n</head>`);
+          }
+          
+          // Inject external JS files
+          const jsFiles = allFiles.filter(f => f.path.endsWith('.js') && f.content);
+          if (jsFiles.length > 0) {
+            const jsScripts = jsFiles.map(jsFile => {
+              const blob = new Blob([jsFile.content!], { type: 'text/javascript' });
+              const url = URL.createObjectURL(blob);
+              return `<script src="${url}"></script>`;
+            }).join('\n');
+            
+            processedHtml = processedHtml.replace('</body>', `${jsScripts}\n</body>`);
+          }
+
           // Write content directly to iframe
           const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
           if (iframeDoc) {
             iframeDoc.open();
-            iframeDoc.write(htmlContent);
+            iframeDoc.write(processedHtml);
             iframeDoc.close();
             setIsLoading(false);
-            console.log('LivePreview - Content written to iframe successfully');
+            console.log('LivePreview - Multi-file content written successfully');
           } else {
             // Fallback to blob URL if direct write fails
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const blob = new Blob([processedHtml], { type: 'text/html;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             iframe.src = url;
             
@@ -95,7 +144,7 @@ export const LivePreview = ({
       setPreviewError('Erro ao configurar o preview');
       setIsLoading(false);
     }
-  }, [htmlContent]);
+  }, [htmlContent, allFiles]);
 
   // Show generation loading when generating
   if (isGenerating) {

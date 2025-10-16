@@ -20,18 +20,56 @@ export const GeneratedPreview = ({
   onNewProject,
   generatedCode
 }: GeneratedPreviewProps) => {
-  const downloadHtml = () => {
-    if (files.length > 0 && files[0].content) {
-      const blob = new Blob([files[0].content], { type: 'text/html' });
+  const getAllFiles = (nodes: FileNode[]): FileNode[] => {
+    let result: FileNode[] = [];
+    for (const node of nodes) {
+      if (node.type === 'file') {
+        result.push(node);
+      } else if (node.type === 'folder' && node.children) {
+        result = result.concat(getAllFiles(node.children));
+      }
+    }
+    return result;
+  };
+
+  const downloadProject = async () => {
+    const allFiles = getAllFiles(files);
+    
+    if (allFiles.length === 0) return;
+    
+    // If single file, download directly
+    if (allFiles.length === 1 && allFiles[0].content) {
+      const blob = new Blob([allFiles[0].content], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'index.html';
+      a.download = allFiles[0].name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      return;
     }
+    
+    // Multiple files - create ZIP
+    const JSZip = (await import('jszip')).default;
+    const zip = new JSZip();
+    
+    allFiles.forEach(file => {
+      if (file.content) {
+        zip.file(file.path, file.content);
+      }
+    });
+    
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'website-project.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const openInNewTab = () => {
@@ -66,11 +104,11 @@ export const GeneratedPreview = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={downloadHtml}
+              onClick={downloadProject}
               className="gap-2"
             >
               <Download className="w-4 h-4" />
-              Download
+              {getAllFiles(files).length > 1 ? 'Download ZIP' : 'Download'}
             </Button>
             <Button
               variant="outline"
