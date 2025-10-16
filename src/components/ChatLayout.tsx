@@ -138,61 +138,64 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
     <div className="h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="border-b bg-card/30 backdrop-blur-sm">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
             <Button
               variant="ghost"
               size="sm"
               onClick={onBackToInput}
-              className="gap-2 hover:bg-muted/50"
+              className="gap-1.5 sm:gap-2 hover:bg-muted/50 text-xs sm:text-sm px-2 sm:px-3 h-8"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Voltar ao Início
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Voltar ao Início</span>
+              <span className="sm:hidden">Voltar</span>
             </Button>
-            <div className="h-4 w-px bg-border/50" />
-            <h2 className="font-medium text-foreground/90">Website Gerado</h2>
+            <div className="h-4 w-px bg-border/50 hidden sm:block" />
+            <h2 className="font-medium text-foreground/90 text-sm sm:text-base">Website Gerado</h2>
             {websiteVersions.length > 0 && (
               <>
-                <div className="h-4 w-px bg-border/50" />
-                <span className="text-sm text-muted-foreground">
+                <div className="h-4 w-px bg-border/50 hidden sm:block" />
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   Versão {websiteVersions.find(v => v.id === currentVersionId)?.versionNumber || websiteVersions.length}
                 </span>
               </>
             )}
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto justify-end">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setChatVisible(!chatVisible)}
-              className="gap-2 bg-background/50 hover:bg-muted/50"
+              className="gap-1.5 sm:gap-2 bg-background/50 hover:bg-muted/50 text-xs sm:text-sm px-2 sm:px-3 h-8"
             >
               {chatVisible ? (
                 <>
-                  <X className="w-4 h-4" />
-                  Ocultar Chat
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden md:inline">Ocultar Chat</span>
+                  <span className="md:hidden">Chat</span>
                 </>
               ) : (
                 <>
-                  <MessageSquare className="w-4 h-4" />
-                  Mostrar Chat
+                  <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden md:inline">Mostrar Chat</span>
+                  <span className="md:hidden">Chat</span>
                 </>
               )}
             </Button>
             
-            <div className="h-4 w-px bg-border/50" />
+            <div className="h-4 w-px bg-border/50 hidden sm:block" />
             
             {/* Device Selector */}
             <Select value={previewDevice} onValueChange={(value: any) => setPreviewDevice(value)}>
-              <SelectTrigger className="w-[120px] bg-background/50">
+              <SelectTrigger className="w-[90px] sm:w-[120px] bg-background/50 text-xs sm:text-sm h-8">
                 <SelectValue>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     {(() => {
                       const Icon = deviceIcons[previewDevice];
-                      return <Icon className="w-4 h-4" />;
+                      return <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />;
                     })()}
-                    <span className="text-xs">{deviceLabels[previewDevice]}</span>
+                    <span className="text-xs hidden sm:inline">{deviceLabels[previewDevice]}</span>
                   </div>
                 </SelectValue>
               </SelectTrigger>
@@ -208,43 +211,44 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               </SelectContent>
             </Select>
             
-            <div className="h-4 w-px bg-border/50" />
+            <div className="h-4 w-px bg-border/50 hidden sm:block" />
             
             <Button
               variant="outline"
               size="sm"
               onClick={downloadHtml}
-              className="gap-2 bg-background/50 hover:bg-muted/50"
+              className="gap-1.5 sm:gap-2 bg-background/50 hover:bg-muted/50 text-xs sm:text-sm px-2 sm:px-3 h-8"
             >
-              <Download className="w-4 h-4" />
-              HTML
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">HTML</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={downloadZip}
-              className="gap-2 bg-background/50 hover:bg-muted/50"
+              className="gap-1.5 sm:gap-2 bg-background/50 hover:bg-muted/50 text-xs sm:text-sm px-2 sm:px-3 h-8"
             >
-              <Download className="w-4 h-4" />
-              ZIP
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">ZIP</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={openInNewTab}
-              className="gap-2 bg-background/50 hover:bg-muted/50"
+              className="gap-1.5 sm:gap-2 bg-background/50 hover:bg-muted/50 text-xs sm:text-sm px-2 sm:px-3 h-8"
             >
-              <ExternalLink className="w-4 h-4" />
-              Abrir
+              <ExternalLink className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden md:inline">Abrir</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={onNewProject}
-              className="gap-2 text-destructive hover:text-destructive bg-background/50 hover:bg-destructive/10"
+              className="gap-1.5 sm:gap-2 text-destructive hover:text-destructive bg-background/50 hover:bg-destructive/10 text-xs sm:text-sm px-2 sm:px-3 h-8"
             >
-              <RotateCcw className="w-4 h-4" />
-              Novo Projeto
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden lg:inline">Novo Projeto</span>
+              <span className="lg:hidden">Novo</span>
             </Button>
           </div>
         </div>
