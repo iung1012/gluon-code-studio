@@ -135,8 +135,7 @@ export default function DarkVeil({
     let frame = 0;
 
     const loop = () => {
-      program.uniforms.uTime.value =
-        ((performance.now() - start) / 1000) * speed;
+      program.uniforms.uTime.value = ((performance.now() - start) / 1000) * speed;
       program.uniforms.uHueShift.value = hueShift;
       program.uniforms.uNoise.value = noiseIntensity;
       program.uniforms.uScan.value = scanlineIntensity;
@@ -152,19 +151,6 @@ export default function DarkVeil({
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
     };
-  }, [
-    hueShift,
-    noiseIntensity,
-    scanlineIntensity,
-    speed,
-    scanlineFrequency,
-    warpAmount,
-    resolutionScale,
-  ]);
-  return (
-    <canvas
-      ref={ref}
-      className="w-full h-full block"
-    />
-  );
+  }, [hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale]);
+  return <canvas ref={ref} className="w-full h-full block" />;
 }
