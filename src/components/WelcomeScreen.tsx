@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowUp, Sparkles, Zap } from "lucide-react";
-import DarkVeil from "@/components/ui/dark-veil";
 
 interface WelcomeScreenProps {
   onSubmit: (prompt: string, model: string, temperature: number) => void;
@@ -29,22 +28,8 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
   ];
 
   return (
-    <div className="min-h-screen relative flex flex-col items-center justify-center p-6">
-      {/* Animated background */}
-      <div className="absolute inset-0 z-0">
-        <DarkVeil 
-          speed={0.3}
-          hueShift={180}
-          noiseIntensity={0.02}
-          scanlineIntensity={0.1}
-          scanlineFrequency={1.5}
-          warpAmount={0.3}
-          resolutionScale={0.8}
-        />
-      </div>
-      
-      {/* Content */}
-      <div className="w-full max-w-xl mx-auto space-y-12 relative z-10">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-xl mx-auto space-y-12">
         {/* Hero Section */}
         <div className="text-center space-y-6">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-3xl mb-8">
