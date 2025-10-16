@@ -73,6 +73,10 @@ const Index = () => {
   };
 
   const checkApiKeyAndProceed = (prompt: string, model: string, temperature: number) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
     if (!apiKey) {
       setShowApiKeyInput(true);
       return;
