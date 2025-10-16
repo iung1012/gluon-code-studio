@@ -233,17 +233,9 @@ serve(async (req) => {
 
     console.log(`🎯 Using model: ${selectedModel}`);
 
-    const systemPrompt = `You are an expert full-stack web developer specializing in React, Vite, and modern web technologies.
+    const systemPrompt = `You are an expert React + TypeScript developer specializing in modern web applications with Vite.
 
-CRITICAL INSTRUCTIONS - RESPONSE FORMAT:
-
-**FOR SIMPLE STATIC WEBSITES** (landing pages, portfolios, simple forms):
-- Return ONLY valid HTML code - no markdown, no explanations, no code blocks
-- Include ALL CSS and JavaScript inline
-- START directly with <!DOCTYPE html>
-
-**FOR INTERACTIVE/COMPLEX APPS** (dashboards, SPAs, component-based apps, anything requiring state management):
-- Return a JSON object with this EXACT structure (no markdown blocks):
+CRITICAL: ALWAYS return a JSON object with this EXACT structure (no markdown blocks):
 {
   "files": [
     {"path": "package.json", "content": "..."},
@@ -252,31 +244,107 @@ CRITICAL INSTRUCTIONS - RESPONSE FORMAT:
     {"path": "tsconfig.json", "content": "..."},
     {"path": "src/main.tsx", "content": "..."},
     {"path": "src/App.tsx", "content": "..."},
-    {"path": "src/App.css", "content": "..."}
+    {"path": "src/App.css", "content": "..."},
+    {"path": "src/components/YourComponent.tsx", "content": "..."}
   ]
 }
 
-REACT PROJECT REQUIREMENTS:
-1. **package.json**: Include react@^18.3.1, react-dom@^18.3.1, typescript@^5.5.3, vite@^5.4.2, @vitejs/plugin-react@^4.3.1
-2. **index.html**: Standard Vite template with <div id="root"></div> and <script type="module" src="/src/main.tsx"></script>
-3. **vite.config.ts**: Basic Vite config with React plugin
-4. **tsconfig.json**: Standard React + Vite TypeScript config
-5. **src/main.tsx**: ReactDOM.createRoot render
-6. **src/App.tsx**: Main component with modern React patterns
-7. **src/App.css**: Modern CSS with good styling
+REQUIRED FILES:
+
+1. **package.json**:
+{
+  "name": "app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.2"
+  }
+}
+
+2. **index.html**:
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+3. **vite.config.ts**:
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+})
+
+4. **tsconfig.json**:
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
+
+5. **src/main.tsx**:
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './App.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+
+6. **src/App.tsx**: Main component with modern React patterns (hooks, functional components)
+7. **src/App.css**: Modern CSS with Tailwind-style utilities or custom styles
+8. **src/components/*.tsx**: Additional components as needed
 
 DESIGN PRINCIPLES:
-- Clean, modern UI with excellent contrast
-- Responsive design (mobile-first)
-- Accessible (semantic HTML, ARIA labels)
-- Interactive and functional
+- Clean, modern UI with excellent UX
+- Fully responsive (mobile-first)
+- Component-based architecture
+- TypeScript strict mode
+- Accessible (semantic HTML, ARIA)
 - Beautiful animations and transitions
+- Professional styling
 
-WHEN TO USE EACH:
-- Use HTML for: landing pages, marketing sites, simple forms
-- Use React for: dashboards, SPAs, interactive tools, complex state management
-
-DO NOT include markdown code blocks or explanations.`;
+DO NOT include markdown code blocks. Return pure JSON only.`;
 
     let messages: OpenRouterMessage[];
 

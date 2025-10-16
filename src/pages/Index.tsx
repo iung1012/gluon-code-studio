@@ -225,69 +225,20 @@ const Index = () => {
     // Remove leading/trailing backticks
     cleanContent = cleanContent.replace(/^`+|`+$/g, '').trim();
     
-    // Try to parse as JSON multi-file response
-    if (cleanContent.startsWith('{') || cleanContent.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(cleanContent);
-        
-        // Check if it's the multi-file format
-        if (parsed.files && Array.isArray(parsed.files)) {
-          console.log('✅ Multi-file JSON detected:', parsed.files.length, 'files');
-          return buildFileTree(parsed.files);
-        }
-      } catch (e) {
-        console.log('⚠️ JSON parse failed, falling back to HTML monolith');
-      }
-    }
-    
-    // Fallback to HTML monolith
-    if (cleanContent.includes('<!DOCTYPE html>') || cleanContent.includes('<html')) {
-      console.log('✅ Valid HTML monolith detected');
+    // Parse as JSON multi-file response (React projects)
+    try {
+      const parsed = JSON.parse(cleanContent);
       
-      return [{
-        name: 'index.html',
-        type: 'file',
-        path: 'index.html',
-        content: cleanContent,
-        children: []
-      }];
+      if (parsed.files && Array.isArray(parsed.files)) {
+        console.log('✅ React project detected:', parsed.files.length, 'files');
+        return buildFileTree(parsed.files);
+      }
+    } catch (e) {
+      console.error('❌ JSON parse failed:', e);
+      throw new Error('Formato inválido: esperado JSON com estrutura React');
     }
     
-    if (cleanContent.includes('Por favor') || 
-        cleanContent.includes('preciso') || 
-        cleanContent.includes('não entendi') ||
-        cleanContent.length < 500) {
-      console.error('❌ API retornou texto explicativo em vez de HTML:', cleanContent.substring(0, 300));
-      throw new Error(`A API não executou a alteração solicitada. Resposta: "${cleanContent.substring(0, 100)}..."`);
-    }
-    
-    console.error('❌ Invalid content received');
-    return [{
-      name: 'index.html',
-      type: 'file',
-      path: 'index.html',
-      content: `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erro de Conteúdo</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
-        .error { background: #fee; padding: 20px; border: 1px solid #fcc; border-radius: 8px; }
-        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; text-align: left; overflow: auto; }
-    </style>
-</head>
-<body>
-    <div class="error">
-        <h1>❌ Conteúdo Inválido</h1>
-        <p>A API não retornou conteúdo válido:</p>
-        <pre>${content.substring(0, 1000)}...</pre>
-    </div>
-</body>
-</html>`,
-      children: []
-    }];
+    throw new Error('Formato inválido: A IA deve retornar um projeto React em JSON');
   };
 
   const handlePromptSubmit = async (prompt: string, model: string = "basic", temperature: number = 0.4) => {
