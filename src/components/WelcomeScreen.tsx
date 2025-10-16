@@ -44,7 +44,7 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
               </span>
             </h1>
             <p className="text-lg text-muted-foreground leading-relaxed max-w-md mx-auto">
-              Descreva seu website e eu gero o código completo para você
+              Descreva sua landing page e eu gero o código completo para você
             </p>
           </div>
         </div>
@@ -56,7 +56,7 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
               <Textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Me ajude a construir um website..."
+                placeholder="Me ajude a construir uma landing page..."
                 className="min-h-[100px] pl-3 pr-12 pb-12 text-base resize-none bg-card/50 border-border/40 focus:ring-primary/10 focus:border-primary/40 placeholder:text-muted-foreground/60"
                 disabled={isLoading}
               />
