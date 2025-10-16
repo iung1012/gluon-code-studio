@@ -68,63 +68,67 @@ export const ProjectSidebar = ({ onProjectSelect, onNewProject, currentProjectId
   };
 
   return (
-    <div
-      className="fixed left-0 top-16 bottom-0 z-40 transition-all duration-300 ease-in-out bg-background border-r border-border"
-      style={{ width: isExpanded ? '280px' : '56px' }}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
-    >
-      <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="p-3 border-b border-border flex items-center gap-2">
-          <ChevronRight 
-            className={`w-5 h-5 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`}
-          />
-          {isExpanded && (
+    <>
+      {/* Trigger area - invisible hover zone */}
+      <div
+        className="fixed left-0 top-16 bottom-0 w-2 z-50"
+        onMouseEnter={() => setIsExpanded(true)}
+      />
+      
+      {/* Sidebar */}
+      <div
+        className={`fixed left-0 top-16 bottom-0 z-40 transition-all duration-300 ease-in-out bg-background border-r border-border shadow-lg ${
+          isExpanded ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ width: '280px' }}
+        onMouseLeave={() => setIsExpanded(false)}
+      >
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="p-3 border-b border-border flex items-center gap-2">
+            <ChevronRight 
+              className="w-5 h-5 text-muted-foreground"
+            />
             <span className="text-sm font-medium">Projetos</span>
-          )}
-        </div>
+          </div>
 
-        {/* New Project Button */}
-        <div className="p-2">
-          <Button
-            onClick={onNewProject}
-            variant="outline"
-            size="sm"
-            className={`w-full justify-start gap-2 ${!isExpanded ? 'px-2' : ''}`}
-            title="Novo Projeto"
-          >
-            <Plus className="w-4 h-4" />
-            {isExpanded && <span>Novo Projeto</span>}
-          </Button>
-        </div>
+          {/* New Project Button */}
+          <div className="p-2">
+            <Button
+              onClick={onNewProject}
+              variant="outline"
+              size="sm"
+              className="w-full justify-start gap-2"
+              title="Novo Projeto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Novo Projeto</span>
+            </Button>
+          </div>
 
-        {/* Projects List */}
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
-            {loading ? (
-              <div className="text-xs text-muted-foreground p-2">
-                {isExpanded ? 'Carregando...' : '...'}
-              </div>
-            ) : projects.length === 0 ? (
-              isExpanded && (
+          {/* Projects List */}
+          <ScrollArea className="flex-1">
+            <div className="p-2 space-y-1">
+              {loading ? (
+                <div className="text-xs text-muted-foreground p-2">
+                  Carregando...
+                </div>
+              ) : projects.length === 0 ? (
                 <div className="text-xs text-muted-foreground p-2">
                   Nenhum projeto ainda
                 </div>
-              )
-            ) : (
-              projects.map((project) => (
-                <button
-                  key={project.id}
-                  onClick={() => onProjectSelect(project)}
-                  className={`w-full text-left p-2 rounded-md transition-colors hover:bg-accent ${
-                    currentProjectId === project.id ? 'bg-accent' : ''
-                  } ${!isExpanded ? 'justify-center flex' : ''}`}
-                  title={isExpanded ? undefined : project.name}
-                >
-                  <div className="flex items-start gap-2">
-                    <FileText className="w-4 h-4 flex-shrink-0 mt-0.5 text-muted-foreground" />
-                    {isExpanded && (
+              ) : (
+                projects.map((project) => (
+                  <button
+                    key={project.id}
+                    onClick={() => onProjectSelect(project)}
+                    className={`w-full text-left p-2 rounded-md transition-colors hover:bg-accent ${
+                      currentProjectId === project.id ? 'bg-accent' : ''
+                    }`}
+                    title={project.name}
+                  >
+                    <div className="flex items-start gap-2">
+                      <FileText className="w-4 h-4 flex-shrink-0 mt-0.5 text-muted-foreground" />
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium truncate">{project.name}</div>
                         {project.description && (
@@ -136,14 +140,14 @@ export const ProjectSidebar = ({ onProjectSelect, onNewProject, currentProjectId
                           {formatDate(project.updated_at)}
                         </div>
                       </div>
-                    )}
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
