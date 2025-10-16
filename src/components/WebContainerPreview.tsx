@@ -169,13 +169,7 @@ export const WebContainerPreview = ({
         devProcess.output.pipeTo(new WritableStream({
           write(data) {
             addLog(data);
-            
-            // Detect server URL
-            const urlMatch = data.match(/https?:\/\/[^\s]+/);
-            if (urlMatch && mounted) {
-              setPreviewUrl(urlMatch[0]);
-              addLog(`✅ Dev server ready at ${urlMatch[0]}`);
-            }
+            // Only rely on WebContainer's 'server-ready' event for a valid preview URL
           }
         }));
 
