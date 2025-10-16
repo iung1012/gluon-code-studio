@@ -18,7 +18,6 @@ interface OpenRouterMessage {
   }>;
 }
 
-// Biblioteca de Templates e Componentes
 const TEMPLATES = {
   components: {
     navbar: `<nav class="bg-white shadow-lg">
@@ -72,11 +71,9 @@ const TEMPLATES = {
   }
 };
 
-// Extrair contexto semântico do código para economizar tokens
 const extractCodeContext = (html: string): string => {
   const context: string[] = [];
   
-  // Estrutura de componentes
   const hasNav = html.match(/<nav/i);
   const hasHeader = html.match(/<header/i);
   const hasMain = html.match(/<main/i);
@@ -91,29 +88,25 @@ const extractCodeContext = (html: string): string => {
     context.push(`Estrutura: ${structure.join(' + ')}`);
   }
   
-  // Estilos principais
-  const hasTailwind = html.includes('tailwindcss') || html.match(/class="[^"]*(?:bg-|text-|flex|grid)/);
+  const hasTailwind = html.includes('tailwindcss') || html.match(/class=\"[^\"]*(?:bg-|text-|flex|grid)/);
   if (hasTailwind) {
     context.push('Framework: Tailwind CSS');
   }
   
-  // Cores dominantes
   const colorMatches = html.match(/(?:bg|text)-(?:blue|red|green|purple|gray|indigo|pink)-\d{3}/g);
   if (colorMatches && colorMatches.length > 0) {
     const uniqueColors = [...new Set(colorMatches.map(c => c.split('-')[1]))];
     context.push(`Cores: ${uniqueColors.slice(0, 3).join(', ')}`);
   }
   
-  // Componentes identificados
   const components = [];
   if (html.includes('button')) components.push('buttons');
-  if (html.includes('card') || html.match(/class="[^"]*(?:shadow|rounded)/)) components.push('cards');
+  if (html.includes('card') || html.match(/class=\"[^\"]*(?:shadow|rounded)/)) components.push('cards');
   if (html.includes('form') || html.includes('input')) components.push('forms');
   if (components.length > 0) {
     context.push(`Componentes: ${components.join(', ')}`);
   }
   
-  // JavaScript/Interatividade
   if (html.includes('<script>')) {
     context.push('Possui JavaScript customizado');
   }
@@ -121,7 +114,6 @@ const extractCodeContext = (html: string): string => {
   return context.join(' | ');
 };
 
-// Validação de qualidade do HTML gerado
 const validateGeneration = (html: string): { isValid: boolean; warnings: string[] } => {
   const warnings: string[] = [];
   
@@ -137,7 +129,7 @@ const validateGeneration = (html: string): { isValid: boolean; warnings: string[
   if (!html.match(/<(header|nav|main|article|section|footer)/)) {
     warnings.push('HTML não semântico (falta tags semânticas)');
   }
-  if (!html.match(/media\s*\(/i)) {
+  if (!html.match(/media\s\(/i)) {
     warnings.push('CSS sem media queries (pode não ser responsivo)');
   }
   if (html.includes('<img') && !html.includes('alt=')) {
@@ -145,12 +137,11 @@ const validateGeneration = (html: string): { isValid: boolean; warnings: string[
   }
   
   return {
-    isValid: warnings.length < 3, // Válido se tiver menos de 3 warnings críticos
+    isValid: warnings.length < 3,
     warnings
   };
 };
 
-// Adicionar Google Fonts ao HTML
 const addGoogleFont = (html: string, fontName: string = 'Inter'): string => {
   const fontLink = `  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,7 +153,6 @@ const addGoogleFont = (html: string, fontName: string = 'Inter'): string => {
   return html;
 };
 
-// Adicionar Tailwind CSS e outras bibliotecas
 const addModernLibraries = (html: string): string => {
   const libraries = `  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -243,13 +233,56 @@ serve(async (req) => {
 
     console.log(`🎯 Using model: ${selectedModel}`);
 
+    const systemPrompt = `You are an expert full-stack web developer specializing in React, Vite, and modern web technologies.
+
+CRITICAL INSTRUCTIONS - RESPONSE FORMAT:
+
+**FOR SIMPLE STATIC WEBSITES** (landing pages, portfolios, simple forms):
+- Return ONLY valid HTML code - no markdown, no explanations, no code blocks
+- Include ALL CSS and JavaScript inline
+- START directly with <!DOCTYPE html>
+
+**FOR INTERACTIVE/COMPLEX APPS** (dashboards, SPAs, component-based apps, anything requiring state management):
+- Return a JSON object with this EXACT structure (no markdown blocks):
+{
+  "files": [
+    {"path": "package.json", "content": "..."},
+    {"path": "index.html", "content": "..."},
+    {"path": "vite.config.ts", "content": "..."},
+    {"path": "tsconfig.json", "content": "..."},
+    {"path": "src/main.tsx", "content": "..."},
+    {"path": "src/App.tsx", "content": "..."},
+    {"path": "src/App.css", "content": "..."}
+  ]
+}
+
+REACT PROJECT REQUIREMENTS:
+1. **package.json**: Include react@^18.3.1, react-dom@^18.3.1, typescript@^5.5.3, vite@^5.4.2, @vitejs/plugin-react@^4.3.1
+2. **index.html**: Standard Vite template with <div id="root"></div> and <script type="module" src="/src/main.tsx"></script>
+3. **vite.config.ts**: Basic Vite config with React plugin
+4. **tsconfig.json**: Standard React + Vite TypeScript config
+5. **src/main.tsx**: ReactDOM.createRoot render
+6. **src/App.tsx**: Main component with modern React patterns
+7. **src/App.css**: Modern CSS with good styling
+
+DESIGN PRINCIPLES:
+- Clean, modern UI with excellent contrast
+- Responsive design (mobile-first)
+- Accessible (semantic HTML, ARIA labels)
+- Interactive and functional
+- Beautiful animations and transitions
+
+WHEN TO USE EACH:
+- Use HTML for: landing pages, marketing sites, simple forms
+- Use React for: dashboards, SPAs, interactive tools, complex state management
+
+DO NOT include markdown code blocks or explanations.`;
+
     let messages: OpenRouterMessage[];
 
     if (isEdit && currentCode) {
-      // Extrair contexto semântico para economizar tokens
       const codeContext = extractCodeContext(currentCode);
       
-      // Build context from chat history
       let historyContext = '';
       if (chatHistory && chatHistory.length > 0) {
         historyContext = '\n\nHISTÓRICO DE MODIFICAÇÕES ANTERIORES:\n';
@@ -264,7 +297,7 @@ serve(async (req) => {
       const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
         {
           type: 'text',
-          text: `CONTEXTO DO PROJETO ATUAL:\n${codeContext}\n\nCÓDIGO HTML ATUAL COMPLETO:\n${currentCode}\n\nINSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${prompt}${historyContext}`
+          text: `CONTEXTO DO PROJETO ATUAL:\n${codeContext}\n\nCÓDIGO ATUAL COMPLETO:\n${currentCode}\n\nINSTRUÇÃO DE ALTERAÇÃO: ${prompt}${historyContext}`
         }
       ];
 
@@ -281,73 +314,27 @@ serve(async (req) => {
           });
           content.push({
             type: 'text',
-            text: `Imagem ${index + 1} (use esta imagem conforme a instrução do usuário)`
+            text: `Imagem ${index + 1}`
           });
         });
       }
 
-      content.push({
-        type: 'text',
-        text: '\nRetorne o HTML completo modificado agora:'
-      });
-
       messages = [
-        {
-          role: 'system',
-          content: `Você é um desenvolvedor web SÊNIOR especializado em criar websites MODERNOS e PROFISSIONAIS usando as melhores práticas.
-
-🎯 REGRAS CRÍTICAS PARA EDIÇÃO:
-
-1. Receba o código HTML monolítico atual completo
-2. Leia o histórico de modificações para entender o contexto
-3. Identifique EXATAMENTE a parte específica que o usuário quer alterar AGORA
-4. Faça APENAS a alteração solicitada na mensagem atual
-5. PRESERVE todas as alterações anteriores do histórico
-6. NÃO desfaça mudanças que já foram aplicadas
-7. NÃO adicione recursos extras não solicitados
-8. SEMPRE retorne o arquivo HTML completo funcional
-9. Se for mudar "um botão", mude APENAS aquele botão específico mencionado
-10. Se imagens forem fornecidas, integre-as conforme a instrução
-
-⚡ SEJA CIRÚRGICO E PRECISO:
-- Se o usuário pedir para mudar a cor de UM botão → mude APENAS esse botão
-- Se pedir para adicionar UM elemento → adicione APENAS esse elemento
-- NÃO reorganize, refatore ou "melhore" código que não foi mencionado
-- Quando em dúvida, faça MENOS, não mais
-- Mantenha o estilo visual consistente com o código existente
-
-🎨 PADRÕES DE QUALIDADE (aplicar nas modificações):
-- Use Tailwind CSS classes sempre que possível
-- Mantenha design responsivo (mobile-first)
-- Use HTML5 semântico
-- Adicione aria-labels para acessibilidade
-- Use transições suaves (transition-all duration-200)
-- Mantenha cores e espaçamentos consistentes
-
-FORMATO DE RESPOSTA OBRIGATÓRIO:
-- Retorne APENAS o código HTML puro
-- NÃO use blocos de código markdown (sem \`\`\`html ou \`\`\`)
-- NÃO adicione explicações, comentários ou texto adicional
-- NÃO faça perguntas - sempre execute a alteração solicitada
-- Sua resposta deve começar diretamente com <!DOCTYPE html> e terminar com </html>`
-        },
-        {
-          role: 'user',
-          content: content
-        }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: content }
       ];
     } else {
       const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
         {
           type: 'text',
-          text: `Crie um website completo HTML monolítico para: ${prompt}`
+          text: `Crie um projeto completo para: ${prompt}`
         }
       ];
 
       if (hasImages) {
         content.push({
           type: 'text',
-          text: '\n\nImagens fornecidas pelo usuário (integre-as no código HTML):'
+          text: '\n\nImagens fornecidas pelo usuário:'
         });
         
         images.forEach((image: string, index: number) => {
@@ -355,119 +342,12 @@ FORMATO DE RESPOSTA OBRIGATÓRIO:
             type: 'image_url',
             image_url: { url: image }
           });
-          content.push({
-            type: 'text',
-            text: `Imagem ${index + 1} (integre esta imagem no HTML usando a tag <img> com src como data URL)`
-          });
         });
       }
 
       messages = [
-        {
-          role: 'system',
-          content: `Você é um desenvolvedor web SÊNIOR especializado em criar websites MODERNOS, RESPONSIVOS e PROFISSIONAIS.
-
-🎯 PRINCÍPIOS FUNDAMENTAIS:
-1. HTML5 semântico (<header>, <nav>, <main>, <article>, <section>, <footer>)
-2. Design mobile-first e totalmente responsivo
-3. CSS moderno com Tailwind CSS (via CDN - já incluído)
-4. JavaScript vanilla moderno (ES6+)
-5. Acessibilidade (ARIA labels, contraste adequado, navegação por teclado)
-6. SEO otimizado (meta tags, estrutura de headings correta)
-7. Performance (lazy loading quando apropriado)
-
-🎨 ESTILO VISUAL MODERNO:
-- Design clean e profissional
-- Espaçamento generoso (use classes Tailwind: p-4, p-6, p-8, etc.)
-- Tipografia profissional (Google Fonts já incluído - Inter, Poppins, etc.)
-- Cores harmoniosas (use Tailwind color palette)
-- Animações sutis (hover:scale-105, transition-all duration-200)
-- Sombras e gradientes modernos (shadow-lg, shadow-xl)
-- Micro-interações em botões e links
-
-💅 USE TAILWIND CSS (já incluído via CDN):
-- SEMPRE use classes Tailwind para estilização
-- Exemplos: bg-blue-500, text-white, rounded-lg, shadow-md, hover:bg-blue-600
-- Para layouts: flex, grid, container, mx-auto
-- Para responsividade: sm:, md:, lg:, xl: prefixes
-- Para espaçamento: p-4, m-2, space-y-4, gap-6
-
-📦 BIBLIOTECAS DISPONÍVEIS (via CDN - já incluídas):
-- Tailwind CSS para estilização rápida e moderna
-- Lucide Icons para ícones modernos (use: <i data-lucide="icon-name"></i>)
-- Google Fonts (Inter) para tipografia profissional
-
-🧩 COMPONENTES DE REFERÊNCIA (use como inspiração):
-
-**Navbar Moderna:**
-${TEMPLATES.components.navbar}
-
-**Hero Section:**
-${TEMPLATES.components.hero}
-
-**Card Component:**
-${TEMPLATES.components.card}
-
-**Footer Profissional:**
-${TEMPLATES.components.footer}
-
-🏗️ ESTRUTURA HTML MONOLÍTICA OBRIGATÓRIA:
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="[Descrição SEO]">
-  <title>[Título da Página]</title>
-  
-  <!-- Tailwind CSS (já incluído automaticamente) -->
-  <!-- Google Fonts (já incluído automaticamente) -->
-  <!-- Lucide Icons (já incluído automaticamente) -->
-  
-  <style>
-    /* CSS customizado adicional aqui (se necessário) */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in { animation: fadeIn 0.6s ease-out; }
-  </style>
-</head>
-<body class="font-['Inter']">
-  <!-- Conteúdo HTML aqui -->
-  
-  <script>
-    // JavaScript aqui
-    // Inicializar Lucide icons
-    if (typeof lucide !== 'undefined') {
-      lucide.createIcons();
-    }
-  </script>
-</body>
-</html>
-
-✅ CHECKLIST DE QUALIDADE (sempre verificar):
-- ✓ DOCTYPE e meta tags presentes
-- ✓ Design responsivo com Tailwind (sm:, md:, lg:)
-- ✓ HTML semântico
-- ✓ Cores harmoniosas e contraste adequado
-- ✓ Animações suaves em interações
-- ✓ Acessibilidade (aria-labels em botões e links importantes)
-- ✓ Performance (código limpo e otimizado)
-- ✓ Inicialização do Lucide Icons no script
-
-FORMATO DE RESPOSTA OBRIGATÓRIO:
-- Retorne APENAS o código HTML puro
-- NÃO use blocos de código markdown (sem \`\`\`html ou \`\`\`)
-- NÃO adicione explicações, comentários ou texto adicional
-- NÃO use JSON ou qualquer outro formato
-- Sua resposta deve começar diretamente com <!DOCTYPE html> e terminar com </html>
-- Tailwind CSS, Google Fonts e Lucide Icons JÁ ESTARÃO incluídos automaticamente`
-        },
-        {
-          role: 'user',
-          content: content
-        }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: content }
       ];
     }
 
@@ -494,104 +374,58 @@ FORMATO DE RESPOSTA OBRIGATÓRIO:
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ OpenRouter API error:', response.status, errorText);
-      
-      let errorMessage = `OpenRouter API error: ${response.status}`;
-      try {
-        const errorData = JSON.parse(errorText);
-        if (errorData.error?.message) {
-          errorMessage = errorData.error.message;
-        }
-      } catch (e) {
-        // Keep original error message
-      }
-      
-      // Special handling for 401 errors
-      if (response.status === 401) {
-        errorMessage = 'Chave API inválida ou expirada. Por favor, verifique sua chave OpenRouter nas configurações.';
-      }
-      
-      return new Response(
-        JSON.stringify({ error: errorMessage }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
     }
 
-    console.log('✅ Streaming response from OpenRouter');
+    if (!response.body) {
+      throw new Error('No response body from OpenRouter');
+    }
 
-    // Post-process: adicionar bibliotecas modernas e Google Fonts
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
     const encoder = new TextEncoder();
-    
     const stream = new ReadableStream({
       async start(controller) {
-        let accumulatedHtml = '';
-        let isCollectingHtml = false;
-        
         try {
+          const reader = response.body!.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
           while (true) {
-            const { done, value } = await reader!.read();
-            if (done) break;
+            const { done, value } = await reader.read();
             
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n');
-            
+            if (done) {
+              controller.close();
+              break;
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
             for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') {
-                  // Processar HTML acumulado
-                  if (accumulatedHtml.trim().length > 0) {
-                    // Adicionar bibliotecas e validar
-                    let processedHtml = addModernLibraries(accumulatedHtml);
-                    processedHtml = addGoogleFont(processedHtml, 'Inter');
-                    
-                    // Validar qualidade
-                    const validation = validateGeneration(processedHtml);
-                    if (validation.warnings.length > 0) {
-                      console.log('⚠️ Avisos de qualidade:', validation.warnings);
-                    }
-                    
-                    // Enviar HTML processado
-                    const finalEvent = `data: ${JSON.stringify({ 
-                      choices: [{ delta: { content: processedHtml.slice(accumulatedHtml.length) } }] 
-                    })}\n\n`;
-                    controller.enqueue(encoder.encode(finalEvent));
-                  }
-                  
-                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-                  continue;
-                }
-                
-                try {
-                  const parsed = JSON.parse(data);
-                  const content = parsed.choices?.[0]?.delta?.content;
-                  
-                  if (content) {
-                    accumulatedHtml += content;
-                    
-                    // Detectar início do HTML
-                    if (content.includes('<!DOCTYPE') || content.includes('<html')) {
-                      isCollectingHtml = true;
-                    }
-                    
-                    // Enviar chunk original durante geração
-                    controller.enqueue(value);
-                  }
-                } catch (e) {
-                  // Passar chunks não-JSON
-                  controller.enqueue(value);
-                }
-              } else {
-                controller.enqueue(encoder.encode(line + '\n'));
+              if (line.trim() === '' || !line.startsWith('data: ')) continue;
+              
+              const dataStr = line.slice(6).trim();
+              if (dataStr === '[DONE]') continue;
+
+              try {
+                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
+              } catch (parseError) {
+                console.warn('Failed to parse chunk:', dataStr.substring(0, 100));
               }
             }
           }
+
+          if (buffer.trim()) {
+            const dataStr = buffer.slice(buffer.indexOf('data:') + 6).trim();
+            if (dataStr && dataStr !== '[DONE]') {
+              try {
+                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
+              } catch { }
+            }
+          }
         } catch (error) {
-          console.error('Error processing stream:', error);
+          console.error('Stream error:', error);
           controller.error(error);
-        } finally {
-          controller.close();
         }
       }
     });
@@ -602,15 +436,14 @@ FORMATO DE RESPOSTA OBRIGATÓRIO:
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-      },
+      }
     });
 
   } catch (error) {
-    console.error('❌ Error in openrouter-generate:', error);
+    console.error('❌ Error in openrouter-generate function:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
-

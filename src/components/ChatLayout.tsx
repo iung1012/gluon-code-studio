@@ -4,6 +4,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { ArrowLeft, Download, ExternalLink, RotateCcw, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-react";
 import { ChatPanel } from "./ChatPanel";
 import { LivePreview } from "./LivePreview";
+import { WebContainerPreview } from "./WebContainerPreview";
 import { FileNode } from "./FileTree";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -47,6 +48,29 @@ export const ChatLayout = ({
   const [chatVisible, setChatVisible] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const { toast } = useToast();
+
+  // Detect if project is React-based
+  const isReactProject = (files: FileNode[]): boolean => {
+    const flattenFiles = (nodes: FileNode[]): FileNode[] => {
+      return nodes.reduce((acc, node) => {
+        if (node.type === 'file') {
+          acc.push(node);
+        }
+        if (node.children) {
+          acc.push(...flattenFiles(node.children));
+        }
+        return acc;
+      }, [] as FileNode[]);
+    };
+    
+    const allFiles = flattenFiles(files);
+    return allFiles.some(f => 
+      f.name === 'package.json' && 
+      f.content?.includes('"react"')
+    );
+  };
+
+  const isReact = isReactProject(files);
 
   const downloadHtml = () => {
     if (files.length > 0 && files[0].content) {
@@ -280,20 +304,28 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               minSize={50}
               className="bg-muted/20"
             >
+              {isReact ? (
+                <WebContainerPreview files={files} />
+              ) : (
+                <LivePreview
+                  files={files}
+                  generatedCode={generatedCode}
+                  device={previewDevice}
+                />
+              )}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          <div className="h-full bg-muted/20">
+            {isReact ? (
+              <WebContainerPreview files={files} />
+            ) : (
               <LivePreview
                 files={files}
                 generatedCode={generatedCode}
                 device={previewDevice}
               />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : (
-          <div className="h-full bg-muted/20">
-            <LivePreview
-              files={files}
-              generatedCode={generatedCode}
-              device={previewDevice}
-            />
+            )}
           </div>
         )}
       </div>

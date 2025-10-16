@@ -4,6 +4,8 @@ import { ApiKeyInput } from "@/components/ApiKeyInput";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GeneratedPreview } from "@/components/GeneratedPreview";
+import { LivePreview } from "@/components/LivePreview";
+import { WebContainerPreview } from "@/components/WebContainerPreview";
 import { ChatLayout } from "@/components/ChatLayout";
 import { ProjectSidebar } from "@/components/ProjectSidebar";
 import { useToast } from "@/hooks/use-toast";
@@ -185,6 +187,27 @@ const Index = () => {
     };
     
     return convertToArray(root);
+  };
+
+  // Detect if project is React-based
+  const isReactProject = (files: FileNode[]): boolean => {
+    const flattenFiles = (nodes: FileNode[]): FileNode[] => {
+      return nodes.reduce((acc, node) => {
+        if (node.type === 'file') {
+          acc.push(node);
+        }
+        if (node.children) {
+          acc.push(...flattenFiles(node.children));
+        }
+        return acc;
+      }, [] as FileNode[]);
+    };
+    
+    const allFiles = flattenFiles(files);
+    return allFiles.some(f => 
+      f.name === 'package.json' && 
+      f.content?.includes('"react"')
+    );
   };
 
   const parseProjectStructure = (content: string): FileNode[] => {
