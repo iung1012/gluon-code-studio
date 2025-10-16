@@ -18,6 +18,61 @@ interface OpenRouterMessage {
   }>;
 }
 
+// Validação de qualidade do HTML gerado
+const validateGeneration = (html: string): { isValid: boolean; warnings: string[] } => {
+  const warnings: string[] = [];
+  
+  if (!html.includes('<!DOCTYPE html>')) {
+    warnings.push('HTML sem DOCTYPE');
+  }
+  if (!html.includes('viewport')) {
+    warnings.push('Meta viewport ausente (não responsivo)');
+  }
+  if (!html.includes('charset')) {
+    warnings.push('Charset ausente');
+  }
+  if (!html.match(/<(header|nav|main|article|section|footer)/)) {
+    warnings.push('HTML não semântico (falta tags semânticas)');
+  }
+  if (!html.match(/media\s*\(/i)) {
+    warnings.push('CSS sem media queries (pode não ser responsivo)');
+  }
+  if (html.includes('<img') && !html.includes('alt=')) {
+    warnings.push('Imagens sem atributo alt (acessibilidade)');
+  }
+  
+  return {
+    isValid: warnings.length < 3, // Válido se tiver menos de 3 warnings críticos
+    warnings
+  };
+};
+
+// Adicionar Google Fonts ao HTML
+const addGoogleFont = (html: string, fontName: string = 'Inter'): string => {
+  const fontLink = `  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=${fontName.replace(' ', '+')}:wght@300;400;500;600;700&display=swap" rel="stylesheet">`;
+  
+  if (html.includes('</head>')) {
+    return html.replace('</head>', `${fontLink}\n</head>`);
+  }
+  return html;
+};
+
+// Adicionar Tailwind CSS e outras bibliotecas
+const addModernLibraries = (html: string): string => {
+  const libraries = `  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>`;
+  
+  if (html.includes('</head>')) {
+    return html.replace('</head>', `${libraries}\n</head>`);
+  }
+  return html;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -133,7 +188,9 @@ serve(async (req) => {
       messages = [
         {
           role: 'system',
-          content: `Você é um desenvolvedor JavaScript especialista. REGRAS CRÍTICAS PARA EDIÇÃO:
+          content: `Você é um desenvolvedor web SÊNIOR especializado em criar websites MODERNOS e PROFISSIONAIS usando as melhores práticas.
+
+🎯 REGRAS CRÍTICAS PARA EDIÇÃO:
 
 1. Receba o código HTML monolítico atual completo
 2. Leia o histórico de modificações para entender o contexto
@@ -146,11 +203,20 @@ serve(async (req) => {
 9. Se for mudar "um botão", mude APENAS aquele botão específico mencionado
 10. Se imagens forem fornecidas, integre-as conforme a instrução
 
-IMPORTANTE - SEJA CIRÚRGICO:
-- Se o usuário pedir para mudar a cor de UM botão, mude APENAS esse botão
-- Se pedir para adicionar UM elemento, adicione APENAS esse elemento
+⚡ SEJA CIRÚRGICO E PRECISO:
+- Se o usuário pedir para mudar a cor de UM botão → mude APENAS esse botão
+- Se pedir para adicionar UM elemento → adicione APENAS esse elemento
 - NÃO reorganize, refatore ou "melhore" código que não foi mencionado
 - Quando em dúvida, faça MENOS, não mais
+- Mantenha o estilo visual consistente com o código existente
+
+🎨 PADRÕES DE QUALIDADE (aplicar nas modificações):
+- Use Tailwind CSS classes sempre que possível
+- Mantenha design responsivo (mobile-first)
+- Use HTML5 semântico
+- Adicione aria-labels para acessibilidade
+- Use transições suaves (transition-all duration-200)
+- Mantenha cores e espaçamentos consistentes
 
 FORMATO DE RESPOSTA OBRIGATÓRIO:
 - Retorne APENAS o código HTML puro
@@ -193,23 +259,84 @@ FORMATO DE RESPOSTA OBRIGATÓRIO:
       messages = [
         {
           role: 'system',
-          content: `Você é um desenvolvedor JavaScript especialista. Regras OBRIGATÓRIAS:
+          content: `Você é um desenvolvedor web SÊNIOR especializado em criar websites MODERNOS, RESPONSIVOS e PROFISSIONAIS.
 
-1. SEMPRE escreva código JavaScript MONOLITO (arquivo HTML único)
-2. Estrutura obrigatória:
-   - HTML completo com DOCTYPE
-   - CSS dentro de <style> no <head>
-   - JavaScript dentro de <script> antes do </body>
-3. Sempre forneça código completo funcional
-4. Use apenas HTML, CSS e JavaScript vanilla
-5. Se imagens forem fornecidas, integre-as diretamente no HTML usando as data URLs fornecidas
+🎯 PRINCÍPIOS FUNDAMENTAIS:
+1. HTML5 semântico (<header>, <nav>, <main>, <article>, <section>, <footer>)
+2. Design mobile-first e totalmente responsivo
+3. CSS moderno com Tailwind CSS (via CDN - já incluído)
+4. JavaScript vanilla moderno (ES6+)
+5. Acessibilidade (ARIA labels, contraste adequado, navegação por teclado)
+6. SEO otimizado (meta tags, estrutura de headings correta)
+7. Performance (lazy loading quando apropriado)
+
+🎨 ESTILO VISUAL MODERNO:
+- Design clean e profissional
+- Espaçamento generoso (use classes Tailwind: p-4, p-6, p-8, etc.)
+- Tipografia profissional (Google Fonts já incluído - Inter, Poppins, etc.)
+- Cores harmoniosas (use Tailwind color palette)
+- Animações sutis (hover:scale-105, transition-all duration-200)
+- Sombras e gradientes modernos (shadow-lg, shadow-xl)
+- Micro-interações em botões e links
+
+💅 USE TAILWIND CSS (já incluído via CDN):
+- SEMPRE use classes Tailwind para estilização
+- Exemplos: bg-blue-500, text-white, rounded-lg, shadow-md, hover:bg-blue-600
+- Para layouts: flex, grid, container, mx-auto
+- Para responsividade: sm:, md:, lg:, xl: prefixes
+- Para espaçamento: p-4, m-2, space-y-4, gap-6
+
+📦 BIBLIOTECAS DISPONÍVEIS (via CDN - já incluídas):
+- Tailwind CSS para estilização rápida e moderna
+- Lucide Icons para ícones modernos (use: <i data-lucide="icon-name"></i>)
+- Google Fonts (Inter) para tipografia profissional
+
+🏗️ ESTRUTURA HTML MONOLÍTICA OBRIGATÓRIA:
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="[Descrição SEO]">
+  <title>[Título da Página]</title>
+  
+  <!-- Tailwind CSS (já incluído automaticamente) -->
+  <!-- Google Fonts (já incluído automaticamente) -->
+  <!-- Lucide Icons (já incluído automaticamente) -->
+  
+  <style>
+    /* CSS customizado adicional aqui (se necessário) */
+  </style>
+</head>
+<body class="font-['Inter']">
+  <!-- Conteúdo HTML aqui -->
+  
+  <script>
+    // JavaScript aqui
+    // Inicializar Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>
+
+✅ CHECKLIST DE QUALIDADE (sempre verificar):
+- ✓ DOCTYPE e meta tags presentes
+- ✓ Design responsivo com Tailwind (sm:, md:, lg:)
+- ✓ HTML semântico
+- ✓ Cores harmoniosas e contraste adequado
+- ✓ Animações suaves em interações
+- ✓ Acessibilidade (aria-labels em botões e links importantes)
+- ✓ Performance (código limpo e otimizado)
 
 FORMATO DE RESPOSTA OBRIGATÓRIO:
 - Retorne APENAS o código HTML puro
 - NÃO use blocos de código markdown (sem \`\`\`html ou \`\`\`)
 - NÃO adicione explicações, comentários ou texto adicional
 - NÃO use JSON ou qualquer outro formato
-- Sua resposta deve começar diretamente com <!DOCTYPE html> e terminar com </html>`
+- Sua resposta deve começar diretamente com <!DOCTYPE html> e terminar com </html>
+- Tailwind CSS, Google Fonts e Lucide Icons JÁ ESTARÃO incluídos automaticamente`
         },
         {
           role: 'user',
@@ -265,7 +392,85 @@ FORMATO DE RESPOSTA OBRIGATÓRIO:
 
     console.log('✅ Streaming response from OpenRouter');
 
-    return new Response(response.body, {
+    // Post-process: adicionar bibliotecas modernas e Google Fonts
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    
+    const stream = new ReadableStream({
+      async start(controller) {
+        let accumulatedHtml = '';
+        let isCollectingHtml = false;
+        
+        try {
+          while (true) {
+            const { done, value } = await reader!.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') {
+                  // Processar HTML acumulado
+                  if (accumulatedHtml.trim().length > 0) {
+                    // Adicionar bibliotecas e validar
+                    let processedHtml = addModernLibraries(accumulatedHtml);
+                    processedHtml = addGoogleFont(processedHtml, 'Inter');
+                    
+                    // Validar qualidade
+                    const validation = validateGeneration(processedHtml);
+                    if (validation.warnings.length > 0) {
+                      console.log('⚠️ Avisos de qualidade:', validation.warnings);
+                    }
+                    
+                    // Enviar HTML processado
+                    const finalEvent = `data: ${JSON.stringify({ 
+                      choices: [{ delta: { content: processedHtml.slice(accumulatedHtml.length) } }] 
+                    })}\n\n`;
+                    controller.enqueue(encoder.encode(finalEvent));
+                  }
+                  
+                  controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                  continue;
+                }
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content;
+                  
+                  if (content) {
+                    accumulatedHtml += content;
+                    
+                    // Detectar início do HTML
+                    if (content.includes('<!DOCTYPE') || content.includes('<html')) {
+                      isCollectingHtml = true;
+                    }
+                    
+                    // Enviar chunk original durante geração
+                    controller.enqueue(value);
+                  }
+                } catch (e) {
+                  // Passar chunks não-JSON
+                  controller.enqueue(value);
+                }
+              } else {
+                controller.enqueue(encoder.encode(line + '\n'));
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error processing stream:', error);
+          controller.error(error);
+        } finally {
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(stream, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/event-stream',
