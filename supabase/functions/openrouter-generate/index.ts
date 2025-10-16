@@ -60,7 +60,8 @@ serve(async (req) => {
       currentCode, 
       images, 
       modelType = 'basic',
-      isEdit = false 
+      isEdit = false,
+      chatHistory = []
     } = await req.json();
 
     if (!prompt) {
@@ -87,10 +88,22 @@ serve(async (req) => {
     let messages: OpenRouterMessage[];
 
     if (isEdit && currentCode) {
+      // Build context from chat history
+      let historyContext = '';
+      if (chatHistory && chatHistory.length > 0) {
+        historyContext = '\n\nHISTÓRICO DE MODIFICAÇÕES ANTERIORES:\n';
+        chatHistory.forEach((msg: any) => {
+          if (msg.role === 'user') {
+            historyContext += `- Usuário pediu: "${msg.content}"\n`;
+          }
+        });
+        historyContext += '\nNÃO desfaça essas alterações anteriores. Adicione a nova modificação preservando o que já foi feito.\n';
+      }
+
       const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
         {
           type: 'text',
-          text: `CÓDIGO HTML ATUAL COMPLETO:\n${currentCode}\n\nINSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${prompt}`
+          text: `CÓDIGO HTML ATUAL COMPLETO:\n${currentCode}\n\nINSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${prompt}${historyContext}`
         }
       ];
 
@@ -120,23 +133,31 @@ serve(async (req) => {
       messages = [
         {
           role: 'system',
-          content: `Você é um desenvolvedor JavaScript especialista. REGRAS CRÍTICAS:
+          content: `Você é um desenvolvedor JavaScript especialista. REGRAS CRÍTICAS PARA EDIÇÃO:
 
 1. Receba o código HTML monolítico atual completo
-2. Identifique EXATAMENTE a parte que o usuário quer alterar
-3. Faça APENAS a alteração solicitada
-4. Mantenha TODO o resto do código EXATAMENTE igual
-5. SEMPRE retorne o arquivo HTML completo funcional
-6. Se imagens forem fornecidas, integre-as conforme a instrução do usuário usando as data URLs
+2. Leia o histórico de modificações para entender o contexto
+3. Identifique EXATAMENTE a parte específica que o usuário quer alterar AGORA
+4. Faça APENAS a alteração solicitada na mensagem atual
+5. PRESERVE todas as alterações anteriores do histórico
+6. NÃO desfaça mudanças que já foram aplicadas
+7. NÃO adicione recursos extras não solicitados
+8. SEMPRE retorne o arquivo HTML completo funcional
+9. Se for mudar "um botão", mude APENAS aquele botão específico mencionado
+10. Se imagens forem fornecidas, integre-as conforme a instrução
+
+IMPORTANTE - SEJA CIRÚRGICO:
+- Se o usuário pedir para mudar a cor de UM botão, mude APENAS esse botão
+- Se pedir para adicionar UM elemento, adicione APENAS esse elemento
+- NÃO reorganize, refatore ou "melhore" código que não foi mencionado
+- Quando em dúvida, faça MENOS, não mais
 
 FORMATO DE RESPOSTA OBRIGATÓRIO:
 - Retorne APENAS o código HTML puro
 - NÃO use blocos de código markdown (sem \`\`\`html ou \`\`\`)
 - NÃO adicione explicações, comentários ou texto adicional
 - NÃO faça perguntas - sempre execute a alteração solicitada
-- Se não entender, faça uma interpretação inteligente e aplique
-
-IMPORTANTE: Sua resposta deve começar diretamente com <!DOCTYPE html> e terminar com </html>`
+- Sua resposta deve começar diretamente com <!DOCTYPE html> e terminar com </html>`
         },
         {
           role: 'user',

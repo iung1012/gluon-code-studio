@@ -347,6 +347,16 @@ const Index = () => {
     setLoadingProgress(0);
     setCurrentStreamContent("");
     
+    // Save user message to database
+    if (user && currentProjectId) {
+      await supabase.from('chat_history').insert({
+        user_id: user.id,
+        project_id: currentProjectId,
+        role: 'user',
+        content: message
+      });
+    }
+    
     try {
       const currentFile = files.find(f => f.name === 'index.html');
       if (!currentFile?.content) {
@@ -365,6 +375,14 @@ const Index = () => {
         throw new Error('Usuário não autenticado');
       }
 
+      // Load recent chat history for context
+      const { data: chatHistory } = await supabase
+        .from('chat_history')
+        .select('role, content')
+        .eq('project_id', currentProjectId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openrouter-generate`,
         {
@@ -378,7 +396,8 @@ const Index = () => {
             currentCode: currentFile.content,
             images,
             isEdit: true,
-            modelType: model
+            modelType: model,
+            chatHistory: chatHistory ? chatHistory.reverse() : []
           })
         }
       );
@@ -462,6 +481,16 @@ const Index = () => {
       const firstFile = findFirstFile(parsedFiles);
       if (firstFile) {
         setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
+      }
+
+      // Save AI response to database
+      if (user && currentProjectId) {
+        await supabase.from('chat_history').insert({
+          user_id: user.id,
+          project_id: currentProjectId,
+          role: 'assistant',
+          content: fullContent.substring(0, 1000) // Save only first 1000 chars to avoid huge storage
+        });
       }
 
       toast({
