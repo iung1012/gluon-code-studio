@@ -5,27 +5,67 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Key, Eye, EyeOff, MessageCircle, Sparkles, Code } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
 
 interface ApiKeyInputProps {
   onApiKeySubmit: (apiKey: string) => void;
 }
+
+const apiKeySchema = z.string()
+  .min(20, "A chave API deve ter pelo menos 20 caracteres")
+  .max(500, "A chave API é muito longa")
+  .regex(/^sk-/, "A chave API deve começar com 'sk-'");
 
 export const ApiKeyInput = ({ onApiKeySubmit }: ApiKeyInputProps) => {
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!apiKey.trim()) {
+    
+    const trimmedKey = apiKey.trim();
+    
+    // Validar chave API
+    const validation = apiKeySchema.safeParse(trimmedKey);
+    if (!validation.success) {
       toast({
-        title: "Chave API Obrigatória",
-        description: "Por favor, insira sua chave API para continuar.",
+        title: "Chave API Inválida",
+        description: validation.error.errors[0].message,
         variant: "destructive"
       });
       return;
     }
-    onApiKeySubmit(apiKey.trim());
+
+    try {
+      // Salvar chave API no perfil do usuário
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Erro de Autenticação",
+          description: "Você precisa estar logado para salvar a chave API.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ openrouter_api_key: trimmedKey })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      onApiKeySubmit(trimmedKey);
+    } catch (error) {
+      console.error('Error saving API key:', error);
+      toast({
+        title: "Erro ao Salvar",
+        description: error instanceof Error ? error.message : "Erro ao salvar chave API.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -93,7 +133,7 @@ export const ApiKeyInput = ({ onApiKeySubmit }: ApiKeyInputProps) => {
               
               <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
                 <Key className="w-3 h-3" />
-                Sua chave é armazenada localmente e nunca enviada aos nossos servidores
+                Sua chave é armazenada de forma segura no seu perfil
               </p>
             </div>
 

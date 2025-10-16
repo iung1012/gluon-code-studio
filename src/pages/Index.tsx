@@ -6,7 +6,6 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { GeneratedPreview } from "@/components/GeneratedPreview";
 import { ChatLayout } from "@/components/ChatLayout";
 import { ProjectSidebar } from "@/components/ProjectSidebar";
-import { OpenRouterApiService } from "@/services/openRouterApi";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,9 +22,8 @@ const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [apiKey, setApiKey] = useState<string>("");
+  const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [apiService, setApiService] = useState<OpenRouterApiService | null>(null);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -40,34 +38,49 @@ const Index = () => {
   const [currentProjectName, setCurrentProjectName] = useState<string>("");
   const { toast } = useToast();
 
-  // Check authentication (but don't redirect)
+  // Check authentication and API key
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      if (session?.user) {
+        setTimeout(() => {
+          checkUserApiKey(session.user.id);
+        }, 0);
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      if (session?.user) {
+        checkUserApiKey(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Load API key from localStorage on mount
-  useEffect(() => {
-    const savedApiKey = localStorage.getItem("api-key");
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-      setApiService(new OpenRouterApiService(savedApiKey));
+  const checkUserApiKey = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('openrouter_api_key')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setHasApiKey(!!data?.openrouter_api_key);
+    } catch (error) {
+      console.error('Error checking API key:', error);
+      setHasApiKey(false);
     }
-  }, []);
+  };
 
   const handleApiKeySubmit = (key: string) => {
-    setApiKey(key);
-    setApiService(new OpenRouterApiService(key));
-    localStorage.setItem("api-key", key);
+    setHasApiKey(true);
     setShowApiKeyInput(false);
     toast({
       title: "Chave API Salva",
@@ -80,7 +93,7 @@ const Index = () => {
       navigate('/auth');
       return;
     }
-    if (!apiKey || !apiKey.trim()) {
+    if (!hasApiKey) {
       setShowApiKeyInput(true);
       toast({
         title: "Chave API Necessária",
@@ -180,22 +193,7 @@ const Index = () => {
     }];
   };
 
-  const handlePromptSubmit = async (prompt: string, model: string = "moonshotai/kimi-k2:free", temperature: number = 0.4) => {
-    let currentService = apiService;
-    if (!apiService) {
-      currentService = new OpenRouterApiService(apiKey);
-      setApiService(currentService);
-    }
-    
-    if (!currentService) {
-      toast({
-        title: "Erro no Serviço",
-        description: "Falha ao inicializar serviço OpenRouter. Tente novamente.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handlePromptSubmit = async (prompt: string, model: string = "basic", temperature: number = 0.4) => {
     setIsLoading(true);
     setLoadingProgress(0);
     setCurrentStreamContent("");
@@ -203,79 +201,103 @@ const Index = () => {
     setUseChatLayout(true);
     
     try {
-      const streamCallbacks = {
-        onProgress: (content: string, isComplete: boolean) => {
-          console.log(`📡 Stream progress: ${content.length} chars, complete: ${isComplete}`);
-          setCurrentStreamContent(content);
-          
-          // Progresso baseado no conteúdo recebido
-          let progress = 0;
-          if (content.length > 100) progress = 20;
-          if (content.includes('<!DOCTYPE')) progress = Math.max(progress, 30);
-          if (content.includes('<head>')) progress = Math.max(progress, 45);
-          if (content.includes('<style>')) progress = Math.max(progress, 60);
-          if (content.includes('<body>')) progress = Math.max(progress, 75);
-          if (content.length > 2000) progress = Math.max(progress, 85);
-          if (isComplete) progress = 100;
-          
-          setLoadingProgress(progress);
-        },
-        onComplete: (fullContent: string) => {
-          console.log('✅ Stream completed with', fullContent.length, 'characters');
-          setLoadingProgress(100);
-        },
-        onError: (error: Error) => {
-          console.error('❌ Stream error:', error);
-          setLoadingProgress(0);
+      const isEdit = files.length > 0 && files[0].content;
+      const currentFile = files.find(f => f.name === 'index.html');
+
+      console.log('🚀 Calling Edge Function:', { isEdit, hasCurrentFile: !!currentFile });
+
+      const { data, error } = await supabase.functions.invoke('openrouter-generate', {
+        body: {
+          prompt,
+          currentCode: isEdit && currentFile ? currentFile.content : undefined,
+          isEdit,
+          modelType: model === 'pro' ? 'pro' : 'basic'
         }
-      };
-      
-      let response: string;
-      
-      if (files.length > 0 && files[0].content) {
-        const currentFile = files.find(f => f.name === 'index.html');
-        if (currentFile?.content) {
-          console.log('🎯 Fazendo edição específica...');
-          response = await currentService.editSpecificPart(currentFile.content, prompt, undefined, streamCallbacks, 'basic');
-        } else {
-          console.log('🆕 Gerando novo projeto...');
-          response = await currentService.generateProjectStructure(prompt, undefined, streamCallbacks, 'basic');
-        }
-      } else {
-        console.log('🆕 Gerando novo projeto...');
-        response = await currentService.generateProjectStructure(prompt, undefined, streamCallbacks, 'basic');
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Erro ao chamar Edge Function');
       }
-      
-      if (!response || response.trim().length === 0) {
+
+      if (!data) {
+        throw new Error('Nenhuma resposta da Edge Function');
+      }
+
+      // Handle streaming response
+      const reader = data.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log('✅ Streaming complete');
+          setLoadingProgress(100);
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim() === '' || !line.startsWith('data: ')) continue;
+          
+          const dataStr = line.slice(6).trim();
+          if (dataStr === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            const deltaContent = parsed.choices?.[0]?.delta?.content;
+            
+            if (deltaContent) {
+              fullContent += deltaContent;
+              setCurrentStreamContent(fullContent);
+              
+              // Progresso baseado no conteúdo recebido
+              let progress = 0;
+              if (fullContent.length > 100) progress = 20;
+              if (fullContent.includes('<!DOCTYPE')) progress = Math.max(progress, 30);
+              if (fullContent.includes('<head>')) progress = Math.max(progress, 45);
+              if (fullContent.includes('<style>')) progress = Math.max(progress, 60);
+              if (fullContent.includes('<body>')) progress = Math.max(progress, 75);
+              if (fullContent.length > 2000) progress = Math.max(progress, 85);
+              
+              setLoadingProgress(progress);
+            }
+          } catch (parseError) {
+            console.warn('Failed to parse chunk:', dataStr.substring(0, 100));
+          }
+        }
+      }
+
+      if (!fullContent || fullContent.trim().length === 0) {
         throw new Error('API retornou resposta vazia');
       }
       
-      console.log('✅ API response received:', response.length, 'characters');
+      console.log('✅ Full response received:', fullContent.length, 'characters');
       
-      const parsedFiles = parseProjectStructure(response);
-      
-      // Create new version
-      createNewVersion(response);
-      
-      // Save project
-      await saveProject(response);
+      const parsedFiles = parseProjectStructure(fullContent);
+      createNewVersion(fullContent);
+      await saveProject(fullContent);
       
       setFiles(parsedFiles);
-      setGeneratedCode(response);
+      setGeneratedCode(fullContent);
       
       const firstFile = findFirstFile(parsedFiles);
       if (firstFile) {
         setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
       }
 
-      const isEdit = files.length > 0;
       toast({
-        title: isEdit ? "Website Atualizado!" : "Website Gerado!",
-        description: isEdit ? "Alterações aplicadas com sucesso." : "Website criado com sucesso.",
+        title: "Website Gerado!",
+        description: "Seu website está pronto para visualização.",
       });
     } catch (error) {
       console.error('❌ Error generating code:', error);
-      setLoadingProgress(0);
       toast({
         title: "Falha na Geração",
         description: error instanceof Error ? error.message : "Erro ao gerar website. Tente novamente.",
@@ -289,79 +311,109 @@ const Index = () => {
   };
 
   const handleChatMessage = async (message: string, images?: string[], model: 'basic' | 'pro' = 'basic') => {
-    if (!apiService) return;
-
     setIsLoading(true);
     setLoadingProgress(0);
     setCurrentStreamContent("");
     
     try {
-      const streamCallbacks = {
-        onProgress: (content: string, isComplete: boolean) => {
-          console.log(`📡 Chat stream progress: ${content.length} chars, complete: ${isComplete}`);
-          setCurrentStreamContent(content);
-          
-          let progress = 0;
-          if (content.length > 100) progress = 25;
-          if (content.includes('<!DOCTYPE')) progress = Math.max(progress, 40);
-          if (content.length > 1000) progress = Math.max(progress, 60);
-          if (content.length > 3000) progress = Math.max(progress, 80);
-          if (isComplete) progress = 100;
-          
-          setLoadingProgress(progress);
-        },
-        onComplete: (fullContent: string) => {
-          console.log('✅ Chat stream completed with', fullContent.length, 'characters');
-          setLoadingProgress(100);
-        },
-        onError: (error: Error) => {
-          console.error('❌ Chat stream error:', error);
-          setLoadingProgress(0);
-        }
-      };
-      
-      if (files.length > 0 && files[0].content) {
-        const currentFile = files.find(f => f.name === 'index.html');
-        if (currentFile?.content) {
-          console.log('🎯 Fazendo edição via chat...', { 
-            messageLength: message.length, 
-            currentCodeLength: currentFile.content.length,
-            imagesCount: images?.length || 0,
-            modelType: model
-          });
-          
-          const response = await apiService.editSpecificPart(currentFile.content, message, images, streamCallbacks, model);
-          
-          if (!response || response.trim().length === 0) {
-            throw new Error('API retornou resposta vazia');
-          }
-          
-          const parsedFiles = parseProjectStructure(response);
-          
-          // Create new version
-          createNewVersion(response);
-          
-          // Save project
-          await saveProject(response);
-          
-          setFiles(parsedFiles);
-          setGeneratedCode(response);
-          
-          const firstFile = findFirstFile(parsedFiles);
-          if (firstFile) {
-            setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
-          }
-
-          toast({
-            title: "Website Atualizado!",
-            description: "Suas alterações foram aplicadas com sucesso.",
-          });
-        } else {
-          throw new Error("Arquivo atual não encontrado para edição");
-        }
-      } else {
+      const currentFile = files.find(f => f.name === 'index.html');
+      if (!currentFile?.content) {
         throw new Error("Nenhum website gerado para editar");
       }
+
+      console.log('🎯 Editando via chat...', { 
+        messageLength: message.length, 
+        currentCodeLength: currentFile.content.length,
+        imagesCount: images?.length || 0,
+        modelType: model
+      });
+
+      const { data, error } = await supabase.functions.invoke('openrouter-generate', {
+        body: {
+          prompt: message,
+          currentCode: currentFile.content,
+          images,
+          isEdit: true,
+          modelType: model
+        }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Erro ao chamar Edge Function');
+      }
+
+      if (!data) {
+        throw new Error('Nenhuma resposta da Edge Function');
+      }
+
+      // Handle streaming response
+      const reader = data.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log('✅ Streaming complete');
+          setLoadingProgress(100);
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim() === '' || !line.startsWith('data: ')) continue;
+          
+          const dataStr = line.slice(6).trim();
+          if (dataStr === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            const deltaContent = parsed.choices?.[0]?.delta?.content;
+            
+            if (deltaContent) {
+              fullContent += deltaContent;
+              setCurrentStreamContent(fullContent);
+              
+              let progress = 0;
+              if (fullContent.length > 100) progress = 25;
+              if (fullContent.includes('<!DOCTYPE')) progress = Math.max(progress, 40);
+              if (fullContent.length > 1000) progress = Math.max(progress, 60);
+              if (fullContent.length > 3000) progress = Math.max(progress, 80);
+              
+              setLoadingProgress(progress);
+            }
+          } catch (parseError) {
+            console.warn('Failed to parse chunk:', dataStr.substring(0, 100));
+          }
+        }
+      }
+
+      if (!fullContent || fullContent.trim().length === 0) {
+        throw new Error('API retornou resposta vazia');
+      }
+      
+      const parsedFiles = parseProjectStructure(fullContent);
+      createNewVersion(fullContent);
+      await saveProject(fullContent);
+      
+      setFiles(parsedFiles);
+      setGeneratedCode(fullContent);
+      
+      const firstFile = findFirstFile(parsedFiles);
+      if (firstFile) {
+        setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
+      }
+
+      toast({
+        title: "Website Atualizado!",
+        description: "Suas alterações foram aplicadas com sucesso.",
+      });
     } catch (error) {
       console.error('❌ Error processing chat message:', error);
       setLoadingProgress(0);

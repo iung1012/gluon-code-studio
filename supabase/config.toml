@@ -1,1 +1,4 @@
 project_id = "pefeepxfbfvwqdtnjajl"
+
+[functions.openrouter-generate]
+verify_jwt = true
