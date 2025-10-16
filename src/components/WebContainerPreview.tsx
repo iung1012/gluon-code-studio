@@ -108,6 +108,13 @@ export const WebContainerPreview = ({
     
     const bootContainer = async () => {
       try {
+        // Ensure the page is cross-origin isolated before booting WebContainer
+        if (typeof window !== 'undefined' && !window.crossOriginIsolated) {
+          addLog('⚠️ Ambiente sem isolamento (COOP/COEP). Registrando Service Worker e aguardando recarga...');
+          setError('Para executar o preview, precisamos ativar o isolamento do navegador. Atualize a página e tente novamente.');
+          return;
+        }
+
         addLog('🚀 Booting WebContainer...');
         const instance = await WebContainer.boot();
         
