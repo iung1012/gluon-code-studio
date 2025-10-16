@@ -35,10 +35,10 @@ interface StreamCallbacks {
 
 export class GLMApiService {
   private apiKey: string;
-  private baseUrl = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-  private basicModel = 'glm-4.5';
-  private proModel = 'glm-4.5-x';
-  private visionModel = 'glm-4.5v';
+  private baseUrl = 'https://openrouter.ai/api/v1/chat/completions';
+  private basicModel = 'moonshotai/kimi-k2:free';
+  private proModel = 'z-ai/glm-4.5-air';
+  private visionModel = 'z-ai/glm-4.5-air';
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
