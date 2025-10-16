@@ -18,6 +18,109 @@ interface OpenRouterMessage {
   }>;
 }
 
+// Biblioteca de Templates e Componentes
+const TEMPLATES = {
+  components: {
+    navbar: `<nav class="bg-white shadow-lg">
+  <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+    <a href="#" class="text-2xl font-bold text-gray-800">Logo</a>
+    <div class="hidden md:flex space-x-6">
+      <a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">Home</a>
+      <a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">Sobre</a>
+      <a href="#" class="text-gray-600 hover:text-blue-600 transition-colors">Contato</a>
+    </div>
+    <button class="md:hidden" aria-label="Menu">
+      <i data-lucide="menu" class="w-6 h-6"></i>
+    </button>
+  </div>
+</nav>`,
+    
+    hero: `<section class="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-20">
+  <div class="container mx-auto px-4 text-center">
+    <h1 class="text-5xl font-bold mb-4 animate-fade-in">Título Impactante</h1>
+    <p class="text-xl mb-8 opacity-90">Subtítulo descritivo que engaja o usuário</p>
+    <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
+      Call to Action
+    </button>
+  </div>
+</section>`,
+    
+    card: `<div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+  <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+    <i data-lucide="zap" class="w-6 h-6 text-blue-600"></i>
+  </div>
+  <h3 class="text-xl font-semibold mb-2">Título do Card</h3>
+  <p class="text-gray-600">Descrição concisa do conteúdo ou recurso apresentado.</p>
+</div>`,
+    
+    footer: `<footer class="bg-gray-900 text-white py-8">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+      <div>
+        <h4 class="font-bold mb-4">Empresa</h4>
+        <ul class="space-y-2">
+          <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Sobre</a></li>
+          <li><a href="#" class="text-gray-400 hover:text-white transition-colors">Contato</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-gray-800 pt-6 text-center text-gray-400">
+      <p>&copy; 2025 Empresa. Todos os direitos reservados.</p>
+    </div>
+  </div>
+</footer>`
+  }
+};
+
+// Extrair contexto semântico do código para economizar tokens
+const extractCodeContext = (html: string): string => {
+  const context: string[] = [];
+  
+  // Estrutura de componentes
+  const hasNav = html.match(/<nav/i);
+  const hasHeader = html.match(/<header/i);
+  const hasMain = html.match(/<main/i);
+  const hasFooter = html.match(/<footer/i);
+  
+  if (hasNav || hasHeader || hasMain || hasFooter) {
+    const structure = [];
+    if (hasNav) structure.push('navbar');
+    if (hasHeader) structure.push('header');
+    if (hasMain) structure.push('main content');
+    if (hasFooter) structure.push('footer');
+    context.push(`Estrutura: ${structure.join(' + ')}`);
+  }
+  
+  // Estilos principais
+  const hasTailwind = html.includes('tailwindcss') || html.match(/class="[^"]*(?:bg-|text-|flex|grid)/);
+  if (hasTailwind) {
+    context.push('Framework: Tailwind CSS');
+  }
+  
+  // Cores dominantes
+  const colorMatches = html.match(/(?:bg|text)-(?:blue|red|green|purple|gray|indigo|pink)-\d{3}/g);
+  if (colorMatches && colorMatches.length > 0) {
+    const uniqueColors = [...new Set(colorMatches.map(c => c.split('-')[1]))];
+    context.push(`Cores: ${uniqueColors.slice(0, 3).join(', ')}`);
+  }
+  
+  // Componentes identificados
+  const components = [];
+  if (html.includes('button')) components.push('buttons');
+  if (html.includes('card') || html.match(/class="[^"]*(?:shadow|rounded)/)) components.push('cards');
+  if (html.includes('form') || html.includes('input')) components.push('forms');
+  if (components.length > 0) {
+    context.push(`Componentes: ${components.join(', ')}`);
+  }
+  
+  // JavaScript/Interatividade
+  if (html.includes('<script>')) {
+    context.push('Possui JavaScript customizado');
+  }
+  
+  return context.join(' | ');
+};
+
 // Validação de qualidade do HTML gerado
 const validateGeneration = (html: string): { isValid: boolean; warnings: string[] } => {
   const warnings: string[] = [];
@@ -143,6 +246,9 @@ serve(async (req) => {
     let messages: OpenRouterMessage[];
 
     if (isEdit && currentCode) {
+      // Extrair contexto semântico para economizar tokens
+      const codeContext = extractCodeContext(currentCode);
+      
       // Build context from chat history
       let historyContext = '';
       if (chatHistory && chatHistory.length > 0) {
@@ -158,7 +264,7 @@ serve(async (req) => {
       const content: Array<{type: 'text' | 'image_url'; text?: string; image_url?: {url: string}}> = [
         {
           type: 'text',
-          text: `CÓDIGO HTML ATUAL COMPLETO:\n${currentCode}\n\nINSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${prompt}${historyContext}`
+          text: `CONTEXTO DO PROJETO ATUAL:\n${codeContext}\n\nCÓDIGO HTML ATUAL COMPLETO:\n${currentCode}\n\nINSTRUÇÃO DE ALTERAÇÃO (execute imediatamente): ${prompt}${historyContext}`
         }
       ];
 
@@ -291,6 +397,20 @@ FORMATO DE RESPOSTA OBRIGATÓRIO:
 - Lucide Icons para ícones modernos (use: <i data-lucide="icon-name"></i>)
 - Google Fonts (Inter) para tipografia profissional
 
+🧩 COMPONENTES DE REFERÊNCIA (use como inspiração):
+
+**Navbar Moderna:**
+${TEMPLATES.components.navbar}
+
+**Hero Section:**
+${TEMPLATES.components.hero}
+
+**Card Component:**
+${TEMPLATES.components.card}
+
+**Footer Profissional:**
+${TEMPLATES.components.footer}
+
 🏗️ ESTRUTURA HTML MONOLÍTICA OBRIGATÓRIA:
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -306,6 +426,11 @@ FORMATO DE RESPOSTA OBRIGATÓRIO:
   
   <style>
     /* CSS customizado adicional aqui (se necessário) */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeIn 0.6s ease-out; }
   </style>
 </head>
 <body class="font-['Inter']">
@@ -329,6 +454,7 @@ FORMATO DE RESPOSTA OBRIGATÓRIO:
 - ✓ Animações suaves em interações
 - ✓ Acessibilidade (aria-labels em botões e links importantes)
 - ✓ Performance (código limpo e otimizado)
+- ✓ Inicialização do Lucide Icons no script
 
 FORMATO DE RESPOSTA OBRIGATÓRIO:
 - Retorne APENAS o código HTML puro
