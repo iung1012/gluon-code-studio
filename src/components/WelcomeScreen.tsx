@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, Sparkles, Zap } from "lucide-react";
+import { ArrowUp, Zap } from "lucide-react";
+import { Header } from "@/components/Header";
 
 interface WelcomeScreenProps {
   onSubmit: (prompt: string, model: string, temperature: number) => void;
@@ -28,8 +29,10 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-xl mx-auto space-y-12">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="flex-1 flex flex-col items-center justify-center p-6 pt-24">
+        <div className="w-full max-w-xl mx-auto space-y-12">
         {/* Hero Section */}
         <div className="text-center space-y-6">
           
@@ -101,6 +104,7 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
                 </Button>
               ))}
             </div>
+          </div>
           </div>
         </div>
       </div>
