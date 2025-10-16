@@ -5,6 +5,7 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GeneratedPreview } from "@/components/GeneratedPreview";
 import { ChatLayout } from "@/components/ChatLayout";
+import { ProjectSidebar } from "@/components/ProjectSidebar";
 import { OpenRouterApiService } from "@/services/openRouterApi";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -35,6 +36,8 @@ const Index = () => {
   const [useChatLayout, setUseChatLayout] = useState(false);
   const [websiteVersions, setWebsiteVersions] = useState<WebsiteVersion[]>([]);
   const [currentVersionId, setCurrentVersionId] = useState<string>("");
+  const [currentProjectId, setCurrentProjectId] = useState<string | undefined>();
+  const [currentProjectName, setCurrentProjectName] = useState<string>("");
   const { toast } = useToast();
 
   // Check authentication (but don't redirect)
@@ -249,6 +252,9 @@ const Index = () => {
       // Create new version
       createNewVersion(response);
       
+      // Save project
+      await saveProject(response);
+      
       setFiles(parsedFiles);
       setGeneratedCode(response);
       
@@ -330,6 +336,9 @@ const Index = () => {
           // Create new version
           createNewVersion(response);
           
+          // Save project
+          await saveProject(response);
+          
           setFiles(parsedFiles);
           setGeneratedCode(response);
           
@@ -377,6 +386,71 @@ const Index = () => {
     return null;
   };
 
+  const saveProject = async (htmlContent: string, projectName?: string) => {
+    if (!user) return;
+
+    try {
+      const name = projectName || currentProjectName || `Projeto ${new Date().toLocaleDateString('pt-BR')}`;
+      
+      if (currentProjectId) {
+        // Update existing project
+        const { error } = await supabase
+          .from('projects')
+          .update({
+            html_content: htmlContent,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', currentProjectId);
+
+        if (error) throw error;
+      } else {
+        // Create new project
+        const { data, error } = await supabase
+          .from('projects')
+          .insert({
+            name,
+            html_content: htmlContent,
+            user_id: user.id,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        if (data) {
+          setCurrentProjectId(data.id);
+          setCurrentProjectName(data.name);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast({
+        title: "Erro ao salvar projeto",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProjectSelect = (project: any) => {
+    const parsedFiles = parseProjectStructure(project.html_content);
+    setFiles(parsedFiles);
+    setGeneratedCode(project.html_content);
+    setCurrentProjectId(project.id);
+    setCurrentProjectName(project.name);
+    setShowPreview(true);
+    setUseChatLayout(true);
+    
+    const firstFile = findFirstFile(parsedFiles);
+    if (firstFile) {
+      setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
+    }
+
+    toast({
+      title: "Projeto Carregado",
+      description: `"${project.name}" foi carregado com sucesso.`,
+    });
+  };
+
   const handleNewProject = () => {
     setFiles([]);
     setSelectedFile(undefined);
@@ -385,6 +459,8 @@ const Index = () => {
     setUseChatLayout(false);
     setWebsiteVersions([]);
     setCurrentVersionId("");
+    setCurrentProjectId(undefined);
+    setCurrentProjectName("");
     toast({
       title: "Novo Projeto",
       description: "Projeto limpo. Você pode gerar um novo website agora.",
@@ -413,6 +489,13 @@ const Index = () => {
           progress={loadingProgress > 0 ? loadingProgress : undefined}
           currentContent={currentStreamContent}
         />
+        {user && (
+          <ProjectSidebar
+            onProjectSelect={handleProjectSelect}
+            onNewProject={handleNewProject}
+            currentProjectId={currentProjectId}
+          />
+        )}
         {useChatLayout ? (
           <ChatLayout
             files={files}
@@ -448,6 +531,13 @@ const Index = () => {
         progress={loadingProgress > 0 ? loadingProgress : undefined}
         currentContent={currentStreamContent}
       />
+      {user && (
+        <ProjectSidebar
+          onProjectSelect={handleProjectSelect}
+          onNewProject={handleNewProject}
+          currentProjectId={currentProjectId}
+        />
+      )}
       <WelcomeScreen 
         onSubmit={checkApiKeyAndProceed} 
         isLoading={isLoading}
