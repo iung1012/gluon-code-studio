@@ -206,34 +206,48 @@ const Index = () => {
 
       console.log('🚀 Calling Edge Function:', { isEdit, hasCurrentFile: !!currentFile });
 
-      const { data, error } = await supabase.functions.invoke('openrouter-generate', {
-        body: {
-          prompt,
-          currentCode: isEdit && currentFile ? currentFile.content : undefined,
-          isEdit,
-          modelType: model === 'pro' ? 'pro' : 'basic'
-        }
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuário não autenticado');
+      }
 
-      if (error) {
-        console.error('Edge function error:', error);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openrouter-generate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            prompt,
+            currentCode: isEdit && currentFile ? currentFile.content : undefined,
+            isEdit,
+            modelType: model === 'pro' ? 'pro' : 'basic'
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Edge function error:', errorData);
         
         // If 401 error, likely API key issue
-        if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('inválida')) {
+        if (response.status === 401 || errorData.error?.includes('401') || errorData.error?.includes('Unauthorized') || errorData.error?.includes('inválida')) {
           setHasApiKey(false);
           setShowApiKeyInput(true);
           throw new Error('Chave API inválida ou expirada. Por favor, configure novamente.');
         }
         
-        throw new Error(error.message || 'Erro ao chamar Edge Function');
+        throw new Error(errorData.error || 'Erro ao chamar Edge Function');
       }
 
-      if (!data) {
+      if (!response.body) {
         throw new Error('Nenhuma resposta da Edge Function');
       }
 
       // Handle streaming response
-      const reader = data.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
       let buffer = '';
@@ -336,35 +350,49 @@ const Index = () => {
         modelType: model
       });
 
-      const { data, error } = await supabase.functions.invoke('openrouter-generate', {
-        body: {
-          prompt: message,
-          currentCode: currentFile.content,
-          images,
-          isEdit: true,
-          modelType: model
-        }
-      });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Usuário não autenticado');
+      }
 
-      if (error) {
-        console.error('Edge function error:', error);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/openrouter-generate`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            prompt: message,
+            currentCode: currentFile.content,
+            images,
+            isEdit: true,
+            modelType: model
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Edge function error:', errorData);
         
         // If 401 error, likely API key issue
-        if (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('inválida')) {
+        if (response.status === 401 || errorData.error?.includes('401') || errorData.error?.includes('Unauthorized') || errorData.error?.includes('inválida')) {
           setHasApiKey(false);
           setShowApiKeyInput(true);
           throw new Error('Chave API inválida ou expirada. Por favor, configure novamente.');
         }
         
-        throw new Error(error.message || 'Erro ao chamar Edge Function');
+        throw new Error(errorData.error || 'Erro ao chamar Edge Function');
       }
 
-      if (!data) {
+      if (!response.body) {
         throw new Error('Nenhuma resposta da Edge Function');
       }
 
       // Handle streaming response
-      const reader = data.getReader();
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullContent = '';
       let buffer = '';
