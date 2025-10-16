@@ -80,8 +80,13 @@ const Index = () => {
       navigate('/auth');
       return;
     }
-    if (!apiKey) {
+    if (!apiKey || !apiKey.trim()) {
       setShowApiKeyInput(true);
+      toast({
+        title: "Chave API Necessária",
+        description: "Por favor, insira sua chave API do OpenRouter para continuar.",
+        variant: "destructive"
+      });
       return;
     }
     handlePromptSubmit(prompt, model, temperature);
