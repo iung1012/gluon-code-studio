@@ -219,14 +219,16 @@ const Index = () => {
     
     let cleanContent = content.trim();
     
-    // Remove markdown code blocks if present
-    const codeBlockMatch = cleanContent.match(/```(?:json|html)?\s*\n?([\s\S]*?)```/);
-    if (codeBlockMatch) {
-      cleanContent = codeBlockMatch[1].trim();
+    // Remove markdown code blocks - try multiple patterns
+    if (cleanContent.startsWith('```')) {
+      // Remove opening ```json or ```
+      cleanContent = cleanContent.replace(/^```(?:json|html)?\s*\n?/, '');
+      // Remove closing ```
+      cleanContent = cleanContent.replace(/\n?```\s*$/, '');
       console.log('🧹 Removed markdown code block wrapper');
     }
     
-    // Remove leading/trailing backticks
+    // Remove any remaining leading/trailing backticks or whitespace
     cleanContent = cleanContent.replace(/^`+|`+$/g, '').trim();
     
     // Parse as JSON multi-file response (React projects)
@@ -239,6 +241,7 @@ const Index = () => {
       }
     } catch (e) {
       console.error('❌ JSON parse failed:', e);
+      console.error('Failed content:', cleanContent.substring(0, 300));
       throw new Error('Formato inválido: esperado JSON com estrutura React');
     }
     
