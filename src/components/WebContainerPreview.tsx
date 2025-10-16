@@ -26,7 +26,7 @@ export const WebContainerPreview = ({
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [isBooting, setIsBooting] = useState(true);
-  const [showTerminal, setShowTerminal] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(true); // Auto-open terminal for debugging
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
 
@@ -136,13 +136,24 @@ export const WebContainerPreview = ({
     if (!container || files.length === 0 || isBooting) return;
 
     let mounted = true;
+    let devProcess: any = null;
 
     const setupProject = async () => {
       try {
         addLog('📁 Mounting files...');
         const fileTree = buildFileTree(files);
+        console.log('File tree structure:', JSON.stringify(fileTree, null, 2));
         await container.mount(fileTree);
         addLog('✅ Files mounted');
+
+        // Set up server-ready listener BEFORE starting server
+        container.on('server-ready', (port, url) => {
+          console.log('Server ready event:', { port, url });
+          if (mounted) {
+            setPreviewUrl(url);
+            addLog(`✅ Server ready on port ${port} at ${url}`);
+          }
+        });
 
         // Install dependencies
         addLog('📦 Installing dependencies...');
@@ -164,19 +175,21 @@ export const WebContainerPreview = ({
 
         // Start dev server
         addLog('🚀 Starting dev server...');
-        const devProcess = await container.spawn('npm', ['run', 'dev']);
+        devProcess = await container.spawn('npm', ['run', 'dev']);
         
         devProcess.output.pipeTo(new WritableStream({
           write(data) {
-            addLog(data);
-            // Only rely on WebContainer's 'server-ready' event for a valid preview URL
+            const log = String(data);
+            addLog(log);
+            console.log('Dev server output:', log);
           }
         }));
 
-        container.on('server-ready', (port, url) => {
-          if (mounted) {
-            setPreviewUrl(url);
-            addLog(`✅ Server ready on port ${port}`);
+        // Monitor dev process exit
+        devProcess.exit.then((code: number) => {
+          if (code !== 0) {
+            addLog(`⚠️ Dev server exited with code ${code}`);
+            console.warn('Dev server exited unexpectedly:', code);
           }
         });
 
@@ -191,6 +204,10 @@ export const WebContainerPreview = ({
 
     return () => {
       mounted = false;
+      // Cleanup: kill dev process if running
+      if (devProcess) {
+        devProcess.kill?.();
+      }
     };
   }, [container, files, isBooting]);
 
