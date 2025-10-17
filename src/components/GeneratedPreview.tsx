@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Download, ExternalLink, RotateCcw } from "lucide-react";
 import { CodePreview } from "./CodePreview";
 import { FileNode } from "./FileTree";
+import { isReactProject } from "@/utils/fileTreeParser";
+import { WebContainerPreview } from "./WebContainerPreview";
 
 interface GeneratedPreviewProps {
   files: FileNode[];
@@ -134,12 +136,16 @@ export const GeneratedPreview = ({
 
       {/* Content */}
       <div className="flex-1">
-        <CodePreview
-          files={files}
-          selectedFile={selectedFile}
-          onFileSelect={onFileSelect}
-          generatedCode={generatedCode}
-        />
+        {isReactProject(files) ? (
+          <WebContainerPreview files={files} />
+        ) : (
+          <CodePreview
+            files={files}
+            selectedFile={selectedFile}
+            onFileSelect={onFileSelect}
+            generatedCode={generatedCode}
+          />
+        )}
       </div>
     </div>
   );
