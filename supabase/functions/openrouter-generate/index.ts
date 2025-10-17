@@ -344,6 +344,33 @@ DESIGN PRINCIPLES:
 - Beautiful animations and transitions
 - Professional styling
 
+CRITICAL CSS REQUIREMENTS:
+- ALWAYS create comprehensive, beautiful CSS in src/App.css
+- Use modern CSS features: flexbox, grid, custom properties, gradients
+- Include smooth transitions and hover effects on all interactive elements
+- Use a professional color palette (not just black/white/gray)
+- Add proper spacing, padding, margins for visual hierarchy
+- Include responsive design with media queries
+- Use modern fonts (system fonts or Google Fonts link in index.html)
+- Add subtle shadows, border-radius for depth
+- Create a cohesive design system with consistent spacing/colors
+- NEVER return bare, unstyled HTML - always include rich CSS
+
+Example color palette to use:
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --secondary: #8b5cf6;
+  --accent: #ec4899;
+  --background: #ffffff;
+  --surface: #f9fafb;
+  --text: #1f2937;
+  --text-light: #6b7280;
+  --border: #e5e7eb;
+  --success: #10b981;
+  --error: #ef4444;
+}
+
 DO NOT include markdown code blocks. Return pure JSON only.`;
 
     let messages: OpenRouterMessage[];
