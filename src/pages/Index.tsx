@@ -8,6 +8,7 @@ import { LivePreview } from "@/components/LivePreview";
 import { WebContainerPreview } from "@/components/WebContainerPreview";
 import { ChatLayout } from "@/components/ChatLayout";
 import { ProjectSidebar } from "@/components/ProjectSidebar";
+import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +49,7 @@ const Index = () => {
   const [currentProjectId, setCurrentProjectId] = useState<string | undefined>();
   const [currentProjectName, setCurrentProjectName] = useState<string>("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { toast } = useToast();
 
   // Check authentication and API key
@@ -111,12 +113,7 @@ const Index = () => {
     }
     
     if (!subscribed) {
-      toast({
-        title: "Assinatura Necessária",
-        description: "Você precisa ser assinante PRO para gerar websites.",
-        variant: "destructive"
-      });
-      navigate('/subscription');
+      setShowUpgradeDialog(true);
       return;
     }
     
@@ -426,12 +423,7 @@ const Index = () => {
 
   const handleChatMessage = async (message: string, images?: string[], model: 'basic' | 'pro' = 'basic') => {
     if (!subscribed) {
-      toast({
-        title: "Assinatura Necessária",
-        description: "Você precisa ser assinante PRO para editar websites.",
-        variant: "destructive"
-      });
-      navigate('/subscription');
+      setShowUpgradeDialog(true);
       return;
     }
     
@@ -792,6 +784,10 @@ const Index = () => {
         isVisible={isLoading}
         progress={loadingProgress > 0 ? loadingProgress : undefined}
         currentContent={currentStreamContent}
+      />
+      <UpgradeDialog 
+        open={showUpgradeDialog} 
+        onOpenChange={setShowUpgradeDialog}
       />
       {user && (
         <ProjectSidebar
