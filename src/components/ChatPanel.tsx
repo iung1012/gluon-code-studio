@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Bot, User, Image, X, Zap } from "lucide-react";
+import { Send, Bot, User, Image, X, Zap, MousePointer2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VersionButton } from "./VersionButton";
 
@@ -29,6 +29,9 @@ interface ChatPanelProps {
   websiteVersions?: WebsiteVersion[];
   currentVersionId?: string;
   onRestoreVersion?: (versionId: string) => void;
+  onVisualSelectToggle?: (enabled: boolean) => void;
+  visualSelectEnabled?: boolean;
+  selectedElement?: string;
 }
 
 export const ChatPanel = ({ 
@@ -37,7 +40,10 @@ export const ChatPanel = ({
   initialMessages = [],
   websiteVersions = [],
   currentVersionId,
-  onRestoreVersion
+  onRestoreVersion,
+  onVisualSelectToggle,
+  visualSelectEnabled = false,
+  selectedElement
 }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
@@ -46,6 +52,13 @@ export const ChatPanel = ({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update input when element is selected
+  useEffect(() => {
+    if (selectedElement && visualSelectEnabled) {
+      setInputValue(`Modificar: ${selectedElement}\n\n`);
+    }
+  }, [selectedElement, visualSelectEnabled]);
 
   // Update messages when new website version is created
   useEffect(() => {
@@ -308,22 +321,39 @@ export const ChatPanel = ({
             </div>
           )}
 
-          {/* Model Selection - positioned above textarea */}
+          {/* Model Selection and Visual Edit - positioned above textarea */}
           <div className="flex items-center justify-between">
-            <Button
-              type="button"
-              variant={modelType === 'pro' ? "default" : "outline"}
-              size="sm"
-              onClick={() => setModelType(modelType === 'basic' ? 'pro' : 'basic')}
-              className="gap-2 text-xs h-7"
-              disabled={isLoading}
-            >
-              <Zap className="w-3 h-3" />
-              {modelType === 'pro' ? 'PRO' : 'BASIC'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={modelType === 'pro' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setModelType(modelType === 'basic' ? 'pro' : 'basic')}
+                className="gap-2 text-xs h-7"
+                disabled={isLoading}
+              >
+                <Zap className="w-3 h-3" />
+                {modelType === 'pro' ? 'PRO' : 'BASIC'}
+              </Button>
+              
+              {onVisualSelectToggle && (
+                <Button
+                  type="button"
+                  variant={visualSelectEnabled ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onVisualSelectToggle(!visualSelectEnabled)}
+                  className="gap-2 text-xs h-7"
+                  disabled={isLoading}
+                  title="Modo de Seleção Visual"
+                >
+                  <MousePointer2 className="w-3 h-3" />
+                  {visualSelectEnabled ? 'Selecionando' : 'Selecionar'}
+                </Button>
+              )}
+            </div>
             
             <p className="text-xs text-muted-foreground">
-              {modelType === 'basic' ? 'Modelo Padrão' : 'Modelo Avançado'}
+              {visualSelectEnabled ? 'Clique em um elemento no preview' : modelType === 'basic' ? 'Modelo Padrão' : 'Modelo Avançado'}
             </p>
           </div>
 

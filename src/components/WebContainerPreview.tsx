@@ -11,16 +11,35 @@ interface WebContainerPreviewProps {
   files: FileNode[];
   isGenerating?: boolean;
   generationProgress?: number;
+  visualSelectEnabled?: boolean;
+  onElementSelect?: (elementInfo: string) => void;
 }
 
 export const WebContainerPreview = ({ 
   files, 
   isGenerating = false,
-  generationProgress 
+  generationProgress,
+  visualSelectEnabled = false,
+  onElementSelect
 }: WebContainerPreviewProps) => {
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [sandpackFiles, setSandpackFiles] = useState<SandpackFiles>({});
+
+  // Inject visual selection script when enabled
+  useEffect(() => {
+    if (!visualSelectEnabled || !onElementSelect) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'element-selected') {
+        const elementInfo = event.data.elementInfo;
+        onElementSelect(elementInfo);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [visualSelectEnabled, onElementSelect]);
 
   const getFileLanguage = (filename: string): string => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -52,6 +71,32 @@ export const WebContainerPreview = ({
     setSelectedFile(file);
   };
 
+  // Visual selection script to inject
+  const visualSelectionScript = `
+    if (window.visualSelectEnabled) {
+      document.addEventListener('click', (e) => {
+        if (!window.visualSelectEnabled) return;
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const element = e.target;
+        const tagName = element.tagName.toLowerCase();
+        const className = element.className ? '.' + element.className.split(' ').join('.') : '';
+        const id = element.id ? '#' + element.id : '';
+        const text = element.innerText?.substring(0, 50) || '';
+        
+        const elementInfo = tagName + id + className + (text ? ' - "' + text + '"' : '');
+        
+        window.parent.postMessage({
+          type: 'element-selected',
+          elementInfo: elementInfo
+        }, '*');
+        
+        window.visualSelectEnabled = false;
+      }, true);
+    }
+  `;
+
   // Convert FileNode[] to Sandpack file structure
   const buildSandpackFiles = (nodes: FileNode[], parentPath = ''): SandpackFiles => {
     const result: SandpackFiles = {};
@@ -60,8 +105,24 @@ export const WebContainerPreview = ({
       const fullPath = parentPath ? `${parentPath}/${node.name}` : `/${node.name}`;
       
       if (node.type === 'file' && node.content) {
+        let content = node.content;
+        
+        // Inject visual selection script into main HTML/JSX files when enabled
+        if (visualSelectEnabled && (node.name.endsWith('.tsx') || node.name.endsWith('.jsx')) && node.name.includes('App')) {
+          content = content.replace(
+            /(function App\(\)|const App = \(\))/,
+            `$1 => {
+              if (typeof window !== 'undefined') {
+                window.visualSelectEnabled = ${visualSelectEnabled};
+                ${visualSelectionScript}
+              }
+              return null;
+            }; const AppComponent = () `
+          ).replace(/export default App/, 'export default AppComponent');
+        }
+        
         result[fullPath] = {
-          code: node.content
+          code: content
         };
       } else if (node.type === 'folder' && node.children) {
         Object.assign(result, buildSandpackFiles(node.children, fullPath));
