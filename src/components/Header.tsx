@@ -6,6 +6,7 @@ import { LogOut, LogIn, User as UserIcon, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ const apiKeySchema = z.string()
 export const Header = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { subscribed } = useSubscription();
   const [user, setUser] = useState<User | null>(null);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -117,7 +119,7 @@ export const Header = () => {
           </button>
 
           <div className="flex items-center gap-2">
-            {user && (
+            {user && subscribed && (
               <Button
                 variant="default"
                 size="sm"
