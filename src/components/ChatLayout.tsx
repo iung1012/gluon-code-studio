@@ -18,6 +18,13 @@ interface WebsiteVersion {
   versionNumber: number;
 }
 
+interface ChatMessage {
+  id: string;
+  content: string;
+  sender: 'user' | 'ai';
+  timestamp: Date;
+}
+
 interface ChatLayoutProps {
   files: FileNode[];
   selectedFile?: { path: string; content: string };
@@ -30,6 +37,7 @@ interface ChatLayoutProps {
   websiteVersions?: WebsiteVersion[];
   currentVersionId?: string;
   onRestoreVersion?: (versionId: string) => void;
+  initialMessages?: ChatMessage[];
 }
 
 export const ChatLayout = ({
@@ -43,7 +51,8 @@ export const ChatLayout = ({
   isLoading,
   websiteVersions = [],
   currentVersionId,
-  onRestoreVersion
+  onRestoreVersion,
+  initialMessages = []
 }: ChatLayoutProps) => {
   const [chatVisible, setChatVisible] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
@@ -272,6 +281,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
                 websiteVersions={websiteVersions}
                 currentVersionId={currentVersionId}
                 onRestoreVersion={onRestoreVersion}
+                initialMessages={initialMessages}
               />
             </ResizablePanel>
             

@@ -20,6 +20,13 @@ interface WebsiteVersion {
   versionNumber: number;
 }
 
+interface ChatMessage {
+  id: string;
+  content: string;
+  sender: 'user' | 'ai';
+  timestamp: Date;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -38,6 +45,7 @@ const Index = () => {
   const [currentVersionId, setCurrentVersionId] = useState<string>("");
   const [currentProjectId, setCurrentProjectId] = useState<string | undefined>();
   const [currentProjectName, setCurrentProjectName] = useState<string>("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const { toast } = useToast();
 
   // Check authentication and API key
@@ -616,7 +624,32 @@ const Index = () => {
     }
   };
 
-  const handleProjectSelect = (project: any) => {
+  const loadChatHistory = async (projectId: string) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      const messages: ChatMessage[] = (data || []).map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        sender: msg.role === 'user' ? 'user' : 'ai',
+        timestamp: new Date(msg.created_at)
+      }));
+      
+      setChatMessages(messages);
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
+  };
+
+  const handleProjectSelect = async (project: any) => {
     const parsedFiles = parseProjectStructure(project.html_content);
     setFiles(parsedFiles);
     setGeneratedCode(project.html_content);
@@ -624,6 +657,9 @@ const Index = () => {
     setCurrentProjectName(project.name);
     setShowPreview(true);
     setUseChatLayout(true);
+    
+    // Load chat history for this project
+    await loadChatHistory(project.id);
     
     const firstFile = findFirstFile(parsedFiles);
     if (firstFile) {
@@ -646,6 +682,7 @@ const Index = () => {
     setCurrentVersionId("");
     setCurrentProjectId(undefined);
     setCurrentProjectName("");
+    setChatMessages([]);
     toast({
       title: "Novo Projeto",
       description: "Projeto limpo. Você pode gerar um novo website agora.",
@@ -694,6 +731,7 @@ const Index = () => {
             websiteVersions={websiteVersions}
             currentVersionId={currentVersionId}
             onRestoreVersion={handleRestoreVersion}
+            initialMessages={chatMessages}
           />
         ) : (
           <GeneratedPreview
