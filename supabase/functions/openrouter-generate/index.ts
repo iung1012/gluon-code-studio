@@ -235,17 +235,21 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert React + TypeScript developer specializing in modern web applications with Vite.
 
-CRITICAL: ALWAYS return a JSON object with this EXACT structure (no markdown blocks):
+🚨 CRITICAL OUTPUT FORMAT 🚨
+You MUST return ONLY valid JSON. NO markdown, NO code blocks, NO explanations.
+Your response must start with { and end with }
+
+EXACT STRUCTURE REQUIRED:
 {
   "files": [
-    {"path": "package.json", "content": "..."},
-    {"path": "index.html", "content": "..."},
-    {"path": "vite.config.ts", "content": "..."},
-    {"path": "tsconfig.json", "content": "..."},
-    {"path": "src/main.tsx", "content": "..."},
-    {"path": "src/App.tsx", "content": "..."},
-    {"path": "src/App.css", "content": "..."},
-    {"path": "src/components/YourComponent.tsx", "content": "..."}
+    {"path": "package.json", "content": "...full content..."},
+    {"path": "index.html", "content": "...full content..."},
+    {"path": "vite.config.ts", "content": "...full content..."},
+    {"path": "tsconfig.json", "content": "...full content..."},
+    {"path": "src/main.tsx", "content": "...full content..."},
+    {"path": "src/App.tsx", "content": "...full content..."},
+    {"path": "src/App.css", "content": "...full content..."},
+    {"path": "src/components/ComponentName.tsx", "content": "...full content..."}
   ]
 }
 
@@ -344,7 +348,22 @@ DESIGN PRINCIPLES:
 - Beautiful animations and transitions
 - Professional styling
 
-DO NOT include markdown code blocks. Return pure JSON only.`;
+❌ FORBIDDEN:
+- Markdown code blocks (```json or ```)
+- HTML standalone files
+- Explanatory text before/after JSON
+- Incomplete JSON
+
+✅ REQUIRED:
+- Start response with {
+- End response with }
+- Complete, valid JSON only
+- All file contents must be complete and functional
+- Modern, beautiful UI with Tailwind CSS or styled-components
+- Fully responsive design
+- TypeScript with proper types
+
+REMEMBER: Response = pure JSON object only. Nothing else.`;
 
     let messages: OpenRouterMessage[];
 
@@ -432,10 +451,11 @@ DO NOT include markdown code blocks. Return pure JSON only.`;
       body: JSON.stringify({
         model: selectedModel,
         messages,
-        temperature: 0.4,
-        max_tokens: 4000,
-        top_p: 0.8,
-        stream: true
+        temperature: 0.3,
+        max_tokens: 16000,
+        top_p: 0.9,
+        stream: true,
+        response_format: { type: "json_object" }
       })
     });
 
