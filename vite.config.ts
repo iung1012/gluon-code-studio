@@ -1,4 +1,4 @@
-import { defineConfig, type ViteDevServer } from "vite";
+import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -11,8 +11,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
-    chromeWebContainerPlugin(),
+    mode === 'development' &&
+    componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -20,21 +20,3 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
-
-// Plugin para configurar headers necessários para WebContainer
-function chromeWebContainerPlugin() {
-  return {
-    name: 'chrome-webcontainer-plugin',
-    configureServer(server: ViteDevServer) {
-      server.middlewares.use((_req, res, next) => {
-        // OBRIGATÓRIO: Garante o isolamento de janela
-        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-        
-        // OBRIGATÓRIO: Permite o uso de SharedArrayBuffer (necessário para WebContainer)
-        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-        
-        next();
-      });
-    },
-  };
-}

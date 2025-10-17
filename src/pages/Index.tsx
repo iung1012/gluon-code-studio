@@ -12,12 +12,10 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAIGeneration } from "@/hooks/useAIGeneration";
-import { useLovableGeneration } from "@/hooks/useLovableGeneration";
 import { useProjectManagement } from "@/hooks/useProjectManagement";
 import { useVersionHistory } from "@/hooks/useVersionHistory";
 import { parseProjectStructure } from "@/utils/jsonParser";
 import { buildFileTree, findFirstFile } from "@/utils/fileTreeParser";
-import { getExampleProject } from "@/utils/exampleProject";
 import type { User } from "@supabase/supabase-js";
 
 interface ChatMessage {
@@ -34,16 +32,14 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [files, setFiles] = useState<FileNode[]>(getExampleProject());
+  const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
   const [useChatLayout, setUseChatLayout] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { toast } = useToast();
-
-  const [useLovableAI, setUseLovableAI] = useState(true); // Default to Lovable AI
 
   const { websiteVersions, currentVersionId, createNewVersion, restoreVersion, resetVersions } = useVersionHistory();
   const { currentProjectId, currentProjectName, setCurrentProjectId, setCurrentProjectName, saveProject, resetProject } = useProjectManagement(user);
@@ -53,17 +49,6 @@ const Index = () => {
       setHasApiKey(false);
       setShowApiKeyInput(true);
     },
-    onCodeGenerated: (parsedFiles, content) => {
-      setFiles(parsedFiles);
-      setGeneratedCode(content);
-      const firstFile = findFirstFile(parsedFiles);
-      if (firstFile) {
-        setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
-      }
-    }
-  });
-
-  const lovableGeneration = useLovableGeneration({
     onCodeGenerated: (parsedFiles, content) => {
       setFiles(parsedFiles);
       setGeneratedCode(content);
@@ -177,26 +162,14 @@ const Index = () => {
     
     try {
       const isEdit = files.length > 0 && files[0].content;
-      
-      let fullContent: string;
+      const currentFile = files.find(f => f.name === 'index.html');
 
-      if (useLovableAI) {
-        // Use Lovable AI - more robust generation
-        fullContent = await lovableGeneration.generate(
-          prompt,
-          generatedCode,
-          Boolean(isEdit)
-        );
-      } else {
-        // Use OpenRouter - legacy method
-        const currentFile = files.find(f => f.name === 'index.html');
-        fullContent = await aiGeneration.generate(
-          prompt,
-          (isEdit && currentFile) ? currentFile.content : undefined,
-          Boolean(isEdit),
-          model === 'pro' ? 'pro' : 'basic'
-        );
-      }
+      const fullContent = await aiGeneration.generate(
+        prompt,
+        (isEdit && currentFile) ? currentFile.content : undefined,
+        Boolean(isEdit),
+        model === 'pro' ? 'pro' : 'basic'
+      );
       
       const filesParsed = parseProjectStructure(fullContent);
       const parsedFiles = buildFileTree(filesParsed);
@@ -376,9 +349,9 @@ const Index = () => {
     return (
       <>
       <LoadingScreen 
-        isVisible={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading} 
-        progress={useLovableAI ? lovableGeneration.loadingProgress : aiGeneration.loadingProgress}
-        currentContent={useLovableAI ? lovableGeneration.currentStreamContent : aiGeneration.currentStreamContent}
+        isVisible={aiGeneration.isLoading} 
+        progress={aiGeneration.loadingProgress > 0 ? aiGeneration.loadingProgress : undefined}
+        currentContent={aiGeneration.currentStreamContent}
         />
         {user && (
           <ProjectSidebar
@@ -396,7 +369,7 @@ const Index = () => {
             onNewProject={handleNewProject}
             onSendMessage={handleChatMessage}
             generatedCode={!selectedFile ? generatedCode : undefined}
-            isLoading={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading}
+            isLoading={aiGeneration.isLoading}
             websiteVersions={websiteVersions}
             currentVersionId={currentVersionId}
             onRestoreVersion={handleRestoreVersion}
@@ -419,9 +392,9 @@ const Index = () => {
   return (
     <>
       <LoadingScreen 
-        isVisible={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading}
-        progress={useLovableAI ? lovableGeneration.loadingProgress : aiGeneration.loadingProgress}
-        currentContent={useLovableAI ? lovableGeneration.currentStreamContent : aiGeneration.currentStreamContent}
+        isVisible={aiGeneration.isLoading}
+        progress={aiGeneration.loadingProgress > 0 ? aiGeneration.loadingProgress : undefined}
+        currentContent={aiGeneration.currentStreamContent}
       />
       <UpgradeDialog 
         open={showUpgradeDialog} 
@@ -436,7 +409,7 @@ const Index = () => {
       )}
       <WelcomeScreen 
         onSubmit={checkApiKeyAndProceed} 
-        isLoading={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading}
+        isLoading={aiGeneration.isLoading}
       />
     </>
   );
