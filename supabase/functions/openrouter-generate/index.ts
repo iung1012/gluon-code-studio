@@ -233,7 +233,7 @@ serve(async (req) => {
 
     console.log(`🎯 Using model: ${selectedModel}`);
 
-    const systemPrompt = `You are an expert React + TypeScript developer specializing in modern web applications with Vite.
+    const systemPrompt = `You are an expert frontend developer specializing in creating beautiful, modern websites using HTML, CSS, and Tailwind CSS.
 
 🚨 CRITICAL OUTPUT FORMAT 🚨
 You MUST return ONLY valid JSON. NO markdown, NO code blocks, NO explanations.
@@ -242,137 +242,83 @@ Your response must start with { and end with }
 EXACT STRUCTURE REQUIRED:
 {
   "files": [
-    {"path": "package.json", "content": "...full content..."},
-    {"path": "index.html", "content": "...full content..."},
-    {"path": "vite.config.ts", "content": "...full content..."},
-    {"path": "tsconfig.json", "content": "...full content..."},
-    {"path": "src/main.tsx", "content": "...full content..."},
-    {"path": "src/App.tsx", "content": "...full content..."},
-    {"path": "src/App.css", "content": "...full content..."},
-    {"path": "src/components/ComponentName.tsx", "content": "...full content..."}
+    {"path": "index.html", "content": "...full HTML content..."},
+    {"path": "styles.css", "content": "...optional custom CSS..."},
+    {"path": "script.js", "content": "...optional JavaScript..."}
   ]
 }
 
-REQUIRED FILES:
+REQUIRED FILE:
 
-1. **package.json**:
-{
-  "name": "app",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.2"
-  }
-}
-
-2. **index.html**:
+**index.html** - Complete, standalone HTML file with:
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Title</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Fonts (optional) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom styles if needed -->
+    <style>
+      body { font-family: 'Inter', sans-serif; }
+      /* Add any custom animations or styles here */
+    </style>
   </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <body class="bg-gray-50">
+    <!-- Your content here using Tailwind classes -->
+    
+    <!-- Initialize Lucide icons -->
+    <script>
+      lucide.createIcons();
+    </script>
   </body>
 </html>
 
-3. **vite.config.ts**:
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-export default defineConfig({
-  plugins: [react()],
-})
-
-4. **tsconfig.json**:
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
-  },
-  "include": ["src"]
-}
-
-5. **src/main.tsx**:
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './App.css'
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
-
-6. **src/App.tsx**: Main component with modern React patterns (hooks, functional components)
-7. **src/App.css**: Modern CSS with Tailwind-style utilities or custom styles
-8. **src/components/*.tsx**: Additional components as needed
-
-🚨 CRITICAL REACT RULES 🚨:
-1. ALL components MUST use "export default function ComponentName()" 
-2. ALL imports MUST use "import ComponentName from './path'"
-3. NEVER use named exports like "export function" or "export const"
-4. Components must be properly imported before use
-5. Verify all icon imports from lucide-react are correct
-
 DESIGN PRINCIPLES:
-- Clean, modern UI with excellent UX
-- Fully responsive (mobile-first)
-- Component-based architecture
-- TypeScript strict mode
-- Accessible (semantic HTML, ARIA)
-- Beautiful animations and transitions
-- Professional styling
+- Use Tailwind CSS classes for all styling
+- Modern, clean, and professional design
+- Fully responsive (mobile-first approach)
+- Semantic HTML5 elements (nav, main, section, article, footer)
+- Accessible (proper ARIA labels, alt text for images)
+- Beautiful color schemes and gradients
+- Smooth animations and transitions
+- Use Lucide icons for visual elements (data-lucide="icon-name")
+- Include proper spacing, typography, and visual hierarchy
+
+COMPONENTS TO USE:
+${Object.entries(TEMPLATES.components).map(([name, template]) => 
+  `${name}:\n${template}\n`
+).join('\n')}
 
 ❌ FORBIDDEN:
+- React, Vue, Angular or any framework code
 - Markdown code blocks with triple backticks
-- HTML standalone files
 - Explanatory text before/after JSON
 - Incomplete JSON
-- Named exports in components
-- Using components without importing them
+- External file references (except CDNs)
+- Broken or incomplete HTML tags
 
 ✅ REQUIRED:
 - Start response with {
 - End response with }
 - Complete, valid JSON only
-- All file contents must be complete and functional
-- Modern, beautiful UI with Tailwind CSS or styled-components
-- Fully responsive design
-- TypeScript with proper types
-- All components use default export
-- All imports use default import
+- Self-contained, working HTML
+- Mobile-responsive design using Tailwind
+- Beautiful, modern UI with proper spacing
+- Use Tailwind utility classes
+- Semantic HTML structure
+- Accessibility features
 
 REMEMBER: Response = pure JSON object only. Nothing else.`;
 

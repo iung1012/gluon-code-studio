@@ -17,7 +17,7 @@ export const parseProjectStructure = (content: string): { path: string; content:
     const parsed = JSON.parse(cleanContent);
     
     if (parsed.files && Array.isArray(parsed.files)) {
-      console.log('✅ React project detected:', parsed.files.length, 'files');
+      console.log('✅ Files detected:', parsed.files.length, 'files');
       return parsed.files;
     }
   } catch (e) {
@@ -37,7 +37,7 @@ export const parseProjectStructure = (content: string): { path: string; content:
     throw new Error('Resposta da API está incompleta ou malformada. Tente novamente.');
   }
   
-  throw new Error('Formato inválido: A IA deve retornar um projeto React em JSON');
+  throw new Error('Formato inválido: A IA deve retornar arquivos em JSON');
 };
 
 const fixJsonIssues = (content: string): string => {
