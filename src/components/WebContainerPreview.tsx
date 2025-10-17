@@ -249,7 +249,7 @@ export const WebContainerPreview = ({
                 showConsoleButton: false,
               }}
               customSetup={{
-                entry: '/src/index.tsx',
+                entry: 'src/index.tsx',
                 dependencies: runtimeDeps
               }}
             />
