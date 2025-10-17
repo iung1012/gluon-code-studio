@@ -60,15 +60,30 @@ export const WebContainerPreview = ({
       // Remove leading slash from path for Sandpack compatibility
       let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
       
-      // Skip package.json as Sandpack auto-generates it from customSetup
-      if (fullPath === 'package.json' || node.name === 'package.json') {
+      // Skip files that can break CRA-based Sandpack runtime
+      const skipNames = new Set([
+        'package.json',
+        'tailwind.config.js',
+        'postcss.config.js',
+        'vite.config.ts',
+        'vite.config.js',
+        'tsconfig.json',
+        'tsconfig.app.json',
+        'tsconfig.node.json',
+      ]);
+      if (skipNames.has(fullPath) || skipNames.has(node.name)) {
         continue;
       }
       
       if (node.type === 'file' && node.content) {
-        result[fullPath] = {
-          code: node.content
-        };
+        let code = node.content;
+        // Remove Tailwind directives which require a build step not available in Sandpack
+        if (node.name.endsWith('.css')) {
+          code = code.replace(/@tailwind\s+base;?/g, '')
+                     .replace(/@tailwind\s+components;?/g, '')
+                     .replace(/@tailwind\s+utilities;?/g, '');
+        }
+        result[fullPath] = { code };
       } else if (node.type === 'folder' && node.children) {
         const childPath = parentPath ? `${parentPath}/${node.name}` : node.name;
         Object.assign(result, buildSandpackFiles(node.children, childPath));
@@ -168,6 +183,7 @@ export const WebContainerPreview = ({
                 showConsoleButton: false,
               }}
               customSetup={{
+                entry: '/src/index.tsx',
                 dependencies: {
                   "react": "^18.3.1",
                   "react-dom": "^18.3.1",
