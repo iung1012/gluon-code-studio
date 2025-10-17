@@ -349,7 +349,7 @@ DESIGN PRINCIPLES:
 - Professional styling
 
 ❌ FORBIDDEN:
-- Markdown code blocks (```json or ```)
+- Markdown code blocks with triple backticks
 - HTML standalone files
 - Explanatory text before/after JSON
 - Incomplete JSON
