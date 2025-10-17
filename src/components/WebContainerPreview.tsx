@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { LiveProvider, LiveError, LivePreview } from 'react-live';
 import { FileNode, FileTree } from './FileTree';
 import { Code2, Eye } from 'lucide-react';
 import { PreviewLoading } from './PreviewLoading';
@@ -19,7 +20,7 @@ export const WebContainerPreview = ({
 }: WebContainerPreviewProps) => {
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [reactCode, setReactCode] = useState<string>('');
 
   const getFileLanguage = (filename: string): string => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -66,70 +67,36 @@ export const WebContainerPreview = ({
     setSelectedFile(file);
   };
 
-  // Update iframe with HTML content
+  // Extract React code from files
   useEffect(() => {
-    if (!iframeRef.current || files.length === 0) return;
+    if (files.length === 0) return;
 
     const allFiles = getAllFiles(files);
-    const htmlFile = allFiles.find(f => 
-      f.name === 'index.html' || f.path?.endsWith('index.html')
+    const appFile = allFiles.find(f => 
+      f.name === 'App.tsx' || f.name === 'App.jsx' || f.path?.endsWith('App.tsx') || f.path?.endsWith('App.jsx')
     );
 
-    if (!htmlFile?.content) return;
-
-    let htmlContent = htmlFile.content;
-
-    // Find and inject CSS files
-    const cssFiles = allFiles.filter(f => f.name.endsWith('.css'));
-    cssFiles.forEach(cssFile => {
-      if (cssFile.content) {
-        const cssBlob = new Blob([cssFile.content], { type: 'text/css' });
-        const cssUrl = URL.createObjectURL(cssBlob);
-        
-        // Add CSS link to head
-        if (!htmlContent.includes(cssFile.name)) {
-          htmlContent = htmlContent.replace(
-            '</head>',
-            `  <link rel="stylesheet" href="${cssUrl}">\n  </head>`
-          );
+    if (appFile?.content) {
+      // Remove import statements and export default
+      let code = appFile.content;
+      
+      // Remove all import statements
+      code = code.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
+      code = code.replace(/import\s+['"].*?['"];?\s*/g, '');
+      
+      // Remove export default and just keep the function
+      code = code.replace(/export\s+default\s+/, '');
+      
+      // If it's a function component, we need to wrap it properly
+      if (code.includes('function App')) {
+        // Extract just the function body
+        const match = code.match(/function\s+App\s*\([^)]*\)\s*{([\s\S]*)}$/);
+        if (match) {
+          code = `function App() {${match[1]}}`;
         }
       }
-    });
-
-    // Find and inject JS files
-    const jsFiles = allFiles.filter(f => 
-      f.name.endsWith('.js') && !f.name.includes('config')
-    );
-    jsFiles.forEach(jsFile => {
-      if (jsFile.content) {
-        const jsBlob = new Blob([jsFile.content], { type: 'text/javascript' });
-        const jsUrl = URL.createObjectURL(jsBlob);
-        
-        // Add JS script to body
-        if (!htmlContent.includes(jsFile.name)) {
-          htmlContent = htmlContent.replace(
-            '</body>',
-            `  <script src="${jsUrl}"></script>\n  </body>`
-          );
-        }
-      }
-    });
-
-    // Inject Tailwind CDN if not present
-    if (!htmlContent.includes('tailwindcss')) {
-      htmlContent = htmlContent.replace(
-        '</head>',
-        `  <script src="https://cdn.tailwindcss.com"></script>\n  </head>`
-      );
-    }
-
-    const iframe = iframeRef.current;
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    
-    if (iframeDoc) {
-      iframeDoc.open();
-      iframeDoc.write(htmlContent);
-      iframeDoc.close();
+      
+      setReactCode(code);
     }
   }, [files]);
 
@@ -182,13 +149,19 @@ export const WebContainerPreview = ({
         </div>
 
         <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
-          <div className="h-full w-full bg-white">
-            <iframe
-              ref={iframeRef}
-              className="w-full h-full border-0"
-              title="Preview"
-              sandbox="allow-scripts allow-same-origin allow-forms"
-            />
+          <div className="h-full w-full bg-white overflow-auto">
+            {reactCode ? (
+              <LiveProvider code={reactCode} noInline={false}>
+                <div className="h-full">
+                  <LivePreview className="h-full" />
+                  <LiveError className="bg-red-50 text-red-600 p-4 font-mono text-sm" />
+                </div>
+              </LiveProvider>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Aguardando código React...
+              </div>
+            )}
           </div>
         </TabsContent>
 
