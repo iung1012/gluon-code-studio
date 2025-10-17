@@ -124,25 +124,27 @@ export const WebContainerPreview = ({
           </TabsList>
         </div>
 
-        <TabsContent value="preview" className="flex-1 m-0 data-[state=inactive]:hidden">
-          <Sandpack
-            template="react"
-            files={sandpackFiles}
-            theme="dark"
-            options={{
-              showNavigator: false,
-              showTabs: false,
-              showLineNumbers: true,
-              editorHeight: "100%",
-              editorWidthPercentage: 0,
-            }}
-            customSetup={{
-              dependencies: {
-                "react": "^18.3.1",
-                "react-dom": "^18.3.1"
-              }
-            }}
-          />
+        <TabsContent value="preview" className="flex-1 m-0 p-0 h-full data-[state=inactive]:hidden">
+          <div className="h-full w-full">
+            <Sandpack
+              template="react"
+              files={sandpackFiles}
+              theme="dark"
+              options={{
+                showNavigator: false,
+                showTabs: false,
+                showLineNumbers: true,
+                editorHeight: "100vh",
+                editorWidthPercentage: 0,
+              }}
+              customSetup={{
+                dependencies: {
+                  "react": "^18.3.1",
+                  "react-dom": "^18.3.1"
+                }
+              }}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="code" className="flex-1 m-0 data-[state=inactive]:hidden">
