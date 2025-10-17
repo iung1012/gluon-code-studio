@@ -48,6 +48,21 @@ serve(async (req) => {
     
     if (customers.data.length === 0) {
       logStep("No customer found, updating unsubscribed state");
+      
+      // Update profile to mark as not subscribed
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({
+          is_subscribed: false,
+          subscription_product_id: null,
+          subscription_end: null
+        })
+        .eq('id', user.id);
+
+      if (updateError) {
+        logStep("Error updating profile", { error: updateError.message });
+      }
+      
       return new Response(JSON.stringify({ subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -74,6 +89,22 @@ serve(async (req) => {
       logStep("Determined subscription tier", { productId });
     } else {
       logStep("No active subscription found");
+    }
+
+    // Update profile with subscription info
+    const { error: updateError } = await supabaseClient
+      .from('profiles')
+      .update({
+        is_subscribed: hasActiveSub,
+        subscription_product_id: productId,
+        subscription_end: subscriptionEnd
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      logStep("Error updating profile", { error: updateError.message });
+    } else {
+      logStep("Profile updated successfully");
     }
 
     return new Response(JSON.stringify({

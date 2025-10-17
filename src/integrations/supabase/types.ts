@@ -62,7 +62,10 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_subscribed: boolean | null
           openrouter_api_key: string | null
+          subscription_end: string | null
+          subscription_product_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -70,7 +73,10 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id: string
+          is_subscribed?: boolean | null
           openrouter_api_key?: string | null
+          subscription_end?: string | null
+          subscription_product_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -78,7 +84,10 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_subscribed?: boolean | null
           openrouter_api_key?: string | null
+          subscription_end?: string | null
+          subscription_product_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
