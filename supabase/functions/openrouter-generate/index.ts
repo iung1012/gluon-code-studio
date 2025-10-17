@@ -332,8 +332,36 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 )
 
 6. **src/App.tsx**: Main component with modern React patterns (hooks, functional components)
-7. **src/App.css**: Modern CSS with Tailwind-style utilities or custom styles
-8. **src/components/*.tsx**: Additional components as needed
+
+7. **src/App.css** (MANDATORY - NEVER SKIP THIS FILE):
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --secondary: #8b5cf6;
+  --accent: #ec4899;
+  --background: #ffffff;
+  --surface: #f9fafb;
+  --text: #1f2937;
+  --text-light: #6b7280;
+  --border: #e5e7eb;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--background);
+}
+
+/* Add smooth scrolling, transitions, hover effects, gradients, shadows, and modern styles */
+
+8. **src/components/*.tsx**: Additional components as needed - each with proper TypeScript types and styling
 
 DESIGN PRINCIPLES:
 - Clean, modern UI with excellent UX
