@@ -481,6 +481,15 @@ const encoder = new TextEncoder();
                   }
                   
                   console.log('✅ Valid JSON received:', parsed.files.length, 'files');
+
+                  // Enviar JSON válido como único evento SSE
+                  const okData = {
+                    choices: [{
+                      delta: { content: JSON.stringify(parsed) },
+                      finish_reason: 'stop'
+                    }]
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(okData)}\n\n`));
                 } catch (jsonError) {
                   console.error('❌ Invalid JSON received:', jsonError);
                   console.log('Content preview:', fullContent.substring(0, 500));
@@ -567,14 +576,12 @@ const encoder = new TextEncoder();
               if (dataStr === '[DONE]') continue;
 
               try {
-                // Parsear para extrair conteúdo
+                // Parsear para extrair conteúdo (sem enviar parcial)
                 const parsed = JSON.parse(dataStr);
                 const content = parsed.choices?.[0]?.delta?.content;
                 if (content) {
                   fullContent += content;
                 }
-                
-                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               } catch (parseError) {
                 console.warn('Failed to parse chunk:', dataStr.substring(0, 100));
               }
@@ -590,8 +597,6 @@ const encoder = new TextEncoder();
                 if (content) {
                   fullContent += content;
                 }
-                
-                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               } catch { }
             }
           }
