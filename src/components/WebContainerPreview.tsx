@@ -58,18 +58,18 @@ export const WebContainerPreview = ({
     const result: SandpackFiles = {};
     
     for (const node of nodes) {
-      // Remove leading slash from path for Sandpack compatibility
-      let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+      // Sandpack expects paths starting with "/"
+      let fullPath = parentPath ? `${parentPath}/${node.name}` : `/${node.name}`;
       
       if (node.type === 'file' && node.content) {
-        // Include files with content; escaping/backslashes are valid in code
+        // Include files with content
         if (node.content.trim().length > 0) {
           result[fullPath] = {
             code: node.content
           };
         }
       } else if (node.type === 'folder' && node.children) {
-        const childPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+        const childPath = parentPath ? `${parentPath}/${node.name}` : `/${node.name}`;
         Object.assign(result, buildSandpackFiles(node.children, childPath));
       }
     }
@@ -80,6 +80,8 @@ export const WebContainerPreview = ({
   useEffect(() => {
     if (files.length > 0) {
       const sandpackFileStructure = buildSandpackFiles(files);
+      console.log('🔍 Sandpack files:', Object.keys(sandpackFileStructure));
+      console.log('📁 Full structure:', sandpackFileStructure);
       setSandpackFiles(sandpackFileStructure);
       
       // Select first file for code view
@@ -149,6 +151,7 @@ export const WebContainerPreview = ({
                 showInlineErrors: false,
                 showConsole: false,
                 showConsoleButton: false,
+                activeFile: "/src/App.tsx"
               }}
             />
           </div>
