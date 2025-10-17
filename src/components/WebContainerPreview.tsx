@@ -32,6 +32,14 @@ export const WebContainerPreview = ({
 
     const bootContainer = async () => {
       try {
+        // Verifica se o ambiente suporta crossOriginIsolated
+        if (!window.crossOriginIsolated) {
+          throw new Error(
+            'WebContainer requer um ambiente cross-origin isolated. ' +
+            'Certifique-se de que o servidor está configurado corretamente.'
+          );
+        }
+
         console.log('🚀 Booting WebContainer...');
         const instance = await WebContainer.boot();
         

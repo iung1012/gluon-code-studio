@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
@@ -8,15 +8,11 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
+    chromeWebContainerPlugin(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -24,3 +20,17 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+
+// Plugin para configurar headers necessários para WebContainer
+function chromeWebContainerPlugin() {
+  return {
+    name: 'chrome-webcontainer-plugin',
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use((_req, res, next) => {
+        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+        next();
+      });
+    },
+  };
+}
