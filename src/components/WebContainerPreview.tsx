@@ -41,7 +41,7 @@ export const WebContainerPreview = ({
         }
 
         console.log('🚀 Booting WebContainer...');
-        const instance = await WebContainer.boot();
+        const instance = await WebContainer.boot({ coep: 'credentialless', forwardPreviewErrors: true });
         
         if (!isMounted) {
           await instance.teardown();
