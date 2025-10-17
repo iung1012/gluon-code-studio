@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Download, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { ChatPanel } from "./ChatPanel";
 import { LivePreview } from "./LivePreview";
 import { WebContainerPreview } from "./WebContainerPreview";
+import { CodePreview } from "./CodePreview";
 import { FileNode } from "./FileTree";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -56,6 +58,7 @@ export const ChatLayout = ({
 }: ChatLayoutProps) => {
   const [chatVisible, setChatVisible] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [activeView, setActiveView] = useState<'preview' | 'code'>('preview');
   const {
     toast
   } = useToast();
@@ -174,6 +177,19 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
             
             <div className="h-4 w-px bg-border/50 hidden sm:block" />
             
+            {/* View Selector */}
+            <Select value={activeView} onValueChange={(value: any) => setActiveView(value)}>
+              <SelectTrigger className="w-[100px] sm:w-[120px] bg-background/50 text-xs sm:text-sm h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="preview">Preview</SelectItem>
+                <SelectItem value="code">Code</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <div className="h-4 w-px bg-border/50 hidden sm:block" />
+            
             {/* Device Selector */}
             <Select value={previewDevice} onValueChange={(value: any) => setPreviewDevice(value)}>
               <SelectTrigger className="w-[90px] sm:w-[120px] bg-background/50 text-xs sm:text-sm h-8">
@@ -217,10 +233,28 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
             <ResizableHandle withHandle className="w-2 bg-border/50 hover:bg-border/80 transition-colors" />
             
             <ResizablePanel defaultSize={75} minSize={50} className="bg-muted/20">
-              <WebContainerPreview files={files} />
+              {activeView === 'preview' ? (
+                <WebContainerPreview files={files} />
+              ) : (
+                <CodePreview 
+                  files={files}
+                  selectedFile={selectedFile}
+                  onFileSelect={onFileSelect}
+                  generatedCode={generatedCode}
+                />
+              )}
             </ResizablePanel>
           </ResizablePanelGroup> : <div className="h-full bg-muted/20">
-            <WebContainerPreview files={files} />
+            {activeView === 'preview' ? (
+              <WebContainerPreview files={files} />
+            ) : (
+              <CodePreview 
+                files={files}
+                selectedFile={selectedFile}
+                onFileSelect={onFileSelect}
+                generatedCode={generatedCode}
+              />
+            )}
           </div>}
       </div>
     </div>;
