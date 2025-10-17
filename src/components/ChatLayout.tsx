@@ -56,14 +56,7 @@ export const ChatLayout = ({
 }: ChatLayoutProps) => {
   const [chatVisible, setChatVisible] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
-  const [visualSelectEnabled, setVisualSelectEnabled] = useState(false);
-  const [selectedElement, setSelectedElement] = useState<string>("");
   const { toast } = useToast();
-
-  const handleElementSelect = (elementInfo: string) => {
-    setSelectedElement(elementInfo);
-    setVisualSelectEnabled(false); // Auto-disable after selection
-  };
 
 
   const downloadHtml = () => {
@@ -289,9 +282,6 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
                 currentVersionId={currentVersionId}
                 onRestoreVersion={onRestoreVersion}
                 initialMessages={initialMessages}
-                onVisualSelectToggle={setVisualSelectEnabled}
-                visualSelectEnabled={visualSelectEnabled}
-                selectedElement={selectedElement}
               />
             </ResizablePanel>
             
@@ -302,11 +292,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               minSize={50}
               className="bg-muted/20"
             >
-              <WebContainerPreview 
-                files={files} 
-                visualSelectEnabled={visualSelectEnabled}
-                onElementSelect={handleElementSelect}
-              />
+              <WebContainerPreview files={files} />
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
