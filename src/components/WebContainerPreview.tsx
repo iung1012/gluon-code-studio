@@ -57,24 +57,9 @@ export const WebContainerPreview = ({
   const buildSandpackFiles = (nodes: FileNode[], parentPath = ''): SandpackFiles => {
     const result: SandpackFiles = {};
     
-    // Files to skip in Sandpack (they cause parsing errors or are auto-generated)
-    const skipFiles = [
-      'package.json',
-      'tsconfig.json',
-      'tsconfig.app.json',
-      'tsconfig.node.json',
-      'vite.config.ts',
-      'vite.config.js'
-    ];
-    
     for (const node of nodes) {
       // Remove leading slash from path for Sandpack compatibility
       let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-      
-      // Skip problematic config files
-      if (skipFiles.includes(node.name) || skipFiles.includes(fullPath)) {
-        continue;
-      }
       
       if (node.type === 'file' && node.content) {
         // Include files with content; escaping/backslashes are valid in code
@@ -115,26 +100,7 @@ export const WebContainerPreview = ({
     }
   }, [files, selectedFile]);
 
-  // Determine appropriate Sandpack template based on project files
-  const hasFileByExt = (nodes: FileNode[], exts: string[]): boolean => {
-    for (const node of nodes) {
-      if (node.type === 'file' && exts.some((ext) => node.name.toLowerCase().endsWith(ext))) return true;
-      if (node.type === 'folder' && node.children && hasFileByExt(node.children, exts)) return true;
-    }
-    return false;
-  };
-  const hasIndexHtml = hasFileByExt(files, ['.html']);
-  const hasReactFiles = hasFileByExt(files, ['.tsx', '.jsx']);
-  const selectedTemplate: 'react-ts' | 'static' = (hasIndexHtml && !hasReactFiles) ? 'static' : 'react-ts';
-  const customSetup = selectedTemplate === 'react-ts' ? {
-    dependencies: {
-      react: '^18.3.1',
-      'react-dom': '^18.3.1',
-      'lucide-react': 'latest'
-    }
-  } : undefined;
-
-   if (isGenerating) {
+  if (isGenerating) {
     return <PreviewLoading progress={generationProgress} />;
   }
 
@@ -171,7 +137,7 @@ export const WebContainerPreview = ({
         <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
           <div className="h-full w-full [&>div]:h-full [&_.sp-wrapper]:!h-full [&_.sp-layout]:!h-full">
             <Sandpack
-              template={selectedTemplate}
+              template="react-ts"
               files={sandpackFiles}
               theme="dark"
               options={{
@@ -184,7 +150,6 @@ export const WebContainerPreview = ({
                 showConsole: false,
                 showConsoleButton: false,
               }}
-              customSetup={customSetup}
             />
           </div>
         </TabsContent>
