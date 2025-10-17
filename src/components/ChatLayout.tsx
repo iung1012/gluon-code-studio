@@ -58,17 +58,6 @@ export const ChatLayout = ({
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const { toast } = useToast();
 
-  // Detect if there's an HTML file to render directly (ensures CSS is injected)
-  const hasHtmlFile = (() => {
-    const check = (nodes: FileNode[]): boolean => {
-      for (const n of nodes) {
-        if (n.type === 'file' && n.name.toLowerCase().endsWith('.html')) return true;
-        if (n.children && check(n.children)) return true;
-      }
-      return false;
-    };
-    return check(files);
-  })();
 
   const downloadHtml = () => {
     if (files.length > 0 && files[0].content) {
@@ -303,20 +292,12 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               minSize={50}
               className="bg-muted/20"
             >
-              {hasHtmlFile ? (
-                <LivePreview files={files} />
-              ) : (
-                <WebContainerPreview files={files} />
-              )}
+              <WebContainerPreview files={files} />
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
           <div className="h-full bg-muted/20">
-            {hasHtmlFile ? (
-              <LivePreview files={files} />
-            ) : (
-              <WebContainerPreview files={files} />
-            )}
+            <WebContainerPreview files={files} />
           </div>
         )}
       </div>

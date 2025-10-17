@@ -233,31 +233,25 @@ serve(async (req) => {
 
     console.log(`🎯 Using model: ${selectedModel}`);
 
-    const systemPrompt = `# Expert Web Application Generator
+    const systemPrompt = `You are an expert React + TypeScript developer specializing in modern web applications with Vite.
 
-You are an advanced AI system specialized in generating complete, modern, production-ready web applications using React, TypeScript, and Vite.
-
-## CRITICAL OUTPUT FORMAT
-
-Generate ONLY valid JSON in this EXACT format (no markdown code blocks, no explanations):
-\`\`\`json
+CRITICAL: ALWAYS return a JSON object with this EXACT structure (no markdown blocks):
 {
   "files": [
-    {
-      "path": "file/path.ext",
-      "content": "file content here"
-    }
+    {"path": "package.json", "content": "..."},
+    {"path": "index.html", "content": "..."},
+    {"path": "vite.config.ts", "content": "..."},
+    {"path": "tsconfig.json", "content": "..."},
+    {"path": "src/main.tsx", "content": "..."},
+    {"path": "src/App.tsx", "content": "..."},
+    {"path": "src/App.css", "content": "..."},
+    {"path": "src/components/YourComponent.tsx", "content": "..."}
   ]
 }
-\`\`\`
 
-## MANDATORY FILE STRUCTURE
+REQUIRED FILES:
 
-You MUST generate ALL of the following files for every project:
-
-### 1. package.json
-Complete npm package configuration with dependencies:
-\`\`\`json
+1. **package.json**:
 {
   "name": "app",
   "private": true,
@@ -280,37 +274,30 @@ Complete npm package configuration with dependencies:
     "vite": "^5.4.2"
   }
 }
-\`\`\`
-Add additional dependencies as needed (lucide-react for icons, etc.)
 
-### 2. index.html
-\`\`\`html
+2. **index.html**:
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App Title</title>
+    <title>App</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-\`\`\`
 
-### 3. vite.config.ts
-\`\`\`typescript
+3. **vite.config.ts**:
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
 })
-\`\`\`
 
-### 4. tsconfig.json
-\`\`\`json
+4. **tsconfig.json**:
 {
   "compilerOptions": {
     "target": "ES2020",
@@ -331,10 +318,8 @@ export default defineConfig({
   },
   "include": ["src"]
 }
-\`\`\`
 
-### 5. src/main.tsx
-\`\`\`typescript
+5. **src/main.tsx**:
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
@@ -345,208 +330,19 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <App />
   </React.StrictMode>,
 )
-\`\`\`
 
-### 6. src/App.tsx
-Main React component using modern patterns:
-- Functional components
-- React hooks (useState, useEffect, etc.)
-- Proper TypeScript types
-- Clean, organized code
+6. **src/App.tsx**: Main component with modern React patterns (hooks, functional components)
+7. **src/App.css**: Modern CSS with Tailwind-style utilities or custom styles
+8. **src/components/*.tsx**: Additional components as needed
 
-### 7. src/App.css (MANDATORY - NEVER SKIP)
-Comprehensive CSS with modern features:
-\`\`\`css
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-:root {
-  /* Color palette */
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --secondary: #8b5cf6;
-  --accent: #ec4899;
-  --background: #ffffff;
-  --surface: #f9fafb;
-  --text: #1f2937;
-  --text-light: #6b7280;
-  --border: #e5e7eb;
-  --shadow: rgba(0, 0, 0, 0.1);
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  line-height: 1.6;
-  color: var(--text);
-  background: var(--background);
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-/* Add smooth transitions */
-* {
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-}
-
-/* Add button styles with hover effects */
-button {
-  cursor: pointer;
-  border: none;
-  outline: none;
-}
-
-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--shadow);
-}
-
-/* Add responsive utilities and modern effects */
-\`\`\`
-
-### 8. src/components/*.tsx
-Create focused, reusable components:
-- Each component in its own file
-- Proper TypeScript interfaces
-- Descriptive names
-- Modern React patterns
-
-Example component structure:
-\`\`\`typescript
-import React, { useState } from 'react';
-
-interface ComponentProps {
-  title: string;
-  onAction?: () => void;
-}
-
-export const ExampleComponent: React.FC<ComponentProps> = ({ title, onAction }) => {
-  return (
-    <div className="component-container">
-      <h2>{title}</h2>
-      <button onClick={onAction}>Action</button>
-    </div>
-  );
-};
-\`\`\`
-
-## ARCHITECTURE PRINCIPLES
-
-### Component Design
-- **Single Responsibility**: Each component does one thing well
-- **Composable**: Build complex UIs from simple components
-- **Reusable**: Write components that can be used in multiple places
-- **Type-Safe**: Use TypeScript interfaces and types everywhere
-
-### Code Quality
-- **Modern React**: Use functional components and hooks
-- **TypeScript**: Comprehensive type coverage
-- **Clean Code**: Clear naming, proper formatting
-- **No Errors**: All code must compile without errors
-- **No Placeholders**: Every file must be complete and functional
-
-### Styling Approach
-- **CSS Variables**: Use custom properties for theming
-- **Modern CSS**: Flexbox, Grid, modern features
-- **Responsive**: Mobile-first design with breakpoints
-- **Visual Polish**: Gradients, shadows, transitions, hover effects
-
-## DESIGN PRINCIPLES
-
-### User Experience
-- **Intuitive**: Easy to understand and navigate
-- **Responsive**: Perfect on all screen sizes
-- **Fast**: Optimized performance
-- **Accessible**: Semantic HTML, ARIA labels
-
-### Visual Design
-- **Modern Aesthetics**: Clean, contemporary design
-- **Typography**: Clear hierarchy with readable fonts
-- **Color**: Professional palette with proper contrast
-- **Spacing**: Consistent padding and margins
-- **Interactive Feedback**: Hover states, animations, loading indicators
-
-## BEST PRACTICES CHECKLIST
-
-Before generating, verify:
-- ✅ All 8 mandatory files are included
-- ✅ package.json has ALL required dependencies
-- ✅ TypeScript is properly configured
-- ✅ src/App.css has comprehensive, modern styles
-- ✅ All components use TypeScript with proper types
-- ✅ All imports point to files that exist
-- ✅ No syntax errors in any file
-- ✅ Responsive design implemented
-- ✅ Loading and error states handled
-- ✅ Professional color palette used
-- ✅ Smooth transitions and hover effects added
-
-## CRITICAL REQUIREMENTS
-
-1. **Complete Files Only**: Never use "// TODO" or placeholders
-2. **All Dependencies**: List every package needed in package.json
-3. **Correct Imports**: Use proper paths (./App.tsx, ./components/Name.tsx)
-4. **Error-Free**: Code must compile without TypeScript errors
-5. **CSS Required**: src/App.css is MANDATORY with comprehensive styles
-6. **Modern Patterns**: Use hooks, functional components, proper types
-7. **Professional Quality**: Production-ready code, not prototypes
-
-## IMPLEMENTATION NOTES
-
-### When Adding Features
-- Break complex features into smaller components
-- Use proper state management (useState, useEffect)
-- Handle loading and error states
-- Add appropriate types for all props and state
-
-### Styling Guidelines
-- Use CSS variables from App.css
-- Add hover effects to all interactive elements
-- Ensure proper spacing and visual hierarchy
-- Make design responsive with media queries
-
-### TypeScript Best Practices
-- Define interfaces for all component props
-- Type all function parameters and returns
-- Use union types for state that has multiple values
-- Avoid 'any' type - be specific
-
-## OUTPUT REMINDER
-
-Your response must be ONLY the JSON object with the files array. No markdown, no explanations, just:
-{
-  "files": [...]
-}
-- Include responsive design with media queries
-- Use modern fonts (system fonts or Google Fonts link in index.html)
-- Add subtle shadows, border-radius for depth
-- Create a cohesive design system with consistent spacing/colors
-- NEVER return bare, unstyled HTML - always include rich CSS
-
-Example color palette to use:
-:root {
-  --primary: #6366f1;
-  --primary-dark: #4f46e5;
-  --secondary: #8b5cf6;
-  --accent: #ec4899;
-  --background: #ffffff;
-  --surface: #f9fafb;
-  --text: #1f2937;
-  --text-light: #6b7280;
-  --border: #e5e7eb;
-  --success: #10b981;
-  --error: #ef4444;
-}
+DESIGN PRINCIPLES:
+- Clean, modern UI with excellent UX
+- Fully responsive (mobile-first)
+- Component-based architecture
+- TypeScript strict mode
+- Accessible (semantic HTML, ARIA)
+- Beautiful animations and transitions
+- Professional styling
 
 DO NOT include markdown code blocks. Return pure JSON only.`;
 
@@ -653,8 +449,7 @@ DO NOT include markdown code blocks. Return pure JSON only.`;
       throw new Error('No response body from OpenRouter');
     }
 
-const encoder = new TextEncoder();
-    let fullContent = '';
+    const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -666,105 +461,6 @@ const encoder = new TextEncoder();
             const { done, value } = await reader.read();
             
             if (done) {
-              // Validar e corrigir JSON antes de fechar
-              if (fullContent.trim()) {
-                try {
-                  // Tentar parsear o JSON completo
-                  const parsed = JSON.parse(fullContent);
-                  
-                  // Validar estrutura
-                  if (!parsed.files || !Array.isArray(parsed.files)) {
-                    throw new Error('Invalid JSON structure: missing files array');
-                  }
-                  
-                  // Validar cada arquivo
-                  for (const file of parsed.files) {
-                    if (!file.path || !file.content) {
-                      throw new Error(`Invalid file structure: ${JSON.stringify(file).substring(0, 100)}`);
-                    }
-                  }
-                  
-                  console.log('✅ Valid JSON received:', parsed.files.length, 'files');
-
-                  // Enviar JSON válido como único evento SSE
-                  const okData = {
-                    choices: [{
-                      delta: { content: JSON.stringify(parsed) },
-                      finish_reason: 'stop'
-                    }]
-                  };
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(okData)}\n\n`));
-                } catch (jsonError) {
-                  console.error('❌ Invalid JSON received:', jsonError);
-                  console.log('Content preview:', fullContent.substring(0, 500));
-                  
-                  // Tentar corrigir JSON malformado
-                  let fixedContent = fullContent.trim();
-                  
-                  // Remover markdown se houver
-                  fixedContent = fixedContent.replace(/^```json?\s*/i, '').replace(/```\s*$/, '');
-                  
-                  // Se não começa com {, tentar encontrar o início
-                  const jsonStartIndex = fixedContent.indexOf('{');
-                  if (jsonStartIndex > 0) {
-                    fixedContent = fixedContent.substring(jsonStartIndex);
-                  }
-                  
-                  // Se não termina com }, adicionar
-                  if (!fixedContent.trim().endsWith('}')) {
-                    // Tentar fechar arrays e objetos abertos
-                    const openBraces = (fixedContent.match(/{/g) || []).length;
-                    const closeBraces = (fixedContent.match(/}/g) || []).length;
-                    const openBrackets = (fixedContent.match(/\[/g) || []).length;
-                    const closeBrackets = (fixedContent.match(/]/g) || []).length;
-                    
-                    // Fechar arrays abertos
-                    for (let i = 0; i < openBrackets - closeBrackets; i++) {
-                      fixedContent += ']';
-                    }
-                    
-                    // Fechar objetos abertos
-                    for (let i = 0; i < openBraces - closeBraces; i++) {
-                      fixedContent += '}';
-                    }
-                  }
-                  
-                  try {
-                    const parsedFixed = JSON.parse(fixedContent);
-                    console.log('✅ JSON fixed successfully');
-                    
-                    // Enviar versão corrigida
-                    const fixedData = {
-                      choices: [{
-                        delta: { content: JSON.stringify(parsedFixed) },
-                        finish_reason: 'stop'
-                      }]
-                    };
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(fixedData)}\n\n`));
-                  } catch (stillInvalid) {
-                    console.error('❌ Could not fix JSON:', stillInvalid);
-                    
-                    // Fallback: criar estrutura mínima válida
-                    const fallbackJson = {
-                      files: [
-                        {
-                          path: 'ERROR.txt',
-                          content: `Erro ao processar resposta da IA.\n\nConteúdo recebido:\n${fullContent.substring(0, 1000)}\n\nErro: ${jsonError.message}`
-                        }
-                      ]
-                    };
-                    
-                    const fallbackData = {
-                      choices: [{
-                        delta: { content: JSON.stringify(fallbackJson) },
-                        finish_reason: 'stop'
-                      }]
-                    };
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(fallbackData)}\n\n`));
-                  }
-                }
-              }
-              
               controller.close();
               break;
             }
@@ -780,12 +476,7 @@ const encoder = new TextEncoder();
               if (dataStr === '[DONE]') continue;
 
               try {
-                // Parsear para extrair conteúdo (sem enviar parcial)
-                const parsed = JSON.parse(dataStr);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  fullContent += content;
-                }
+                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               } catch (parseError) {
                 console.warn('Failed to parse chunk:', dataStr.substring(0, 100));
               }
@@ -796,38 +487,12 @@ const encoder = new TextEncoder();
             const dataStr = buffer.slice(buffer.indexOf('data:') + 6).trim();
             if (dataStr && dataStr !== '[DONE]') {
               try {
-                const parsed = JSON.parse(dataStr);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  fullContent += content;
-                }
+                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               } catch { }
             }
           }
         } catch (error) {
           console.error('Stream error:', error);
-          
-          // Enviar erro como JSON válido
-          const errorJson = {
-            files: [
-              {
-                path: 'ERROR.txt',
-                content: `Erro no streaming: ${error.message}`
-              }
-            ]
-          };
-          
-          const errorData = {
-            choices: [{
-              delta: { content: JSON.stringify(errorJson) },
-              finish_reason: 'stop'
-            }]
-          };
-          
-          try {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorData)}\n\n`));
-          } catch { }
-          
           controller.error(error);
         }
       }

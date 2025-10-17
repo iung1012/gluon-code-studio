@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
-import { LogOut, LogIn, User as UserIcon, Settings, CreditCard } from "lucide-react";
+import { LogOut, LogIn, User as UserIcon, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useSubscription } from "@/contexts/SubscriptionContext";
 import type { User } from "@supabase/supabase-js";
 import {
   DropdownMenu,
@@ -35,7 +34,6 @@ const apiKeySchema = z.string()
 export const Header = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { subscribed, createCheckoutSession, openCustomerPortal } = useSubscription();
   const [user, setUser] = useState<User | null>(null);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -145,45 +143,9 @@ export const Header = () => {
                     <span className="text-xs text-muted-foreground truncate">
                       {user.email}
                     </span>
-                    {subscribed && (
-                      <span className="text-xs text-green-600 mt-1">
-                        ✓ Assinatura Ativa
-                      </span>
-                    )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {subscribed ? (
-                  <DropdownMenuItem onClick={async () => {
-                    try {
-                      await openCustomerPortal();
-                    } catch (error) {
-                      toast({
-                        title: "Erro",
-                        description: "Não foi possível abrir o portal de gerenciamento",
-                        variant: "destructive",
-                      });
-                    }
-                  }} className="gap-2">
-                    <CreditCard className="w-4 h-4" />
-                    Gerenciar Assinatura
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={async () => {
-                    try {
-                      await createCheckoutSession();
-                    } catch (error) {
-                      toast({
-                        title: "Erro",
-                        description: "Não foi possível iniciar o checkout",
-                        variant: "destructive",
-                      });
-                    }
-                  }} className="gap-2">
-                    <CreditCard className="w-4 h-4" />
-                    Assinar Plataforma - R$ 49,90/mês
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem onClick={() => setShowApiKeyDialog(true)} className="gap-2">
                   <Settings className="w-4 h-4" />
                   Configurar Chave API
