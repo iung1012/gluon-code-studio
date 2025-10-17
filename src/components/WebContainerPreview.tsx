@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { WebContainer } from '@webcontainer/api';
 import type { FileNode } from './FileTree';
 import { Card } from './ui/card';
+import { Button } from './ui/button';
 import { AlertCircle, Loader2, Terminal as TerminalIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { LivePreview } from './LivePreview';
+
 
 interface WebContainerPreviewProps {
   files: FileNode[];
@@ -168,16 +169,20 @@ export const WebContainerPreview = ({
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-primary" />
               <div>
-                <h3 className="font-medium">Preview avançado indisponível</h3>
+                <h3 className="font-medium">WebContainer requer ambiente isolado</h3>
                 <p className="text-sm text-muted-foreground">
-                  Este ambiente não está cross-origin isolated, exigido pelo WebContainer. Exibindo preview simplificado.
+                  Abra em uma nova aba para executar o preview com WebContainer (SharedArrayBuffer).
                 </p>
+                <div className="mt-3">
+                  <Button
+                    onClick={() => window.open(window.location.href, '_blank', 'noopener')}
+                  >
+                    Abrir preview avançado em nova aba
+                  </Button>
+                </div>
               </div>
             </div>
           </Card>
-        </div>
-        <div className="flex-1">
-          <LivePreview files={files} />
         </div>
       </div>
     );
