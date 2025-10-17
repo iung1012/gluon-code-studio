@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { Sandpack, SandpackFiles } from '@codesandbox/sandpack-react';
+import { useEffect, useState, useRef } from 'react';
 import { FileNode, FileTree } from './FileTree';
 import { Code2, Eye } from 'lucide-react';
 import { PreviewLoading } from './PreviewLoading';
@@ -20,8 +19,7 @@ export const WebContainerPreview = ({
 }: WebContainerPreviewProps) => {
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
-  const [sandpackFiles, setSandpackFiles] = useState<SandpackFiles>({});
-  const [runtimeDeps, setRuntimeDeps] = useState<Record<string, string>>({});
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const getFileLanguage = (filename: string): string => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -38,181 +36,118 @@ export const WebContainerPreview = ({
     return languageMap[ext || ''] || 'plaintext';
   };
 
-  // Extract dependencies used in imports to ensure Sandpack installs them
-  const extractDependenciesFromFiles = (nodes: FileNode[]): Record<string, string> => {
-    const packages = new Set<string>();
-    const importRegex = /from\s+['"]([^'\"]+)['"]|require\(\s*['"]([^'\"]+)['"]\s*\)/g;
-
-    const addPackage = (specifier?: string) => {
-      if (!specifier) return;
-      if (specifier.startsWith('.') || specifier.startsWith('/')) return;
-      let pkg = specifier;
-      if (pkg.startsWith('@')) {
-        const parts = pkg.split('/');
-        if (parts.length >= 2) pkg = parts.slice(0, 2).join('/');
-      } else {
-        pkg = pkg.split('/')[0];
+  // Find file by path
+  const findFile = (nodes: FileNode[], targetPath: string): FileNode | null => {
+    for (const node of nodes) {
+      if (node.path === targetPath) return node;
+      if (node.children) {
+        const found = findFile(node.children, targetPath);
+        if (found) return found;
       }
-      packages.add(pkg);
-    };
-
-    const walk = (list: FileNode[]) => {
-      for (const n of list) {
-        if (n.type === 'file' && n.content) {
-          let m: RegExpExecArray | null;
-          while ((m = importRegex.exec(n.content))) {
-            addPackage(m[1] || m[2]);
-          }
-        }
-        if (n.children) walk(n.children);
-      }
-    };
-
-    walk(nodes);
-
-    const versions: Record<string, string> = {
-      react: '^18.3.1',
-      'react-dom': '^18.3.1',
-      'lucide-react': 'latest',
-      'react-router-dom': '^6.30.1',
-      clsx: '^2.1.1',
-      zod: '^3.25.76',
-      'react-hook-form': '^7.61.1',
-      'tailwind-merge': '^2.6.0',
-      'react-syntax-highlighter': '^15.6.1',
-      prismjs: '^1.30.0',
-      'date-fns': '^3.6.0',
-      recharts: '^2.15.4',
-    };
-
-    const deps: Record<string, string> = {};
-    // Always include react and react-dom
-    deps.react = versions.react;
-    deps['react-dom'] = versions['react-dom'];
-
-    packages.forEach((pkg) => {
-      if (versions[pkg]) {
-        deps[pkg] = versions[pkg];
-      }
-    });
-
-    return deps;
+    }
+    return null;
   };
 
-  const handleFileSelect = (path: string, content: string) => {
-    const findFile = (nodes: FileNode[], targetPath: string): FileNode | null => {
-      for (const node of nodes) {
-        if (node.path === targetPath) return node;
-        if (node.children) {
-          const found = findFile(node.children, targetPath);
-          if (found) return found;
-        }
+  // Get all files recursively
+  const getAllFiles = (nodes: FileNode[]): FileNode[] => {
+    const result: FileNode[] = [];
+    const walk = (list: FileNode[]) => {
+      for (const node of list) {
+        if (node.type === 'file') result.push(node);
+        if (node.children) walk(node.children);
       }
-      return null;
     };
+    walk(nodes);
+    return result;
+  };
+
+  const handleFileSelect = (path: string) => {
     const file = findFile(files, path);
     setSelectedFile(file);
   };
 
-  // Fix common JSX errors in code
-  const fixJSXErrors = (code: string): string => {
-    // Fix incomplete opening tags like <h className="..."> that should be <h1 className="...">
-    code = code.replace(/<h(\s+className)/g, '<h1$1');
-    code = code.replace(/<h(\s+[^>]*>)/g, '<h1$1');
-    
-    return code;
-  };
-
-  // Convert FileNode[] to Sandpack file structure
-  const buildSandpackFiles = (nodes: FileNode[], parentPath = ''): SandpackFiles => {
-    const result: SandpackFiles = {};
-    
-    for (const node of nodes) {
-      // Remove leading slash from path for Sandpack compatibility
-      let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-      
-      // Skip files that can break CRA-based Sandpack runtime
-      const skipNames = new Set([
-        'package.json',
-        'tailwind.config.js',
-        'postcss.config.js',
-        'vite.config.ts',
-        'vite.config.js',
-        'tsconfig.json',
-        'tsconfig.app.json',
-        'tsconfig.node.json',
-      ]);
-      if (skipNames.has(fullPath) || skipNames.has(node.name)) {
-        continue;
-      }
-      
-      if (node.type === 'file' && node.content) {
-        let code = node.content;
-        
-        // Fix JSX errors in React files
-        if (node.name.endsWith('.tsx') || node.name.endsWith('.jsx')) {
-          code = fixJSXErrors(code);
-        }
-        
-        // Remove Tailwind directives which require a build step not available in Sandpack
-        if (node.name.endsWith('.css')) {
-          code = code.replace(/@tailwind\s+base;?/g, '')
-                     .replace(/@tailwind\s+components;?/g, '')
-                     .replace(/@tailwind\s+utilities;?/g, '');
-        }
-        result[fullPath] = { code };
-      } else if (node.type === 'folder' && node.children) {
-        const childPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-        Object.assign(result, buildSandpackFiles(node.children, childPath));
-      }
-    }
-    
-    return result;
-  };
-
+  // Update iframe with HTML content
   useEffect(() => {
-    if (files.length > 0) {
-      const sandpackFileStructure = buildSandpackFiles(files);
-      // Detect runtime dependencies from import statements
-      const deps = extractDependenciesFromFiles(files);
-      setRuntimeDeps(deps);
+    if (!iframeRef.current || files.length === 0) return;
 
-      // Adapter: if the generated project is Vite-style (index.html + src/main.tsx),
-      // inject CRA-compatible entry files for the Sandpack "react-ts" runtime.
-      const hasRootIndexHtml = Boolean(sandpackFileStructure['index.html']);
-      const hasMainTsx = Boolean(sandpackFileStructure['src/main.tsx'] || sandpackFileStructure['src/main.jsx']);
-      const hasIndexTsx = Boolean(sandpackFileStructure['src/index.tsx']);
-      const hasPublicIndexHtml = Boolean(sandpackFileStructure['public/index.html']);
+    const allFiles = getAllFiles(files);
+    const htmlFile = allFiles.find(f => 
+      f.name === 'index.html' || f.path?.endsWith('index.html')
+    );
 
-      if (hasRootIndexHtml && hasMainTsx && !hasIndexTsx) {
-        sandpackFileStructure['src/index.tsx'] = {
-          code: `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\n\nReactDOM.createRoot(document.getElementById('root')!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);\n`
-        };
+    if (!htmlFile?.content) return;
+
+    let htmlContent = htmlFile.content;
+
+    // Find and inject CSS files
+    const cssFiles = allFiles.filter(f => f.name.endsWith('.css'));
+    cssFiles.forEach(cssFile => {
+      if (cssFile.content) {
+        const cssBlob = new Blob([cssFile.content], { type: 'text/css' });
+        const cssUrl = URL.createObjectURL(cssBlob);
+        
+        // Add CSS link to head
+        if (!htmlContent.includes(cssFile.name)) {
+          htmlContent = htmlContent.replace(
+            '</head>',
+            `  <link rel="stylesheet" href="${cssUrl}">\n  </head>`
+          );
+        }
       }
+    });
 
-      if (!hasPublicIndexHtml) {
-        sandpackFileStructure['public/index.html'] = {
-          code: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="utf-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1" />\n    <title>App</title>\n  </head>\n  <body>\n    <div id="root"></div>\n  </body>\n</html>`
-        };
+    // Find and inject JS files
+    const jsFiles = allFiles.filter(f => 
+      f.name.endsWith('.js') && !f.name.includes('config')
+    );
+    jsFiles.forEach(jsFile => {
+      if (jsFile.content) {
+        const jsBlob = new Blob([jsFile.content], { type: 'text/javascript' });
+        const jsUrl = URL.createObjectURL(jsBlob);
+        
+        // Add JS script to body
+        if (!htmlContent.includes(jsFile.name)) {
+          htmlContent = htmlContent.replace(
+            '</body>',
+            `  <script src="${jsUrl}"></script>\n  </body>`
+          );
+        }
       }
+    });
 
-      setSandpackFiles(sandpackFileStructure);
-      
-      // Select first file for code view
-      if (!selectedFile) {
-        const findFirstFile = (nodes: FileNode[]): FileNode | null => {
-          for (const node of nodes) {
-            if (node.type === 'file') return node;
-            if (node.children) {
-              const found = findFirstFile(node.children);
-              if (found) return found;
-            }
+    // Inject Tailwind CDN if not present
+    if (!htmlContent.includes('tailwindcss')) {
+      htmlContent = htmlContent.replace(
+        '</head>',
+        `  <script src="https://cdn.tailwindcss.com"></script>\n  </head>`
+      );
+    }
+
+    const iframe = iframeRef.current;
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(htmlContent);
+      iframeDoc.close();
+    }
+  }, [files]);
+
+  // Select first file for code view
+  useEffect(() => {
+    if (files.length > 0 && !selectedFile) {
+      const findFirstFile = (nodes: FileNode[]): FileNode | null => {
+        for (const node of nodes) {
+          if (node.type === 'file') return node;
+          if (node.children) {
+            const found = findFirstFile(node.children);
+            if (found) return found;
           }
-          return null;
-        };
-        const firstFile = findFirstFile(files);
-        if (firstFile) setSelectedFile(firstFile);
-      }
+        }
+        return null;
+      };
+      const firstFile = findFirstFile(files);
+      if (firstFile) setSelectedFile(firstFile);
     }
   }, [files, selectedFile]);
 
@@ -220,7 +155,7 @@ export const WebContainerPreview = ({
     return <PreviewLoading progress={generationProgress} />;
   }
 
-  if (Object.keys(sandpackFiles).length === 0) {
+  if (files.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
         <div className="text-center max-w-md mx-auto p-8">
@@ -247,26 +182,12 @@ export const WebContainerPreview = ({
         </div>
 
         <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
-          <div className="h-full w-full [&>div]:h-full [&_.sp-wrapper]:!h-full [&_.sp-layout]:!h-full">
-            <Sandpack
-              template="react-ts"
-              files={sandpackFiles}
-              theme="dark"
-              options={{
-                bundlerURL: "https://sandpack.codesandbox.io",
-                showNavigator: false,
-                showTabs: false,
-                showLineNumbers: true,
-                editorHeight: "100%",
-                editorWidthPercentage: 0,
-                showInlineErrors: true,
-                showConsole: false,
-                showConsoleButton: false,
-              }}
-              customSetup={{
-                entry: 'src/index.tsx',
-                dependencies: runtimeDeps
-              }}
+          <div className="h-full w-full bg-white">
+            <iframe
+              ref={iframeRef}
+              className="w-full h-full border-0"
+              title="Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms"
             />
           </div>
         </TabsContent>
