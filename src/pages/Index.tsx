@@ -11,6 +11,7 @@ import { ProjectSidebar } from "@/components/ProjectSidebar";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import type { User } from "@supabase/supabase-js";
 
 interface WebsiteVersion {
@@ -29,6 +30,7 @@ interface ChatMessage {
 
 const Index = () => {
   const navigate = useNavigate();
+  const { subscribed, loading: subLoading } = useSubscription();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
@@ -107,6 +109,17 @@ const Index = () => {
       navigate('/auth');
       return;
     }
+    
+    if (!subscribed) {
+      toast({
+        title: "Assinatura Necessária",
+        description: "Você precisa ser assinante PRO para gerar websites.",
+        variant: "destructive"
+      });
+      navigate('/subscription');
+      return;
+    }
+    
     if (!hasApiKey) {
       setShowApiKeyInput(true);
       toast({
@@ -412,6 +425,16 @@ const Index = () => {
   };
 
   const handleChatMessage = async (message: string, images?: string[], model: 'basic' | 'pro' = 'basic') => {
+    if (!subscribed) {
+      toast({
+        title: "Assinatura Necessária",
+        description: "Você precisa ser assinante PRO para editar websites.",
+        variant: "destructive"
+      });
+      navigate('/subscription');
+      return;
+    }
+    
     setIsLoading(true);
     setLoadingProgress(0);
     setCurrentStreamContent("");

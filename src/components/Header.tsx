@@ -115,8 +115,20 @@ export const Header = () => {
           >
             <img src={logo} alt="2code Logo" className="h-7 sm:h-8 w-auto" />
           </button>
-          
-          {user ? (
+
+          <div className="flex items-center gap-2">
+            {user && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => navigate("/subscription")}
+                className="gap-1.5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              >
+                <span className="text-xs sm:text-sm font-bold">PRO</span>
+              </Button>
+            )}
+            
+            {user ? (
             <>
               <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -207,7 +219,8 @@ export const Header = () => {
               <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Entrar</span>
             </Button>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </header>
