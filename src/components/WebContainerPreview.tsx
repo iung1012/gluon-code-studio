@@ -56,19 +56,32 @@ export const WebContainerPreview = ({
   const buildSandpackFiles = (nodes: FileNode[], parentPath = ''): SandpackFiles => {
     const result: SandpackFiles = {};
     
+    // Files to skip in Sandpack (they cause parsing errors or are auto-generated)
+    const skipFiles = [
+      'package.json',
+      'tsconfig.json',
+      'tsconfig.app.json',
+      'tsconfig.node.json',
+      'vite.config.ts',
+      'vite.config.js'
+    ];
+    
     for (const node of nodes) {
       // Remove leading slash from path for Sandpack compatibility
       let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
       
-      // Skip package.json as Sandpack auto-generates it from customSetup
-      if (fullPath === 'package.json' || node.name === 'package.json') {
+      // Skip problematic config files
+      if (skipFiles.includes(node.name) || skipFiles.includes(fullPath)) {
         continue;
       }
       
       if (node.type === 'file' && node.content) {
-        result[fullPath] = {
-          code: node.content
-        };
+        // Validate that content is not malformed before adding
+        if (node.content.trim().length > 0 && !node.content.includes('\\')) {
+          result[fullPath] = {
+            code: node.content
+          };
+        }
       } else if (node.type === 'folder' && node.children) {
         const childPath = parentPath ? `${parentPath}/${node.name}` : node.name;
         Object.assign(result, buildSandpackFiles(node.children, childPath));
