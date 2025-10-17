@@ -1,16 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Calendar, CreditCard, AlertCircle } from "lucide-react";
 import { Header } from "@/components/Header";
 
 const Subscription = () => {
-  const { subscribed, loading: subLoading, checkSubscription } = useSubscription();
+  const { subscribed, loading: subLoading, checkSubscription, user } = useSubscription();
   const [loading, setLoading] = useState(false);
+  const [subscriptionDetails, setSubscriptionDetails] = useState<{
+    is_subscribed: boolean;
+    subscription_product_id: string | null;
+    subscription_end: string | null;
+  } | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadSubscriptionDetails = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_subscribed, subscription_product_id, subscription_end')
+        .eq('id', user.id)
+        .single();
+
+      if (!error && data) {
+        setSubscriptionDetails(data);
+      }
+    };
+
+    loadSubscriptionDetails();
+  }, [user, subscribed]);
 
   const handleCheckout = async () => {
     try {
@@ -69,21 +93,33 @@ const Subscription = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Se não houver customer no Stripe, mostra mensagem informativa
+        toast({
+          title: "Informação",
+          description: "Sua assinatura está ativa. Para alterações, entre em contato com o suporte.",
+        });
+        return;
+      }
 
       if (data?.url) {
         window.open(data.url, '_blank');
       }
     } catch (error) {
-      console.error('Error opening customer portal:', error);
       toast({
         title: "Erro",
-        description: "Não foi possível abrir o portal de gerenciamento",
-        variant: "destructive",
+        description: "Ocorreu um erro ao acessar o portal de gerenciamento",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Ilimitado';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR');
   };
 
   const features = [
@@ -135,7 +171,23 @@ const Subscription = () => {
               </div>
 
               <div className="pt-6 space-y-3">
-                {subscribed ? (
+                {!subscribed ? (
+                  <Button
+                    onClick={handleCheckout}
+                    disabled={loading || subLoading}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processando...
+                      </>
+                    ) : (
+                      "Assinar Agora"
+                    )}
+                  </Button>
+                ) : (
                   <>
                     <Button
                       onClick={handleManageSubscription}
@@ -149,7 +201,10 @@ const Subscription = () => {
                           Carregando...
                         </>
                       ) : (
-                        "Gerenciar Assinatura"
+                        <>
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Gerenciar Pagamento
+                        </>
                       )}
                     </Button>
                     <Button
@@ -168,26 +223,54 @@ const Subscription = () => {
                       )}
                     </Button>
                   </>
-                ) : (
-                  <Button
-                    onClick={handleCheckout}
-                    disabled={loading || subLoading}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Carregando...
-                      </>
-                    ) : (
-                      "Assinar Agora"
-                    )}
-                  </Button>
                 )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Detalhes da Assinatura Card */}
+          {subscribed && subscriptionDetails && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Detalhes da Assinatura</CardTitle>
+                <CardDescription>Informações sobre seu plano atual</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                  <Check className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <div className="font-medium">Status</div>
+                    <div className="text-sm text-muted-foreground">Assinatura Ativa</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                  <Calendar className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <div className="font-medium">Validade</div>
+                    <div className="text-sm text-muted-foreground">
+                      {formatDate(subscriptionDetails.subscription_end)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                  <CreditCard className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <div className="font-medium">Plano</div>
+                    <div className="text-sm text-muted-foreground">PRO - Acesso Total</div>
+                  </div>
+                </div>
+
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Para cancelar ou modificar sua assinatura, utilize o botão "Gerenciar Pagamento" ou entre em contato com o suporte.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
