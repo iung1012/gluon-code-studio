@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { WebContainer } from '@webcontainer/api';
 import type { FileNode } from './FileTree';
 import { Card } from './ui/card';
-import { AlertCircle, Loader2, Terminal as TerminalIcon } from 'lucide-react';
+import { Button } from './ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { AlertCircle, Loader2, Terminal as TerminalIcon } from 'lucide-react';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -208,6 +209,14 @@ export const WebContainerPreview = ({
                   <li>Verifique se não está em modo privado/anônimo</li>
                   <li>Certifique-se que o navegador suporta WebContainers (Chrome/Edge recomendados)</li>
                 </ul>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Button onClick={() => window.open(window.location.href, '_blank', 'noopener,noreferrer')}>
+                    Abrir em nova aba (top-level)
+                  </Button>
+                  <Button variant="secondary" onClick={() => window.location.reload()}>
+                    Tentar novamente
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
