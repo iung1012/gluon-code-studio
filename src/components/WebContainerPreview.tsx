@@ -81,6 +81,26 @@ export const WebContainerPreview = ({
   useEffect(() => {
     if (files.length > 0) {
       const sandpackFileStructure = buildSandpackFiles(files);
+
+      // Adapter: if the generated project is Vite-style (index.html + src/main.tsx),
+      // inject CRA-compatible entry files for the Sandpack "react-ts" runtime.
+      const hasRootIndexHtml = Boolean(sandpackFileStructure['index.html']);
+      const hasMainTsx = Boolean(sandpackFileStructure['src/main.tsx'] || sandpackFileStructure['src/main.jsx']);
+      const hasIndexTsx = Boolean(sandpackFileStructure['src/index.tsx']);
+      const hasPublicIndexHtml = Boolean(sandpackFileStructure['public/index.html']);
+
+      if (hasRootIndexHtml && hasMainTsx && !hasIndexTsx) {
+        sandpackFileStructure['src/index.tsx'] = {
+          code: `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\n\nReactDOM.createRoot(document.getElementById('root')!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);\n`
+        };
+      }
+
+      if (!hasPublicIndexHtml) {
+        sandpackFileStructure['public/index.html'] = {
+          code: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="utf-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1" />\n    <title>App</title>\n  </head>\n  <body>\n    <div id="root"></div>\n  </body>\n</html>`
+        };
+      }
+
       setSandpackFiles(sandpackFileStructure);
       
       // Select first file for code view
