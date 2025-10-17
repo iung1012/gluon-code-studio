@@ -134,7 +134,7 @@ export const WebContainerPreview = ({
         <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
           <div className="h-full w-full [&>div]:h-full [&_.sp-wrapper]:!h-full [&_.sp-layout]:!h-full">
             <Sandpack
-              template={Object.keys(sandpackFiles).some((f) => f.endsWith('.tsx') || f.endsWith('.jsx')) ? 'react-ts' : 'vanilla'}
+              template="react-ts"
               files={sandpackFiles}
               theme="dark"
               options={{
