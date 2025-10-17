@@ -2,12 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { WebContainer } from '@webcontainer/api';
 import type { FileNode } from './FileTree';
 import { Card } from './ui/card';
-import { Button } from './ui/button';
 import { AlertCircle, Loader2, Terminal as TerminalIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
-
 
 interface WebContainerPreviewProps {
   files: FileNode[];
@@ -34,14 +32,6 @@ export const WebContainerPreview = ({
 
     const bootContainer = async () => {
       try {
-        // Guard: WebContainers require cross-origin isolation at top-level
-        if (typeof window !== 'undefined' && !(window as any).crossOriginIsolated) {
-          console.warn('WebContainer disabled: window.crossOriginIsolated is false. Falling back to LivePreview.');
-          setIsBooting(false);
-          setError(null);
-          return;
-        }
-
         console.log('🚀 Booting WebContainer...');
         const instance = await WebContainer.boot();
         
@@ -158,35 +148,6 @@ export const WebContainerPreview = ({
 
     setupProject();
   }, [webcontainer, files, isBooting]);
-
-  const isIsolated = typeof window !== 'undefined' && (window as any).crossOriginIsolated;
-
-  if (!isIsolated) {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="p-4">
-          <Card className="p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-primary" />
-              <div>
-                <h3 className="font-medium">WebContainer requer ambiente isolado</h3>
-                <p className="text-sm text-muted-foreground">
-                  Abra em uma nova aba para executar o preview com WebContainer (SharedArrayBuffer).
-                </p>
-                <div className="mt-3">
-                  <Button
-                    onClick={() => window.open(window.location.href, '_blank', 'noopener')}
-                  >
-                    Abrir preview avançado em nova aba
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   if (isGenerating) {
     return (
