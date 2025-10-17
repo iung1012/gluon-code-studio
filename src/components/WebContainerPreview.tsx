@@ -26,22 +26,32 @@ export const WebContainerPreview = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
 
-  // Boot WebContainer
+  // Boot WebContainer no top-level context
   useEffect(() => {
     let isMounted = true;
 
     const bootContainer = async () => {
       try {
+        console.log('🔍 Verificando ambiente...');
+        console.log('crossOriginIsolated:', window.crossOriginIsolated);
+        console.log('isSecureContext:', window.isSecureContext);
+        
         // Verifica se o ambiente suporta crossOriginIsolated
         if (!window.crossOriginIsolated) {
           throw new Error(
-            'WebContainer requer um ambiente cross-origin isolated. ' +
-            'Certifique-se de que o servidor está configurado corretamente.'
+            '❌ WebContainer requer ambiente cross-origin isolated.\n\n' +
+            'Headers necessários:\n' +
+            '• Cross-Origin-Opener-Policy: same-origin\n' +
+            '• Cross-Origin-Embedder-Policy: credentialless\n\n' +
+            'Reinicie o servidor e limpe o cache do navegador.'
           );
         }
 
-        console.log('🚀 Booting WebContainer...');
-        const instance = await WebContainer.boot({ coep: 'credentialless', forwardPreviewErrors: true });
+        console.log('🚀 Booting WebContainer no top-level context...');
+        const instance = await WebContainer.boot({ 
+          coep: 'credentialless',
+          forwardPreviewErrors: true 
+        });
         
         if (!isMounted) {
           await instance.teardown();
@@ -51,6 +61,10 @@ export const WebContainerPreview = ({
         setWebcontainer(instance);
         setIsBooting(false);
         console.log('✅ WebContainer booted successfully');
+        
+        // Envia mensagem para o parent informando que está pronto
+        window.parent.postMessage({ type: 'WEBCONTAINER_READY' }, '*');
+        
       } catch (err) {
         console.error('❌ Failed to boot WebContainer:', err);
         setError(err instanceof Error ? err.message : 'Failed to boot WebContainer');
@@ -145,6 +159,13 @@ export const WebContainerPreview = ({
           console.log('✅ Server ready at:', serverUrl);
           setUrl(serverUrl);
           setTerminalOutput(prev => [...prev, `✅ Server running at ${serverUrl}`]);
+          
+          // Envia URL virtual para o parent window via postMessage
+          window.parent.postMessage({ 
+            type: 'SERVER_READY', 
+            url: serverUrl,
+            port 
+          }, '*');
         });
 
       } catch (err) {
@@ -170,16 +191,24 @@ export const WebContainerPreview = ({
 
   if (error) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
-        <Card className="p-8 max-w-md">
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4">
+        <Card className="p-8 max-w-2xl">
           <div className="flex items-start gap-4">
             <AlertCircle className="w-8 h-8 text-destructive flex-shrink-0" />
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold text-lg mb-2">WebContainer Error</h3>
-              <p className="text-sm text-muted-foreground mb-4">{error}</p>
-              <p className="text-xs text-muted-foreground">
-                Certifique-se que seu navegador suporta WebContainers e que não está em modo privado/anônimo.
-              </p>
+              <pre className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap font-mono bg-muted/50 p-4 rounded">
+                {error}
+              </pre>
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <p>✅ <strong>Checklist de Troubleshooting:</strong></p>
+                <ul className="list-disc list-inside space-y-1 ml-2">
+                  <li>Reinicie o servidor de desenvolvimento (npm run dev)</li>
+                  <li>Limpe o cache do navegador (Ctrl+Shift+Delete)</li>
+                  <li>Verifique se não está em modo privado/anônimo</li>
+                  <li>Certifique-se que o navegador suporta WebContainers (Chrome/Edge recomendados)</li>
+                </ul>
+              </div>
             </div>
           </div>
         </Card>
@@ -216,12 +245,17 @@ export const WebContainerPreview = ({
               src={url}
               className="w-full h-full border-0"
               title="WebContainer Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+              allow="cross-origin-isolated"
             />
           ) : (
             <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
-                <p className="text-sm text-muted-foreground">Aguardando servidor...</p>
+              <div className="text-center space-y-3">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
+                <p className="text-sm text-muted-foreground">Aguardando servidor iniciar...</p>
+                <p className="text-xs text-muted-foreground/60">
+                  (npm install + npm run dev)
+                </p>
               </div>
             </div>
           )}
