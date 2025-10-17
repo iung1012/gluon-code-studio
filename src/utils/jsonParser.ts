@@ -3,6 +3,67 @@ export const parseProjectStructure = (content: string): { path: string; content:
   
   let cleanContent = content.trim();
   
+  // Check if it's old HTML format (legacy projects)
+  if (cleanContent.startsWith('<!DOCTYPE') || cleanContent.startsWith('<html')) {
+    console.log('⚠️ Legacy HTML format detected, converting to React structure...');
+    return [{
+      path: 'package.json',
+      content: JSON.stringify({
+        name: 'legacy-project',
+        private: true,
+        version: '0.0.0',
+        type: 'module',
+        scripts: {
+          dev: 'vite',
+          build: 'tsc && vite build',
+          preview: 'vite preview'
+        },
+        dependencies: {
+          react: '^18.3.1',
+          'react-dom': '^18.3.1'
+        },
+        devDependencies: {
+          '@types/react': '^18.3.3',
+          '@types/react-dom': '^18.3.0',
+          '@vitejs/plugin-react': '^4.3.1',
+          typescript: '^5.5.4',
+          vite: '^5.4.2'
+        }
+      }, null, 2)
+    }, {
+      path: 'index.html',
+      content: cleanContent
+    }, {
+      path: 'vite.config.ts',
+      content: `import { defineConfig } from 'vite'\nimport react from '@vitejs/plugin-react'\n\nexport default defineConfig({\n  plugins: [react()],\n})`
+    }, {
+      path: 'tsconfig.json',
+      content: JSON.stringify({
+        compilerOptions: {
+          target: 'ES2020',
+          useDefineForClassFields: true,
+          lib: ['ES2020', 'DOM', 'DOM.Iterable'],
+          module: 'ESNext',
+          skipLibCheck: true,
+          moduleResolution: 'bundler',
+          allowImportingTsExtensions: true,
+          resolveJsonModule: true,
+          isolatedModules: true,
+          noEmit: true,
+          jsx: 'react-jsx',
+          strict: true
+        },
+        include: ['src']
+      }, null, 2)
+    }, {
+      path: 'src/main.tsx',
+      content: `import React from 'react'\nimport ReactDOM from 'react-dom/client'\nimport App from './App.tsx'\n\nReactDOM.createRoot(document.getElementById('root')!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>,\n)`
+    }, {
+      path: 'src/App.tsx',
+      content: `export default function App() {\n  return (\n    <div className="min-h-screen flex items-center justify-center bg-gray-100">\n      <h1 className="text-4xl font-bold">Legacy Project - Please regenerate</h1>\n    </div>\n  )\n}`
+    }];
+  }
+  
   // Remove markdown code blocks
   if (cleanContent.startsWith('```')) {
     cleanContent = cleanContent.replace(/^```(?:json|html)?\s*\n?/, '');
