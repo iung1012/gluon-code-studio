@@ -60,6 +60,11 @@ export const WebContainerPreview = ({
       // Remove leading slash from path for Sandpack compatibility
       let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
       
+      // Skip package.json as Sandpack auto-generates it from customSetup
+      if (fullPath === 'package.json' || node.name === 'package.json') {
+        continue;
+      }
+      
       if (node.type === 'file' && node.content) {
         result[fullPath] = {
           code: node.content
