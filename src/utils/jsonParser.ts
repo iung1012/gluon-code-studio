@@ -21,17 +21,19 @@ export const parseProjectStructure = (content: string): { path: string; content:
       return parsed.files;
     }
   } catch (e) {
-    console.error('❌ JSON parse failed:', e);
-    console.error('Content length:', cleanContent.length);
-    console.error('Failed content (first 300 chars):', cleanContent.substring(0, 300));
-    console.error('Failed content (last 300 chars):', cleanContent.substring(cleanContent.length - 300));
-    
+    // First, try a graceful recovery without logging noisy errors
     const extractedFiles = tryExtractFilesFromMalformedJson(cleanContent);
     if (extractedFiles.length > 0) {
-      console.log('✅ Successfully extracted files from malformed JSON:', extractedFiles.length);
+      console.warn('⚠️ JSON parse failed, but recovered files from malformed JSON:', extractedFiles.length);
       return extractedFiles;
     }
-    
+
+    // Only log detailed errors if recovery was not possible
+    console.error('❌ JSON parse failed and recovery unsuccessful:', e);
+    console.error('Content length:', cleanContent.length);
+    console.error('Failed content (first 300 chars):', cleanContent.substring(0, 300));
+    console.error('Failed content (last 300 chars):', cleanContent.substring(Math.max(0, cleanContent.length - 300)));
+
     throw new Error('Resposta da API está incompleta ou malformada. Tente novamente.');
   }
   
