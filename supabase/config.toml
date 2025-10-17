@@ -3,6 +3,9 @@ project_id = "pefeepxfbfvwqdtnjajl"
 [functions.openrouter-generate]
 verify_jwt = true
 
+[functions.openrouter-chat]
+verify_jwt = true
+
 [functions.lovable-generate]
 verify_jwt = true
 

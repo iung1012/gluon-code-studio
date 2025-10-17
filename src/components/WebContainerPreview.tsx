@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Sandpack, SandpackFiles } from '@codesandbox/sandpack-react';
-import { FileNode, FileTree } from './FileTree';
-import { Code2, Eye } from 'lucide-react';
-import { PreviewLoading } from './PreviewLoading';
-import Editor from '@monaco-editor/react';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useEffect, useRef, useState } from 'react';
+import { WebContainer } from '@webcontainer/api';
+import type { FileNode } from './FileTree';
+import { Card } from './ui/card';
+import { AlertCircle, Loader2, Terminal as TerminalIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { ScrollArea } from './ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface WebContainerPreviewProps {
   files: FileNode[];
@@ -16,193 +16,223 @@ interface WebContainerPreviewProps {
 export const WebContainerPreview = ({ 
   files, 
   isGenerating = false,
-  generationProgress 
+  generationProgress = 0 
 }: WebContainerPreviewProps) => {
-  const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
-  const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
-  const [sandpackFiles, setSandpackFiles] = useState<SandpackFiles>({});
+  const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
+  const [url, setUrl] = useState<string>('');
+  const [isBooting, setIsBooting] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
 
-  const getFileLanguage = (filename: string): string => {
-    const ext = filename.split('.').pop()?.toLowerCase();
-    const languageMap: Record<string, string> = {
-      ts: 'typescript',
-      tsx: 'typescript',
-      js: 'javascript',
-      jsx: 'javascript',
-      json: 'json',
-      html: 'html',
-      css: 'css',
-      md: 'markdown',
-    };
-    return languageMap[ext || ''] || 'plaintext';
-  };
-
-  const handleFileSelect = (path: string, content: string) => {
-    const findFile = (nodes: FileNode[], targetPath: string): FileNode | null => {
-      for (const node of nodes) {
-        if (node.path === targetPath) return node;
-        if (node.children) {
-          const found = findFile(node.children, targetPath);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-    const file = findFile(files, path);
-    setSelectedFile(file);
-  };
-
-  // Convert FileNode[] to Sandpack file structure
-  const buildSandpackFiles = (nodes: FileNode[], parentPath = ''): SandpackFiles => {
-    const result: SandpackFiles = {};
-    
-    for (const node of nodes) {
-      // Remove leading slash from path for Sandpack compatibility
-      let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-      
-      // Skip package.json as Sandpack auto-generates it from customSetup
-      if (fullPath === 'package.json' || node.name === 'package.json') {
-        continue;
-      }
-      
-      if (node.type === 'file' && node.content) {
-        result[fullPath] = {
-          code: node.content
-        };
-      } else if (node.type === 'folder' && node.children) {
-        const childPath = parentPath ? `${parentPath}/${node.name}` : node.name;
-        Object.assign(result, buildSandpackFiles(node.children, childPath));
-      }
-    }
-    
-    return result;
-  };
-
+  // Boot WebContainer
   useEffect(() => {
-    if (files.length > 0) {
-      const sandpackFileStructure = buildSandpackFiles(files);
-      setSandpackFiles(sandpackFileStructure);
-      
-      // Select first file for code view
-      if (!selectedFile) {
-        const findFirstFile = (nodes: FileNode[]): FileNode | null => {
-          for (const node of nodes) {
-            if (node.type === 'file') return node;
-            if (node.children) {
-              const found = findFirstFile(node.children);
-              if (found) return found;
+    let isMounted = true;
+
+    const bootContainer = async () => {
+      try {
+        console.log('🚀 Booting WebContainer...');
+        const instance = await WebContainer.boot();
+        
+        if (!isMounted) {
+          await instance.teardown();
+          return;
+        }
+
+        setWebcontainer(instance);
+        setIsBooting(false);
+        console.log('✅ WebContainer booted successfully');
+      } catch (err) {
+        console.error('❌ Failed to boot WebContainer:', err);
+        setError(err instanceof Error ? err.message : 'Failed to boot WebContainer');
+        setIsBooting(false);
+      }
+    };
+
+    bootContainer();
+
+    return () => {
+      isMounted = false;
+      if (webcontainer) {
+        webcontainer.teardown();
+      }
+    };
+  }, []);
+
+  // Mount files and run dev server
+  useEffect(() => {
+    if (!webcontainer || files.length === 0 || isBooting) return;
+
+    const setupProject = async () => {
+      try {
+        setError(null);
+        setTerminalOutput(['📦 Installing dependencies...']);
+
+        // Convert FileNode array to WebContainer file structure
+        const fileTree: Record<string, any> = {};
+        
+        const processNode = (node: FileNode, path: string = '') => {
+          const fullPath = path ? `${path}/${node.name}` : node.name;
+          
+          if (node.type === 'file' && node.content) {
+            // Create nested structure
+            const parts = fullPath.split('/');
+            let current = fileTree;
+            
+            for (let i = 0; i < parts.length - 1; i++) {
+              if (!current[parts[i]]) {
+                current[parts[i]] = { directory: {} };
+              }
+              current = current[parts[i]].directory;
+            }
+            
+            current[parts[parts.length - 1]] = {
+              file: { contents: node.content }
+            };
+          } else if (node.type === 'folder' && node.children) {
+            node.children.forEach(child => processNode(child, fullPath));
+          }
+        };
+
+        files.forEach(node => processNode(node));
+
+        console.log('📁 Mounting files...', Object.keys(fileTree));
+        await webcontainer.mount(fileTree);
+
+        // Install dependencies
+        const installProcess = await webcontainer.spawn('npm', ['install']);
+        
+        installProcess.output.pipeTo(new WritableStream({
+          write(data) {
+            setTerminalOutput(prev => [...prev, data]);
+            if (terminalRef.current) {
+              terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
             }
           }
-          return null;
-        };
-        const firstFile = findFirstFile(files);
-        if (firstFile) setSelectedFile(firstFile);
+        }));
+
+        const installExitCode = await installProcess.exit;
+        
+        if (installExitCode !== 0) {
+          throw new Error(`npm install failed with exit code ${installExitCode}`);
+        }
+
+        setTerminalOutput(prev => [...prev, '✅ Dependencies installed', '🚀 Starting dev server...']);
+
+        // Start dev server
+        const devProcess = await webcontainer.spawn('npm', ['run', 'dev']);
+        
+        devProcess.output.pipeTo(new WritableStream({
+          write(data) {
+            setTerminalOutput(prev => [...prev, data]);
+            if (terminalRef.current) {
+              terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+            }
+          }
+        }));
+
+        // Wait for server to be ready
+        webcontainer.on('server-ready', (port, serverUrl) => {
+          console.log('✅ Server ready at:', serverUrl);
+          setUrl(serverUrl);
+          setTerminalOutput(prev => [...prev, `✅ Server running at ${serverUrl}`]);
+        });
+
+      } catch (err) {
+        console.error('❌ Error setting up project:', err);
+        setError(err instanceof Error ? err.message : 'Failed to setup project');
+        setTerminalOutput(prev => [...prev, `❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`]);
       }
-    }
-  }, [files, selectedFile]);
+    };
+
+    setupProject();
+  }, [webcontainer, files, isBooting]);
 
   if (isGenerating) {
-    return <PreviewLoading progress={generationProgress} />;
-  }
-
-  if (Object.keys(sandpackFiles).length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
-        <div className="text-center max-w-md mx-auto p-8">
-          <p className="text-muted-foreground">Aguardando arquivos...</p>
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Gerando código... {generationProgress}%</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
+        <Card className="p-8 max-w-md">
+          <div className="flex items-start gap-4">
+            <AlertCircle className="w-8 h-8 text-destructive flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-lg mb-2">WebContainer Error</h3>
+              <p className="text-sm text-muted-foreground mb-4">{error}</p>
+              <p className="text-xs text-muted-foreground">
+                Certifique-se que seu navegador suporta WebContainers e que não está em modo privado/anônimo.
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isBooting) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Iniciando WebContainer...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/20">
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'code')} className="h-full flex flex-col">
-        <div className="border-b bg-card/30 backdrop-blur-sm px-4">
-          <TabsList className="bg-transparent h-12">
-            <TabsTrigger value="preview" className="gap-2 data-[state=active]:bg-background/60">
-              <Eye className="w-4 h-4" />
-              Preview
-            </TabsTrigger>
-            <TabsTrigger value="code" className="gap-2 data-[state=active]:bg-background/60">
-              <Code2 className="w-4 h-4" />
-              Código
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
-          <div className="h-full w-full [&>div]:h-full [&_.sp-wrapper]:!h-full [&_.sp-layout]:!h-full">
-            <Sandpack
-              template="react-ts"
-              files={sandpackFiles}
-              theme="dark"
-              options={{
-                showNavigator: false,
-                showTabs: false,
-                showLineNumbers: true,
-                editorHeight: "100%",
-                editorWidthPercentage: 0,
-                showInlineErrors: false,
-                showConsole: false,
-                showConsoleButton: false,
-              }}
-              customSetup={{
-                dependencies: {
-                  "react": "^18.3.1",
-                  "react-dom": "^18.3.1",
-                  "lucide-react": "latest"
-                }
-              }}
+    <div className="h-full flex flex-col">
+      <Tabs defaultValue="preview" className="flex-1 flex flex-col">
+        <TabsList className="w-full justify-start rounded-none border-b">
+          <TabsTrigger value="preview">Preview</TabsTrigger>
+          <TabsTrigger value="terminal">
+            <TerminalIcon className="w-4 h-4 mr-2" />
+            Terminal
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="preview" className="flex-1 m-0">
+          {url ? (
+            <iframe
+              ref={iframeRef}
+              src={url}
+              className="w-full h-full border-0"
+              title="WebContainer Preview"
             />
-          </div>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">Aguardando servidor...</p>
+              </div>
+            </div>
+          )}
         </TabsContent>
-
-        <TabsContent value="code" className="flex-1 m-0 data-[state=inactive]:hidden">
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
-              <div className="h-full overflow-auto bg-card/20 border-r border-border/40 p-4">
-                <h3 className="text-sm font-medium mb-3 text-foreground">Arquivos</h3>
-                <FileTree
-                  files={files}
-                  onFileSelect={handleFileSelect}
-                  selectedFile={selectedFile?.path}
-                />
-              </div>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle className="w-1 bg-border/50 hover:bg-border/80" />
-
-            <ResizablePanel defaultSize={75} minSize={60}>
-              <div className="h-full bg-background">
-                {selectedFile && selectedFile.content ? (
-                  <div className="h-full flex flex-col">
-                    <div className="px-4 py-2 bg-card/30 border-b border-border/40 text-sm font-medium text-foreground">
-                      {selectedFile.path}
-                    </div>
-                    <Editor
-                      height="100%"
-                      language={getFileLanguage(selectedFile.name)}
-                      value={selectedFile.content}
-                      theme="vs-dark"
-                      options={{
-                        readOnly: true,
-                        minimap: { enabled: false },
-                        fontSize: 13,
-                        lineNumbers: 'on',
-                        scrollBeyondLastLine: false,
-                        automaticLayout: true,
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    Selecione um arquivo para visualizar
-                  </div>
-                )}
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+        
+        <TabsContent value="terminal" className="flex-1 m-0 bg-black/95">
+          <ScrollArea className="h-full">
+            <div 
+              ref={terminalRef}
+              className={cn(
+                "p-4 font-mono text-xs text-green-400",
+                "whitespace-pre-wrap break-all"
+              )}
+            >
+              {terminalOutput.map((line, i) => (
+                <div key={i} className="mb-1">{line}</div>
+              ))}
+            </div>
+          </ScrollArea>
         </TabsContent>
       </Tabs>
     </div>
