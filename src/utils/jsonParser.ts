@@ -75,35 +75,42 @@ const tryExtractFilesFromMalformedJson = (content: string): {path: string, conte
   const files: {path: string, content: string}[] = [];
   
   try {
-    const filePattern = /"path"\s*:\s*"([^"]+)"\s*,\s*"content"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/g;
+    // Try to extract complete file objects including truncated ones
+    const filePattern = /\{"path"\s*:\s*"([^"]+)"\s*,\s*"content"\s*:\s*"((?:[^"\\]|\\.)*)"\}/gs;
     let match;
     
     while ((match = filePattern.exec(content)) !== null) {
-      const [, path, content] = match;
+      const [, path, fileContent] = match;
       files.push({
         path: path,
-        content: content.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+        content: fileContent.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
       });
     }
     
+    // Fallback: try to match incomplete entries
     if (files.length === 0) {
-      const pathMatches = content.match(/"path"\s*:\s*"([^"]+)"/g);
-      const contentMatches = content.match(/"content"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/g);
+      const pathPattern = /"path"\s*:\s*"([^"]+)"/g;
+      const matches = [...content.matchAll(pathPattern)];
       
-      if (pathMatches && contentMatches && pathMatches.length === contentMatches.length) {
-        for (let i = 0; i < pathMatches.length; i++) {
-          const path = pathMatches[i].match(/"path"\s*:\s*"([^"]+)"/)?.[1];
-          const fileContent = contentMatches[i].match(/"content"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/)?.[1];
-          
-          if (path && fileContent) {
-            files.push({
-              path: path,
-              content: fileContent.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
-            });
-          }
+      for (let i = 0; i < matches.length; i++) {
+        const path = matches[i][1];
+        const startIdx = matches[i].index! + matches[i][0].length;
+        const endIdx = i < matches.length - 1 ? matches[i + 1].index! : content.length;
+        const section = content.substring(startIdx, endIdx);
+        
+        const contentMatch = section.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+        if (contentMatch) {
+          files.push({
+            path: path,
+            content: contentMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+          });
         }
       }
     }
+    
+    console.log(`✅ Extracted ${files.length} files from malformed JSON`);
+    files.forEach(f => console.log(`  - ${f.path} (${f.content.length} chars)`));
+    
   } catch (error) {
     console.error('Error extracting files from malformed JSON:', error);
   }
