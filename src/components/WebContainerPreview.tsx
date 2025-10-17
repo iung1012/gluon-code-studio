@@ -60,6 +60,11 @@ export const WebContainerPreview = ({
       // Remove leading slash from path for Sandpack compatibility
       let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
       
+      // Skip package.json as Sandpack auto-generates it from customSetup
+      if (fullPath === 'package.json' || node.name === 'package.json') {
+        continue;
+      }
+      
       if (node.type === 'file' && node.content) {
         result[fullPath] = {
           code: node.content
@@ -126,21 +131,21 @@ export const WebContainerPreview = ({
           </TabsList>
         </div>
 
-        <TabsContent value="preview" className="flex-1 m-0 p-0 h-full data-[state=inactive]:hidden">
-          <div className="h-full w-full">
+        <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
+          <div className="h-full w-full [&>div]:h-full [&_.sp-wrapper]:!h-full [&_.sp-layout]:!h-full">
             <Sandpack
               template="react-ts"
               files={sandpackFiles}
               theme="dark"
               options={{
                 showNavigator: false,
-                showTabs: true,
+                showTabs: false,
                 showLineNumbers: true,
                 editorHeight: "100%",
-                editorWidthPercentage: 40,
-                showInlineErrors: true,
-                showConsole: true,
-                showConsoleButton: true,
+                editorWidthPercentage: 0,
+                showInlineErrors: false,
+                showConsole: false,
+                showConsoleButton: false,
               }}
               customSetup={{
                 dependencies: {
