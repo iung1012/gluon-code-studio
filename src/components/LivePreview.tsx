@@ -103,16 +103,24 @@ export const LivePreview = ({
 
             const appFile = allFiles.find(f => /(^|\/)App\.(tsx|jsx|js)$/.test(f.path));
             let appCode = appFile?.content || '';
+            
+            // Remove imports, exports, and TypeScript type annotations
             appCode = appCode
               .replace(/^import\s+[^;]+;\s*$/gm, '')
               .replace(/export\s+default\s+function\s+App/g, 'function App')
-              .replace(/export\s+default\s+App;?/g, '');
+              .replace(/export\s+default\s+App;?/g, '')
+              // Remove type annotations: : Type, <Type>, as Type, etc.
+              .replace(/:\s*\w+(\[\])?(\s*\||\s*&|\s*,|\s*\)|\s*;|\s*=|\s*{)/g, '$1')
+              .replace(/<\w+(\[\])?>/g, '')
+              .replace(/\s+as\s+\w+/g, '')
+              // Remove interface/type definitions
+              .replace(/^(interface|type)\s+\w+[^;]+;?\s*$/gm, '');
 
             const babelScripts = `
 <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="text/babel" data-presets="react,typescript">
+<script type="text/babel" data-presets="react">
 ${appCode}
 const rootEl = document.getElementById('root') || (() => { const d=document.createElement('div'); d.id='root'; document.body.appendChild(d); return d; })();
 const root = ReactDOM.createRoot(rootEl);
