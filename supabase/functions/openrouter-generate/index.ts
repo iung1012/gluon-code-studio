@@ -452,7 +452,7 @@ REMEMBER: Response = pure JSON object only. Nothing else.`;
         model: selectedModel,
         messages,
         temperature: 0.3,
-        max_tokens: 32000,
+        max_tokens: Math.max(1024, Math.min(24000, 32768 - Math.ceil(JSON.stringify(messages).length / 4) - 1024)),
         top_p: 0.9,
         stream: true,
         response_format: { type: "json_object" }
