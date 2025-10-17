@@ -6,6 +6,7 @@ import { AlertCircle, Loader2, Terminal as TerminalIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { LivePreview } from './LivePreview';
 
 interface WebContainerPreviewProps {
   files: FileNode[];
@@ -32,6 +33,14 @@ export const WebContainerPreview = ({
 
     const bootContainer = async () => {
       try {
+        // Guard: WebContainers require cross-origin isolation at top-level
+        if (typeof window !== 'undefined' && !(window as any).crossOriginIsolated) {
+          console.warn('WebContainer disabled: window.crossOriginIsolated is false. Falling back to LivePreview.');
+          setIsBooting(false);
+          setError(null);
+          return;
+        }
+
         console.log('🚀 Booting WebContainer...');
         const instance = await WebContainer.boot();
         
@@ -148,6 +157,31 @@ export const WebContainerPreview = ({
 
     setupProject();
   }, [webcontainer, files, isBooting]);
+
+  const isIsolated = typeof window !== 'undefined' && (window as any).crossOriginIsolated;
+
+  if (!isIsolated) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="p-4">
+          <Card className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-primary" />
+              <div>
+                <h3 className="font-medium">Preview avançado indisponível</h3>
+                <p className="text-sm text-muted-foreground">
+                  Este ambiente não está cross-origin isolated, exigido pelo WebContainer. Exibindo preview simplificado.
+                </p>
+              </div>
+            </div>
+          </Card>
+        </div>
+        <div className="flex-1">
+          <LivePreview files={files} />
+        </div>
+      </div>
+    );
+  }
 
   if (isGenerating) {
     return (
