@@ -27,9 +27,12 @@ function chromeWebContainerPlugin() {
     name: 'chrome-webcontainer-plugin',
     configureServer(server: ViteDevServer) {
       server.middlewares.use((_req, res, next) => {
+        // OBRIGATÓRIO: Garante o isolamento de janela
         res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-        res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
-        res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+        
+        // OBRIGATÓRIO: Permite o uso de SharedArrayBuffer (necessário para WebContainer)
+        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+        
         next();
       });
     },
