@@ -21,6 +21,7 @@ export const WebContainerPreview = ({
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [sandpackFiles, setSandpackFiles] = useState<SandpackFiles>({});
+  const [runtimeDeps, setRuntimeDeps] = useState<Record<string, string>>({});
 
   const getFileLanguage = (filename: string): string => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -35,6 +36,67 @@ export const WebContainerPreview = ({
       md: 'markdown',
     };
     return languageMap[ext || ''] || 'plaintext';
+  };
+
+  // Extract dependencies used in imports to ensure Sandpack installs them
+  const extractDependenciesFromFiles = (nodes: FileNode[]): Record<string, string> => {
+    const packages = new Set<string>();
+    const importRegex = /from\s+['"]([^'\"]+)['"]|require\(\s*['"]([^'\"]+)['"]\s*\)/g;
+
+    const addPackage = (specifier?: string) => {
+      if (!specifier) return;
+      if (specifier.startsWith('.') || specifier.startsWith('/')) return;
+      let pkg = specifier;
+      if (pkg.startsWith('@')) {
+        const parts = pkg.split('/');
+        if (parts.length >= 2) pkg = parts.slice(0, 2).join('/');
+      } else {
+        pkg = pkg.split('/')[0];
+      }
+      packages.add(pkg);
+    };
+
+    const walk = (list: FileNode[]) => {
+      for (const n of list) {
+        if (n.type === 'file' && n.content) {
+          let m: RegExpExecArray | null;
+          while ((m = importRegex.exec(n.content))) {
+            addPackage(m[1] || m[2]);
+          }
+        }
+        if (n.children) walk(n.children);
+      }
+    };
+
+    walk(nodes);
+
+    const versions: Record<string, string> = {
+      react: '^18.3.1',
+      'react-dom': '^18.3.1',
+      'lucide-react': 'latest',
+      'react-router-dom': '^6.30.1',
+      clsx: '^2.1.1',
+      zod: '^3.25.76',
+      'react-hook-form': '^7.61.1',
+      'tailwind-merge': '^2.6.0',
+      'react-syntax-highlighter': '^15.6.1',
+      prismjs: '^1.30.0',
+      'date-fns': '^3.6.0',
+      recharts: '^2.15.4',
+    };
+
+    const deps: Record<string, string> = {};
+    // Always include react and react-dom
+    deps.react = versions.react;
+    deps['react-dom'] = versions['react-dom'];
+
+    packages.forEach((pkg) => {
+      if (versions[pkg]) {
+        deps[pkg] = versions[pkg];
+      }
+    });
+
+    return deps;
   };
 
   const handleFileSelect = (path: string, content: string) => {
@@ -96,6 +158,9 @@ export const WebContainerPreview = ({
   useEffect(() => {
     if (files.length > 0) {
       const sandpackFileStructure = buildSandpackFiles(files);
+      // Detect runtime dependencies from import statements
+      const deps = extractDependenciesFromFiles(files);
+      setRuntimeDeps(deps);
 
       // Adapter: if the generated project is Vite-style (index.html + src/main.tsx),
       // inject CRA-compatible entry files for the Sandpack "react-ts" runtime.
@@ -173,22 +238,19 @@ export const WebContainerPreview = ({
               files={sandpackFiles}
               theme="dark"
               options={{
+                bundlerURL: "https://sandpack.codesandbox.io",
                 showNavigator: false,
                 showTabs: false,
                 showLineNumbers: true,
                 editorHeight: "100%",
                 editorWidthPercentage: 0,
-                showInlineErrors: false,
+                showInlineErrors: true,
                 showConsole: false,
                 showConsoleButton: false,
               }}
               customSetup={{
                 entry: '/src/index.tsx',
-                dependencies: {
-                  "react": "^18.3.1",
-                  "react-dom": "^18.3.1",
-                  "lucide-react": "latest"
-                }
+                dependencies: runtimeDeps
               }}
             />
           </div>
