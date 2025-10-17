@@ -88,6 +88,13 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Check subscription status and redirect if needed
+  useEffect(() => {
+    if (user && !loading && !subscribed && showPreview) {
+      setShowUpgradeDialog(true);
+    }
+  }, [user, loading, subscribed, showPreview]);
+
   const checkUserApiKey = async (userId: string) => {
     try {
       const { data, error } = await supabase

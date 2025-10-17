@@ -18,11 +18,14 @@ export const UpgradeDialog = ({ open, onOpenChange }: UpgradeDialogProps) => {
   const navigate = useNavigate();
 
   const features = [
-    "Geração ilimitada de sites",
-    "Todos os modelos AI disponíveis",
-    "Suporte prioritário",
-    "Atualizações automáticas",
-    "Histórico completo de projetos",
+    "✨ Geração ilimitada de sites",
+    "💻 Acesso a todos os modelos PRO",
+    "🎨 Editor de código avançado",
+    "💬 Chat interativo com IA",
+    "📁 Projetos ilimitados",
+    "🔄 Histórico completo de versões",
+    "⚡ Geração mais rápida",
+    "🎯 Suporte prioritário",
   ];
 
   const handleUpgrade = () => {
@@ -37,9 +40,9 @@ export const UpgradeDialog = ({ open, onOpenChange }: UpgradeDialogProps) => {
           <div className="mx-auto mb-2 bg-gradient-to-br from-primary to-primary/60 rounded-full p-3 w-fit">
             <Sparkles className="w-6 h-6 text-primary-foreground" />
           </div>
-          <DialogTitle className="text-2xl text-center">Upgrade para PRO</DialogTitle>
+          <DialogTitle className="text-2xl text-center">Assine o Plano PRO</DialogTitle>
           <DialogDescription className="text-center text-base">
-            Desbloqueie todo o potencial da 2CODE
+            Continue criando sites incríveis com a 2CODE
           </DialogDescription>
         </DialogHeader>
         
