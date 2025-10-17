@@ -23,6 +23,7 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
   };
 
   const examples = [
+    "Tela de login moderna com animações",
     "Portfólio moderno e profissional",
     "Landing page para produto SaaS", 
     "Site de menu para restaurante"
