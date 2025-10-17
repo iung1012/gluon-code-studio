@@ -57,14 +57,16 @@ export const WebContainerPreview = ({
     const result: SandpackFiles = {};
     
     for (const node of nodes) {
-      const fullPath = parentPath ? `${parentPath}/${node.name}` : `/${node.name}`;
+      // Remove leading slash from path for Sandpack compatibility
+      let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
       
       if (node.type === 'file' && node.content) {
         result[fullPath] = {
           code: node.content
         };
       } else if (node.type === 'folder' && node.children) {
-        Object.assign(result, buildSandpackFiles(node.children, fullPath));
+        const childPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+        Object.assign(result, buildSandpackFiles(node.children, childPath));
       }
     }
     
@@ -127,20 +129,24 @@ export const WebContainerPreview = ({
         <TabsContent value="preview" className="flex-1 m-0 p-0 h-full data-[state=inactive]:hidden">
           <div className="h-full w-full">
             <Sandpack
-              template="react"
+              template="react-ts"
               files={sandpackFiles}
               theme="dark"
               options={{
                 showNavigator: false,
-                showTabs: false,
+                showTabs: true,
                 showLineNumbers: true,
-                editorHeight: "100vh",
-                editorWidthPercentage: 0,
+                editorHeight: "100%",
+                editorWidthPercentage: 40,
+                showInlineErrors: true,
+                showConsole: true,
+                showConsoleButton: true,
               }}
               customSetup={{
                 dependencies: {
                   "react": "^18.3.1",
-                  "react-dom": "^18.3.1"
+                  "react-dom": "^18.3.1",
+                  "lucide-react": "latest"
                 }
               }}
             />
