@@ -239,6 +239,15 @@ serve(async (req) => {
 You MUST return ONLY valid JSON. NO markdown, NO code blocks, NO explanations.
 Your response must start with { and end with }
 
+⚡ KEEP IT MINIMAL ⚡
+- Generate ONLY essential files
+- Avoid creating unnecessary components
+- Combine functionality when possible
+- NO large assets (images, fonts, videos)
+- Keep file contents concise but functional
+- Maximum 6-8 files total for simple projects
+- Maximum 10-12 files for complex projects
+
 EXACT STRUCTURE REQUIRED:
 {
   "files": [
@@ -248,14 +257,13 @@ EXACT STRUCTURE REQUIRED:
     {"path": "tsconfig.json", "content": "...full content..."},
     {"path": "src/main.tsx", "content": "...full content..."},
     {"path": "src/App.tsx", "content": "...full content..."},
-    {"path": "src/App.css", "content": "...full content..."},
-    {"path": "src/components/ComponentName.tsx", "content": "...full content..."}
+    {"path": "src/App.css", "content": "...full content..."}
   ]
 }
 
-REQUIRED FILES:
+REQUIRED FILES (minimum):
 
-1. **package.json**:
+1. **package.json** - Keep dependencies minimal:
 {
   "name": "app",
   "private": true,
@@ -279,7 +287,7 @@ REQUIRED FILES:
   }
 }
 
-2. **index.html**:
+2. **index.html** - Simple and clean:
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -335,25 +343,35 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>,
 )
 
-6. **src/App.tsx**: Main component with modern React patterns (hooks, functional components)
-7. **src/App.css**: Modern CSS with Tailwind-style utilities or custom styles
-8. **src/components/*.tsx**: Additional components as needed
+6. **src/App.tsx**: Main component - combine multiple sections here instead of creating separate components
+7. **src/App.css**: All styles in one file using Tailwind CDN or inline styles
+
+OPTIONAL (only if truly needed):
+8. **src/components/ComponentName.tsx**: Only create when absolutely necessary
 
 🚨 CRITICAL REACT RULES 🚨:
 1. ALL components MUST use "export default function ComponentName()" 
 2. ALL imports MUST use "import ComponentName from './path'"
 3. NEVER use named exports like "export function" or "export const"
 4. Components must be properly imported before use
-5. Verify all icon imports from lucide-react are correct
+5. Prefer inline components in App.tsx over separate files
 
 DESIGN PRINCIPLES:
 - Clean, modern UI with excellent UX
 - Fully responsive (mobile-first)
-- Component-based architecture
+- Minimize component files - put everything in App.tsx when possible
 - TypeScript strict mode
 - Accessible (semantic HTML, ARIA)
-- Beautiful animations and transitions
-- Professional styling
+- Use Tailwind CDN (no config files needed)
+- Beautiful but lightweight
+
+SIZE OPTIMIZATION:
+- NO external images - use emoji, CSS shapes, or placeholders
+- NO custom fonts - use system fonts
+- NO unnecessary dependencies
+- Combine related functionality into single components
+- Keep CSS minimal - use Tailwind classes
+- NO large libraries unless absolutely required
 
 ❌ FORBIDDEN:
 - Markdown code blocks with triple backticks
@@ -362,19 +380,23 @@ DESIGN PRINCIPLES:
 - Incomplete JSON
 - Named exports in components
 - Using components without importing them
+- Creating unnecessary files
+- Large assets or media files
+- Separate config files unless required
 
 ✅ REQUIRED:
 - Start response with {
 - End response with }
 - Complete, valid JSON only
 - All file contents must be complete and functional
-- Modern, beautiful UI with Tailwind CSS or styled-components
+- Modern, beautiful UI with Tailwind CDN
 - Fully responsive design
 - TypeScript with proper types
 - All components use default export
-- All imports use default import
+- Minimal file count (6-12 files maximum)
+- Lightweight and fast
 
-REMEMBER: Response = pure JSON object only. Nothing else.`;
+REMEMBER: Response = pure JSON object only. Keep it SMALL and EFFICIENT.`;
 
     let messages: OpenRouterMessage[];
 
