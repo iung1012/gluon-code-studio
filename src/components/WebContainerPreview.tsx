@@ -114,6 +114,15 @@ export const WebContainerPreview = ({
     setSelectedFile(file);
   };
 
+  // Fix common JSX errors in code
+  const fixJSXErrors = (code: string): string => {
+    // Fix incomplete opening tags like <h className="..."> that should be <h1 className="...">
+    code = code.replace(/<h(\s+className)/g, '<h1$1');
+    code = code.replace(/<h(\s+[^>]*>)/g, '<h1$1');
+    
+    return code;
+  };
+
   // Convert FileNode[] to Sandpack file structure
   const buildSandpackFiles = (nodes: FileNode[], parentPath = ''): SandpackFiles => {
     const result: SandpackFiles = {};
@@ -139,6 +148,12 @@ export const WebContainerPreview = ({
       
       if (node.type === 'file' && node.content) {
         let code = node.content;
+        
+        // Fix JSX errors in React files
+        if (node.name.endsWith('.tsx') || node.name.endsWith('.jsx')) {
+          code = fixJSXErrors(code);
+        }
+        
         // Remove Tailwind directives which require a build step not available in Sandpack
         if (node.name.endsWith('.css')) {
           code = code.replace(/@tailwind\s+base;?/g, '')
