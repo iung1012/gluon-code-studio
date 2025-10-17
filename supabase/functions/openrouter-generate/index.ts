@@ -449,7 +449,8 @@ DO NOT include markdown code blocks. Return pure JSON only.`;
       throw new Error('No response body from OpenRouter');
     }
 
-    const encoder = new TextEncoder();
+const encoder = new TextEncoder();
+    let fullContent = '';
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -461,6 +462,96 @@ DO NOT include markdown code blocks. Return pure JSON only.`;
             const { done, value } = await reader.read();
             
             if (done) {
+              // Validar e corrigir JSON antes de fechar
+              if (fullContent.trim()) {
+                try {
+                  // Tentar parsear o JSON completo
+                  const parsed = JSON.parse(fullContent);
+                  
+                  // Validar estrutura
+                  if (!parsed.files || !Array.isArray(parsed.files)) {
+                    throw new Error('Invalid JSON structure: missing files array');
+                  }
+                  
+                  // Validar cada arquivo
+                  for (const file of parsed.files) {
+                    if (!file.path || !file.content) {
+                      throw new Error(`Invalid file structure: ${JSON.stringify(file).substring(0, 100)}`);
+                    }
+                  }
+                  
+                  console.log('✅ Valid JSON received:', parsed.files.length, 'files');
+                } catch (jsonError) {
+                  console.error('❌ Invalid JSON received:', jsonError);
+                  console.log('Content preview:', fullContent.substring(0, 500));
+                  
+                  // Tentar corrigir JSON malformado
+                  let fixedContent = fullContent.trim();
+                  
+                  // Remover markdown se houver
+                  fixedContent = fixedContent.replace(/^```json?\s*/i, '').replace(/```\s*$/, '');
+                  
+                  // Se não começa com {, tentar encontrar o início
+                  const jsonStartIndex = fixedContent.indexOf('{');
+                  if (jsonStartIndex > 0) {
+                    fixedContent = fixedContent.substring(jsonStartIndex);
+                  }
+                  
+                  // Se não termina com }, adicionar
+                  if (!fixedContent.trim().endsWith('}')) {
+                    // Tentar fechar arrays e objetos abertos
+                    const openBraces = (fixedContent.match(/{/g) || []).length;
+                    const closeBraces = (fixedContent.match(/}/g) || []).length;
+                    const openBrackets = (fixedContent.match(/\[/g) || []).length;
+                    const closeBrackets = (fixedContent.match(/]/g) || []).length;
+                    
+                    // Fechar arrays abertos
+                    for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                      fixedContent += ']';
+                    }
+                    
+                    // Fechar objetos abertos
+                    for (let i = 0; i < openBraces - closeBraces; i++) {
+                      fixedContent += '}';
+                    }
+                  }
+                  
+                  try {
+                    const parsedFixed = JSON.parse(fixedContent);
+                    console.log('✅ JSON fixed successfully');
+                    
+                    // Enviar versão corrigida
+                    const fixedData = {
+                      choices: [{
+                        delta: { content: JSON.stringify(parsedFixed) },
+                        finish_reason: 'stop'
+                      }]
+                    };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(fixedData)}\n\n`));
+                  } catch (stillInvalid) {
+                    console.error('❌ Could not fix JSON:', stillInvalid);
+                    
+                    // Fallback: criar estrutura mínima válida
+                    const fallbackJson = {
+                      files: [
+                        {
+                          path: 'ERROR.txt',
+                          content: `Erro ao processar resposta da IA.\n\nConteúdo recebido:\n${fullContent.substring(0, 1000)}\n\nErro: ${jsonError.message}`
+                        }
+                      ]
+                    };
+                    
+                    const fallbackData = {
+                      choices: [{
+                        delta: { content: JSON.stringify(fallbackJson) },
+                        finish_reason: 'stop'
+                      }]
+                    };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(fallbackData)}\n\n`));
+                  }
+                }
+              }
+              
               controller.close();
               break;
             }
@@ -476,6 +567,13 @@ DO NOT include markdown code blocks. Return pure JSON only.`;
               if (dataStr === '[DONE]') continue;
 
               try {
+                // Parsear para extrair conteúdo
+                const parsed = JSON.parse(dataStr);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  fullContent += content;
+                }
+                
                 controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               } catch (parseError) {
                 console.warn('Failed to parse chunk:', dataStr.substring(0, 100));
@@ -487,12 +585,40 @@ DO NOT include markdown code blocks. Return pure JSON only.`;
             const dataStr = buffer.slice(buffer.indexOf('data:') + 6).trim();
             if (dataStr && dataStr !== '[DONE]') {
               try {
+                const parsed = JSON.parse(dataStr);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  fullContent += content;
+                }
+                
                 controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               } catch { }
             }
           }
         } catch (error) {
           console.error('Stream error:', error);
+          
+          // Enviar erro como JSON válido
+          const errorJson = {
+            files: [
+              {
+                path: 'ERROR.txt',
+                content: `Erro no streaming: ${error.message}`
+              }
+            ]
+          };
+          
+          const errorData = {
+            choices: [{
+              delta: { content: JSON.stringify(errorJson) },
+              finish_reason: 'stop'
+            }]
+          };
+          
+          try {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(errorData)}\n\n`));
+          } catch { }
+          
           controller.error(error);
         }
       }
