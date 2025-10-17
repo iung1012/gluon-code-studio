@@ -49,7 +49,7 @@ export default defineConfig({
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>2Code - Projeto Demo</title>
+    <title>2Code - AI Web Builder</title>
   </head>
   <body>
     <div id="root"></div>
@@ -89,51 +89,150 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1 className="title">
-          Bem-vindo ao <span className="gradient-text">2Code</span>
-        </h1>
-        <p className="subtitle">
-          Crie projetos web incríveis com IA
-        </p>
+      <div className="gradient-bg"></div>
+      
+      <header className="header">
+        <nav className="nav">
+          <div className="logo">2Code</div>
+          <div className="nav-links">
+            <a href="#features">Recursos</a>
+            <a href="#demo">Demo</a>
+            <a href="#about">Sobre</a>
+          </div>
+        </nav>
       </header>
 
-      <main className="main-content">
-        <div className="card">
-          <h2>Projeto Demo</h2>
-          <p>Este é um exemplo de projeto React + Vite</p>
-          
-          <div className="counter-section">
-            <button 
-              className="counter-btn"
-              onClick={() => setCount((count) => count + 1)}
-            >
-              Contador: {count}
-            </button>
+      <main className="main">
+        <section className="hero">
+          <h1 className="hero-title">
+            Crie websites incríveis
+            <br />
+            <span className="gradient-text">com o poder da IA</span>
+          </h1>
+          <p className="hero-subtitle">
+            Transforme suas ideias em realidade com geração inteligente de código.
+            Rápido, moderno e totalmente personalizável.
+          </p>
+          <div className="cta-buttons">
+            <button className="btn btn-primary">Começar Agora</button>
+            <button className="btn btn-secondary">Ver Demo</button>
           </div>
+        </section>
 
-          <div className="features">
-            <div className="feature">
-              <span className="feature-icon">⚡</span>
-              <h3>Rápido</h3>
-              <p>Vite oferece desenvolvimento ultra-rápido</p>
+        <section id="demo" className="demo-section">
+          <div className="card">
+            <h2>Experimente o Contador</h2>
+            <p className="card-subtitle">Um exemplo interativo construído com React</p>
+            
+            <div className="counter-display">
+              <div className="counter-value">{count}</div>
+              <p className="counter-label">cliques</p>
             </div>
-            <div className="feature">
-              <span className="feature-icon">⚛️</span>
-              <h3>React</h3>
-              <p>Framework moderno e poderoso</p>
-            </div>
-            <div className="feature">
-              <span className="feature-icon">🎨</span>
-              <h3>Estilizado</h3>
-              <p>Design limpo e responsivo</p>
+
+            <div className="counter-buttons">
+              <button 
+                className="counter-btn decrement"
+                onClick={() => setCount(count - 1)}
+              >
+                −
+              </button>
+              <button 
+                className="counter-btn reset"
+                onClick={() => setCount(0)}
+              >
+                Reset
+              </button>
+              <button 
+                className="counter-btn increment"
+                onClick={() => setCount(count + 1)}
+              >
+                +
+              </button>
             </div>
           </div>
-        </div>
+        </section>
+
+        <section id="features" className="features-section">
+          <h2 className="section-title">Por que escolher 2Code?</h2>
+          
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon">⚡</div>
+              <h3>Ultra Rápido</h3>
+              <p>Vite oferece HMR instantâneo e build otimizado para máxima performance</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">⚛️</div>
+              <h3>React Moderno</h3>
+              <p>Use o framework mais popular com hooks e componentes funcionais</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🎨</div>
+              <h3>Design Responsivo</h3>
+              <p>Layouts que se adaptam perfeitamente a qualquer dispositivo</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🤖</div>
+              <h3>IA Integrada</h3>
+              <p>Gere código inteligente com apenas uma descrição do que precisa</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🔧</div>
+              <h3>Totalmente Customizável</h3>
+              <p>Edite e personalize cada detalhe do código gerado</p>
+            </div>
+
+            <div className="feature-card">
+              <div className="feature-icon">🚀</div>
+              <h3>Deploy Rápido</h3>
+              <p>Publique seu projeto com um clique em diversas plataformas</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="about" className="stats-section">
+          <div className="stats-grid">
+            <div className="stat-item">
+              <div className="stat-value">100+</div>
+              <div className="stat-label">Projetos Criados</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">50+</div>
+              <div className="stat-label">Usuários Ativos</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">99%</div>
+              <div className="stat-label">Satisfação</div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="footer">
-        <p>Criado com 2Code - Transforme ideias em realidade</p>
+        <div className="footer-content">
+          <div className="footer-section">
+            <h4>2Code</h4>
+            <p>Criando o futuro do desenvolvimento web</p>
+          </div>
+          <div className="footer-section">
+            <h4>Links</h4>
+            <a href="#features">Recursos</a>
+            <a href="#demo">Demo</a>
+            <a href="#about">Sobre</a>
+          </div>
+          <div className="footer-section">
+            <h4>Contato</h4>
+            <a href="#">suporte@2code.dev</a>
+            <a href="#">Documentação</a>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <p>© 2024 2Code. Todos os direitos reservados.</p>
+        </div>
       </footer>
     </div>
   )
@@ -147,52 +246,159 @@ export default App`
           path: 'src/App.css',
           content: `.app {
   min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.gradient-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  opacity: 0.03;
+  z-index: -1;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 100;
+}
+
+.nav {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 4rem 2rem 3rem;
-  text-align: center;
-  color: white;
-}
-
-.title {
-  font-size: 3rem;
+.logo {
+  font-size: 1.5rem;
   font-weight: 700;
-  margin: 0 0 1rem;
-  animation: fadeInDown 0.6s ease-out;
-}
-
-.gradient-text {
-  background: linear-gradient(45deg, #ffd89b, #19547b);
+  background: linear-gradient(135deg, #667eea, #764ba2);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.subtitle {
-  font-size: 1.25rem;
-  opacity: 0.95;
-  margin: 0;
-  animation: fadeInUp 0.6s ease-out;
+.nav-links {
+  display: flex;
+  gap: 2rem;
 }
 
-.main-content {
-  flex: 1;
-  padding: 3rem 2rem;
-  background: #f7fafc;
+.nav-links a {
+  color: #2d3748;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.nav-links a:hover {
+  color: #667eea;
+}
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.hero {
+  text-align: center;
+  padding: 8rem 2rem 6rem;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.hero-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 1.5rem;
+  color: #1a202c;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient 3s ease infinite;
+  background-size: 200% 200%;
+}
+
+@keyframes gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: #718096;
+  max-width: 600px;
+  margin: 0 auto 3rem;
+  line-height: 1.6;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.btn-secondary:hover {
+  background: #667eea;
+  color: white;
+}
+
+.demo-section {
+  padding: 4rem 0;
+  animation: fadeIn 1s ease-out;
 }
 
 .card {
-  max-width: 900px;
-  margin: 0 auto;
   background: white;
-  border-radius: 16px;
+  border-radius: 24px;
   padding: 3rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  animation: fadeIn 0.8s ease-out;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
 }
 
 .card h2 {
@@ -201,85 +407,195 @@ export default App`
   margin: 0 0 0.5rem;
 }
 
-.card > p {
+.card-subtitle {
   color: #718096;
-  margin: 0 0 2rem;
+  margin: 0 0 3rem;
 }
 
-.counter-section {
+.counter-display {
   margin: 2rem 0;
-  text-align: center;
+}
+
+.counter-value {
+  font-size: 5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1;
+}
+
+.counter-label {
+  color: #a0aec0;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+}
+
+.counter-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
 }
 
 .counter-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  width: 80px;
+  height: 80px;
   border: none;
-  padding: 1rem 2rem;
-  font-size: 1.125rem;
-  border-radius: 8px;
+  border-radius: 16px;
+  font-size: 2rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  font-weight: 600;
+  transition: all 0.3s;
+  color: white;
+}
+
+.counter-btn.increment {
+  background: linear-gradient(135deg, #48bb78, #38a169);
+}
+
+.counter-btn.decrement {
+  background: linear-gradient(135deg, #f56565, #e53e3e);
+}
+
+.counter-btn.reset {
+  background: linear-gradient(135deg, #718096, #4a5568);
+  font-size: 1rem;
 }
 
 .counter-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .counter-btn:active {
-  transform: translateY(0);
+  transform: translateY(-2px);
 }
 
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 2rem;
-  margin-top: 3rem;
+.features-section {
+  padding: 6rem 0;
 }
 
-.feature {
+.section-title {
   text-align: center;
-  padding: 2rem 1rem;
-  border-radius: 12px;
-  background: #f7fafc;
-  transition: transform 0.3s, box-shadow 0.3s;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin: 0 0 4rem;
 }
 
-.feature:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.feature-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 50px rgba(102, 126, 234, 0.15);
 }
 
 .feature-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 1rem;
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
+  display: inline-block;
 }
 
-.feature h3 {
-  font-size: 1.25rem;
+.feature-card h3 {
+  font-size: 1.5rem;
   color: #2d3748;
-  margin: 0 0 0.5rem;
+  margin: 0 0 1rem;
 }
 
-.feature p {
+.feature-card p {
   color: #718096;
+  line-height: 1.6;
   margin: 0;
-  font-size: 0.95rem;
+}
+
+.stats-section {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: 4rem -2rem;
+  color: white;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 3rem;
+  text-align: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.stat-value {
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 1.125rem;
+  opacity: 0.9;
 }
 
 .footer {
-  background: #2d3748;
+  background: #1a202c;
   color: white;
-  text-align: center;
-  padding: 2rem;
+  padding: 4rem 2rem 2rem;
+  margin-top: 6rem;
 }
 
-.footer p {
+.footer-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+
+.footer-section h4 {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+}
+
+.footer-section p {
+  color: #a0aec0;
   margin: 0;
-  opacity: 0.9;
+}
+
+.footer-section a {
+  display: block;
+  color: #a0aec0;
+  text-decoration: none;
+  margin: 0.5rem 0;
+  transition: color 0.3s;
+}
+
+.footer-section a:hover {
+  color: white;
+}
+
+.footer-bottom {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a0aec0;
 }
 
 @keyframes fadeIn {
@@ -293,21 +609,10 @@ export default App`
   }
 }
 
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -316,20 +621,29 @@ export default App`
 }
 
 @media (max-width: 768px) {
-  .title {
-    font-size: 2rem;
+  .nav-links {
+    gap: 1rem;
   }
-  
-  .subtitle {
-    font-size: 1rem;
+
+  .hero {
+    padding: 4rem 1rem 3rem;
   }
-  
+
   .card {
-    padding: 2rem 1.5rem;
+    padding: 2rem;
   }
-  
-  .features {
+
+  .counter-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .features-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stats-section {
+    margin: 4rem 0;
   }
 }`
         },
@@ -350,10 +664,29 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
+  color: #2d3748;
+  background: #f7fafc;
 }
 
 #root {
   width: 100%;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
 }`
         }
       ]
