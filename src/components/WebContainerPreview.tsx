@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Sandpack, SandpackFiles } from '@codesandbox/sandpack-react';
 import { FileNode, FileTree } from './FileTree';
-import { Code2, Eye, MonitorPlay } from 'lucide-react';
+import { Code2, Eye } from 'lucide-react';
 import { PreviewLoading } from './PreviewLoading';
 import Editor from '@monaco-editor/react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LivePreview } from './LivePreview';
 
 interface WebContainerPreviewProps {
   files: FileNode[];
@@ -19,7 +18,7 @@ export const WebContainerPreview = ({
   isGenerating = false,
   generationProgress 
 }: WebContainerPreviewProps) => {
-  const [viewMode, setViewMode] = useState<'preview' | 'fallback' | 'code'>('preview');
+  const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [sandpackFiles, setSandpackFiles] = useState<SandpackFiles>({});
 
@@ -58,18 +57,20 @@ export const WebContainerPreview = ({
     const result: SandpackFiles = {};
     
     for (const node of nodes) {
-      // Sandpack expects paths starting with "/"
-      let fullPath = parentPath ? `${parentPath}/${node.name}` : `/${node.name}`;
+      // Remove leading slash from path for Sandpack compatibility
+      let fullPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+      
+      // Skip package.json as Sandpack auto-generates it from customSetup
+      if (fullPath === 'package.json' || node.name === 'package.json') {
+        continue;
+      }
       
       if (node.type === 'file' && node.content) {
-        // Include files with content
-        if (node.content.trim().length > 0) {
-          result[fullPath] = {
-            code: node.content
-          };
-        }
+        result[fullPath] = {
+          code: node.content
+        };
       } else if (node.type === 'folder' && node.children) {
-        const childPath = parentPath ? `${parentPath}/${node.name}` : `/${node.name}`;
+        const childPath = parentPath ? `${parentPath}/${node.name}` : node.name;
         Object.assign(result, buildSandpackFiles(node.children, childPath));
       }
     }
@@ -80,8 +81,6 @@ export const WebContainerPreview = ({
   useEffect(() => {
     if (files.length > 0) {
       const sandpackFileStructure = buildSandpackFiles(files);
-      console.log('🔍 Sandpack files:', Object.keys(sandpackFileStructure));
-      console.log('📁 Full structure:', sandpackFileStructure);
       setSandpackFiles(sandpackFileStructure);
       
       // Select first file for code view
@@ -118,16 +117,12 @@ export const WebContainerPreview = ({
 
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/20">
-      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'fallback' | 'code')} className="h-full flex flex-col">
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'code')} className="h-full flex flex-col">
         <div className="border-b bg-card/30 backdrop-blur-sm px-4">
           <TabsList className="bg-transparent h-12">
             <TabsTrigger value="preview" className="gap-2 data-[state=active]:bg-background/60">
               <Eye className="w-4 h-4" />
-              Preview (Sandbox)
-            </TabsTrigger>
-            <TabsTrigger value="fallback" className="gap-2 data-[state=active]:bg-background/60">
-              <MonitorPlay className="w-4 h-4" />
-              Preview (Fallback)
+              Preview
             </TabsTrigger>
             <TabsTrigger value="code" className="gap-2 data-[state=active]:bg-background/60">
               <Code2 className="w-4 h-4" />
@@ -151,15 +146,15 @@ export const WebContainerPreview = ({
                 showInlineErrors: false,
                 showConsole: false,
                 showConsoleButton: false,
-                activeFile: "/src/App.tsx"
+              }}
+              customSetup={{
+                dependencies: {
+                  "react": "^18.3.1",
+                  "react-dom": "^18.3.1",
+                  "lucide-react": "latest"
+                }
               }}
             />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="fallback" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
-          <div className="h-full w-full">
-            <LivePreview files={files} />
           </div>
         </TabsContent>
 

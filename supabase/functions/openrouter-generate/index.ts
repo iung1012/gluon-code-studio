@@ -233,135 +233,127 @@ serve(async (req) => {
 
     console.log(`🎯 Using model: ${selectedModel}`);
 
-    const systemPrompt = `You are an expert React + TypeScript developer creating apps for CodeSandbox/Sandpack environment.
+    const systemPrompt = `You are an expert React + TypeScript developer specializing in modern web applications with Vite.
 
 🚨 CRITICAL OUTPUT FORMAT 🚨
 You MUST return ONLY valid JSON. NO markdown, NO code blocks, NO explanations.
 Your response must start with { and end with }
 
-⚡ KEEP IT MINIMAL ⚡
-- Generate ONLY essential files (max 6-8 for simple, 10-12 for complex)
-- Avoid unnecessary components - combine functionality
-- NO large assets (images, fonts, videos)
-- Keep file contents concise but functional
-
-🎯 SANDPACK-COMPATIBLE STRUCTURE (CRA format):
+EXACT STRUCTURE REQUIRED:
 {
   "files": [
-    {"path": "package.json", "content": "..."},
-    {"path": "public/index.html", "content": "..."},
-    {"path": "src/index.tsx", "content": "..."},
-    {"path": "src/App.tsx", "content": "..."},
-    {"path": "src/styles.css", "content": "..."}
+    {"path": "package.json", "content": "...full content..."},
+    {"path": "index.html", "content": "...full content..."},
+    {"path": "vite.config.ts", "content": "...full content..."},
+    {"path": "tsconfig.json", "content": "...full content..."},
+    {"path": "src/main.tsx", "content": "...full content..."},
+    {"path": "src/App.tsx", "content": "...full content..."},
+    {"path": "src/App.css", "content": "...full content..."},
+    {"path": "src/components/ComponentName.tsx", "content": "...full content..."}
   ]
 }
 
-📦 REQUIRED FILES:
+REQUIRED FILES:
 
-1. **package.json** (minimal dependencies):
+1. **package.json**:
 {
-  "name": "react-app",
-  "version": "1.0.0",
-  "description": "React application",
-  "main": "src/index.tsx",
+  "name": "app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-scripts": "5.0.1"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/react": "^18.3.1",
+    "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "typescript": "^5.0.0"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build"
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.2"
   }
 }
 
-2. **public/index.html**:
+2. **index.html**:
 <!DOCTYPE html>
 <html lang="pt-BR">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>React App</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>App</title>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 
-3. **src/index.tsx** (entry point):
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './styles.css';
+3. **vite.config.ts**:
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-root.render(
+export default defineConfig({
+  plugins: [react()],
+})
+
+4. **tsconfig.json**:
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
+
+5. **src/main.tsx**:
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './App.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
-);
+  </React.StrictMode>,
+)
 
-4. **src/App.tsx** (main component):
-import React from 'react';
-
-function App() {
-  return (
-    <div className="App">
-      {/* Your components here */}
-    </div>
-  );
-}
-
-export default App;
-
-5. **src/styles.css** (all styles - use Tailwind CDN if needed):
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-/* Add Tailwind CDN via @import or use regular CSS */
-
-OPTIONAL FILES (only when needed):
-- src/components/ComponentName.tsx
-- src/types.ts (for shared types)
+6. **src/App.tsx**: Main component with modern React patterns (hooks, functional components)
+7. **src/App.css**: Modern CSS with Tailwind-style utilities or custom styles
+8. **src/components/*.tsx**: Additional components as needed
 
 🚨 CRITICAL REACT RULES 🚨:
 1. ALL components MUST use "export default function ComponentName()" 
 2. ALL imports MUST use "import ComponentName from './path'"
 3. NEVER use named exports like "export function" or "export const"
 4. Components must be properly imported before use
-5. Prefer inline components in App.tsx over separate files
+5. Verify all icon imports from lucide-react are correct
 
 DESIGN PRINCIPLES:
 - Clean, modern UI with excellent UX
 - Fully responsive (mobile-first)
-- Minimize component files - put everything in App.tsx when possible
+- Component-based architecture
 - TypeScript strict mode
 - Accessible (semantic HTML, ARIA)
-- Use Tailwind CDN (no config files needed)
-- Beautiful but lightweight
-
-SIZE OPTIMIZATION:
-- NO external images - use emoji, CSS shapes, or placeholders
-- NO custom fonts - use system fonts
-- NO unnecessary dependencies
-- Combine related functionality into single components
-- Keep CSS minimal - use Tailwind classes
-- NO large libraries unless absolutely required
+- Beautiful animations and transitions
+- Professional styling
 
 ❌ FORBIDDEN:
 - Markdown code blocks with triple backticks
@@ -370,23 +362,19 @@ SIZE OPTIMIZATION:
 - Incomplete JSON
 - Named exports in components
 - Using components without importing them
-- Creating unnecessary files
-- Large assets or media files
-- Separate config files unless required
 
 ✅ REQUIRED:
 - Start response with {
 - End response with }
 - Complete, valid JSON only
 - All file contents must be complete and functional
-- Modern, beautiful UI with Tailwind CDN
+- Modern, beautiful UI with Tailwind CSS or styled-components
 - Fully responsive design
 - TypeScript with proper types
 - All components use default export
-- Minimal file count (6-12 files maximum)
-- Lightweight and fast
+- All imports use default import
 
-REMEMBER: Response = pure JSON object only. Keep it SMALL and EFFICIENT.`;
+REMEMBER: Response = pure JSON object only. Nothing else.`;
 
     let messages: OpenRouterMessage[];
 
@@ -499,24 +487,11 @@ REMEMBER: Response = pure JSON object only. Keep it SMALL and EFFICIENT.`;
           const reader = response.body!.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
-          let fullContent = '';
-          let fileCount = 0;
 
           while (true) {
             const { done, value } = await reader.read();
             
             if (done) {
-              // Send final progress
-              if (fullContent.trim()) {
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({
-                    choices: [{ delta: { content: '' }, finish_reason: 'stop' }],
-                    type: 'complete',
-                    totalFiles: fileCount
-                  })}\n\n`)
-                );
-              }
-              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
               controller.close();
               break;
             }
@@ -532,41 +507,13 @@ REMEMBER: Response = pure JSON object only. Keep it SMALL and EFFICIENT.`;
               if (dataStr === '[DONE]') continue;
 
               try {
-                const parsed = JSON.parse(dataStr);
-                const deltaContent = parsed.choices?.[0]?.delta?.content;
-                
-                if (deltaContent) {
-                  fullContent += deltaContent;
-                  
-                  // Count files progressively
-                  const pathMatches = fullContent.match(/"path"\s*:/g);
-                  if (pathMatches) {
-                    fileCount = pathMatches.length;
-                  }
-                  
-                  // Forward chunk immediately
-                  controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
-                  
-                  // Send progress update every 5 files
-                  if (fileCount > 0 && fileCount % 5 === 0) {
-                    controller.enqueue(
-                      encoder.encode(`data: ${JSON.stringify({
-                        choices: [{ delta: { content: '' } }],
-                        type: 'progress',
-                        filesReceived: fileCount
-                      })}\n\n`)
-                    );
-                  }
-                }
+                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               } catch (parseError) {
                 console.warn('Failed to parse chunk:', dataStr.substring(0, 100));
-                // Forward anyway but log warning
-                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               }
             }
           }
 
-          // Final buffer flush
           if (buffer.trim()) {
             const dataStr = buffer.slice(buffer.indexOf('data:') + 6).trim();
             if (dataStr && dataStr !== '[DONE]') {
@@ -575,16 +522,8 @@ REMEMBER: Response = pure JSON object only. Keep it SMALL and EFFICIENT.`;
               } catch { }
             }
           }
-          
-          console.log(`✅ Stream complete. Total files sent: ${fileCount}`);
         } catch (error) {
-          console.error('❌ Stream error:', error);
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({
-              error: error instanceof Error ? error.message : 'Stream error',
-              type: 'error'
-            })}\n\n`)
-          );
+          console.error('Stream error:', error);
           controller.error(error);
         }
       }

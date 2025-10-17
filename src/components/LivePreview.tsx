@@ -90,45 +90,9 @@ export const LivePreview = ({
             processedHtml = processedHtml.replace('</head>', `${cssLinks}\n</head>`);
           }
           
-          // Inject JS or React fallback
+          // Inject external JS files
           const jsFiles = allFiles.filter(f => f.path.endsWith('.js') && f.content);
-          const hasReactSources = allFiles.some(f => /\.(tsx|jsx)$/.test(f.path));
-          
-          if (hasReactSources) {
-            // Fallback: transpile TSX/JSX inline with Babel and load React from CDN
-            // Remove Vite/CRA module scripts that point to /src/main.*
-            processedHtml = processedHtml
-              .replace(/<script[^>]+src=["'][^"']*src\/main\.(tsx|jsx|js)["'][^>]*><\/script>/i, '')
-              .replace(/<script[^>]*type=["']module["'][^>]*>[^<]*<\/script>/gi, '');
-
-            const appFile = allFiles.find(f => /(^|\/)App\.(tsx|jsx|js)$/.test(f.path));
-            let appCode = appFile?.content || '';
-            
-            // Remove imports, exports, and TypeScript type annotations
-            appCode = appCode
-              .replace(/^import\s+[^;]+;\s*$/gm, '')
-              .replace(/export\s+default\s+function\s+App/g, 'function App')
-              .replace(/export\s+default\s+App;?/g, '')
-              // Remove type annotations: : Type, <Type>, as Type, etc.
-              .replace(/:\s*\w+(\[\])?(\s*\||\s*&|\s*,|\s*\)|\s*;|\s*=|\s*{)/g, '$1')
-              .replace(/<\w+(\[\])?>/g, '')
-              .replace(/\s+as\s+\w+/g, '')
-              // Remove interface/type definitions
-              .replace(/^(interface|type)\s+\w+[^;]+;?\s*$/gm, '');
-
-            const babelScripts = `
-<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="text/babel" data-presets="react">
-${appCode}
-const rootEl = document.getElementById('root') || (() => { const d=document.createElement('div'); d.id='root'; document.body.appendChild(d); return d; })();
-const root = ReactDOM.createRoot(rootEl);
-root.render(React.createElement(App));
-</script>`;
-
-            processedHtml = processedHtml.replace('</body>', `${babelScripts}\n</body>`);
-          } else if (jsFiles.length > 0) {
+          if (jsFiles.length > 0) {
             const jsScripts = jsFiles.map(jsFile => {
               const blob = new Blob([jsFile.content!], { type: 'text/javascript' });
               const url = URL.createObjectURL(blob);

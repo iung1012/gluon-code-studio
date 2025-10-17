@@ -75,87 +75,34 @@ const tryExtractFilesFromMalformedJson = (content: string): {path: string, conte
   const files: {path: string, content: string}[] = [];
   
   try {
-    // Try to extract file objects with better handling of escaped content
-    const fileObjectPattern = /\{\s*"path"\s*:\s*"([^"]+)"\s*,\s*"content"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+    const filePattern = /"path"\s*:\s*"([^"]+)"\s*,\s*"content"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/g;
     let match;
     
-    while ((match = fileObjectPattern.exec(content)) !== null) {
-      const [, path, rawContent] = match;
-      
-      // Properly decode escaped JSON strings
-      try {
-        const decodedContent = JSON.parse(`"${rawContent}"`);
-        files.push({
-          path: path,
-          content: decodedContent
-        });
-      } catch {
-        // Fallback to manual replacement if JSON.parse fails
-        const decodedContent = rawContent
-          .replace(/\\n/g, '\n')
-          .replace(/\\t/g, '\t')
-          .replace(/\\r/g, '\r')
-          .replace(/\\"/g, '"')
-          .replace(/\\\\/g, '\\');
-        
-        files.push({
-          path: path,
-          content: decodedContent
-        });
-      }
+    while ((match = filePattern.exec(content)) !== null) {
+      const [, path, content] = match;
+      files.push({
+        path: path,
+        content: content.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+      });
     }
     
-    // If no files found with strict pattern, try looser matching
     if (files.length === 0) {
-      console.warn('🔍 Trying alternative extraction method...');
-      const pathPattern = /"path"\s*:\s*"([^"]+)"/g;
-      const paths: string[] = [];
+      const pathMatches = content.match(/"path"\s*:\s*"([^"]+)"/g);
+      const contentMatches = content.match(/"content"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/g);
       
-      while ((match = pathPattern.exec(content)) !== null) {
-        paths.push(match[1]);
-      }
-      
-      // For each path, try to find the corresponding content
-      paths.forEach(path => {
-        const pathIndex = content.indexOf(`"path":"${path}"`);
-        if (pathIndex === -1) return;
-        
-        const contentStart = content.indexOf('"content":"', pathIndex);
-        if (contentStart === -1) return;
-        
-        const contentValueStart = contentStart + 11; // length of '"content":"'
-        let contentEnd = contentValueStart;
-        let escapeNext = false;
-        
-        // Find the end of the content string, respecting escapes
-        while (contentEnd < content.length) {
-          const char = content[contentEnd];
-          if (escapeNext) {
-            escapeNext = false;
-          } else if (char === '\\') {
-            escapeNext = true;
-          } else if (char === '"') {
-            break;
-          }
-          contentEnd++;
-        }
-        
-        const rawContent = content.substring(contentValueStart, contentEnd);
-        
-        try {
-          const decodedContent = JSON.parse(`"${rawContent}"`);
-          files.push({ path, content: decodedContent });
-        } catch {
-          const decodedContent = rawContent
-            .replace(/\\n/g, '\n')
-            .replace(/\\t/g, '\t')
-            .replace(/\\r/g, '\r')
-            .replace(/\\"/g, '"')
-            .replace(/\\\\/g, '\\');
+      if (pathMatches && contentMatches && pathMatches.length === contentMatches.length) {
+        for (let i = 0; i < pathMatches.length; i++) {
+          const path = pathMatches[i].match(/"path"\s*:\s*"([^"]+)"/)?.[1];
+          const fileContent = contentMatches[i].match(/"content"\s*:\s*"([^"]*(?:\\.[^"]*)*)"/)?.[1];
           
-          files.push({ path, content: decodedContent });
+          if (path && fileContent) {
+            files.push({
+              path: path,
+              content: fileContent.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\')
+            });
+          }
         }
-      });
+      }
     }
   } catch (error) {
     console.error('Error extracting files from malformed JSON:', error);
