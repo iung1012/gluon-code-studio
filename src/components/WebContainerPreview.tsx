@@ -134,13 +134,13 @@ export const WebContainerPreview = ({
               theme="dark"
               options={{
                 showNavigator: false,
-                showTabs: true,
+                showTabs: false,
                 showLineNumbers: true,
                 editorHeight: "100%",
-                editorWidthPercentage: 40,
-                showInlineErrors: true,
-                showConsole: true,
-                showConsoleButton: true,
+                editorWidthPercentage: 0,
+                showInlineErrors: false,
+                showConsole: false,
+                showConsoleButton: false,
               }}
               customSetup={{
                 dependencies: {
