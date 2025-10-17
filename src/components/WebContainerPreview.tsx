@@ -76,8 +76,8 @@ export const WebContainerPreview = ({
       }
       
       if (node.type === 'file' && node.content) {
-        // Validate that content is not malformed before adding
-        if (node.content.trim().length > 0 && !node.content.includes('\\')) {
+        // Include files with content; escaping/backslashes are valid in code
+        if (node.content.trim().length > 0) {
           result[fullPath] = {
             code: node.content
           };
@@ -114,7 +114,26 @@ export const WebContainerPreview = ({
     }
   }, [files, selectedFile]);
 
-  if (isGenerating) {
+  // Determine appropriate Sandpack template based on project files
+  const hasFileByExt = (nodes: FileNode[], exts: string[]): boolean => {
+    for (const node of nodes) {
+      if (node.type === 'file' && exts.some((ext) => node.name.toLowerCase().endsWith(ext))) return true;
+      if (node.type === 'folder' && node.children && hasFileByExt(node.children, exts)) return true;
+    }
+    return false;
+  };
+  const hasIndexHtml = hasFileByExt(files, ['.html']);
+  const hasReactFiles = hasFileByExt(files, ['.tsx', '.jsx']);
+  const selectedTemplate: 'react-ts' | 'static' = (hasIndexHtml && !hasReactFiles) ? 'static' : 'react-ts';
+  const customSetup = selectedTemplate === 'react-ts' ? {
+    dependencies: {
+      react: '^18.3.1',
+      'react-dom': '^18.3.1',
+      'lucide-react': 'latest'
+    }
+  } : undefined;
+
+   if (isGenerating) {
     return <PreviewLoading progress={generationProgress} />;
   }
 
@@ -147,7 +166,7 @@ export const WebContainerPreview = ({
         <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
           <div className="h-full w-full [&>div]:h-full [&_.sp-wrapper]:!h-full [&_.sp-layout]:!h-full">
             <Sandpack
-              template="react-ts"
+              template={selectedTemplate}
               files={sandpackFiles}
               theme="dark"
               options={{
@@ -160,13 +179,7 @@ export const WebContainerPreview = ({
                 showConsole: false,
                 showConsoleButton: false,
               }}
-              customSetup={{
-                dependencies: {
-                  "react": "^18.3.1",
-                  "react-dom": "^18.3.1",
-                  "lucide-react": "latest"
-                }
-              }}
+              customSetup={customSetup}
             />
           </div>
         </TabsContent>
