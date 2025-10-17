@@ -21,12 +21,13 @@ export const useAIGeneration = ({ onApiKeyInvalid, onCodeGenerated }: UseAIGener
     const decoder = new TextDecoder();
     let fullContent = '';
     let buffer = '';
+    let filesReceived = 0;
 
     while (true) {
       const { done, value } = await reader.read();
       
       if (done) {
-        console.log('✅ Streaming complete');
+        console.log('✅ Streaming complete. Files received:', filesReceived);
         setLoadingProgress(100);
         break;
       }
@@ -44,26 +45,54 @@ export const useAIGeneration = ({ onApiKeyInvalid, onCodeGenerated }: UseAIGener
         try {
           const parsed = JSON.parse(dataStr);
           
-          if (parsed.error) {
+          // Handle progress updates
+          if (parsed.type === 'progress') {
+            filesReceived = parsed.filesReceived || 0;
+            console.log(`📦 Progress: ${filesReceived} files received`);
+            setLoadingProgress(Math.min(80, 20 + (filesReceived * 5)));
+            continue;
+          }
+          
+          // Handle completion
+          if (parsed.type === 'complete') {
+            filesReceived = parsed.totalFiles || filesReceived;
+            console.log(`✅ Complete: ${filesReceived} total files`);
+            setLoadingProgress(90);
+            continue;
+          }
+          
+          // Handle warnings
+          if (parsed.type === 'warning') {
+            console.warn('⚠️ Stream warning:', parsed.error);
+            continue;
+          }
+          
+          // Handle errors
+          if (parsed.type === 'error' || parsed.error) {
             throw new Error(parsed.error + (parsed.details ? ': ' + parsed.details : ''));
           }
           
+          // Handle content chunks
           const deltaContent = parsed.choices?.[0]?.delta?.content;
           
           if (deltaContent) {
             fullContent += deltaContent;
             setCurrentStreamContent(fullContent);
             
-            // Update progress based on content
-            let progress = 0;
-            if (fullContent.length > 100) progress = 20;
-            if (fullContent.includes('<!DOCTYPE') || fullContent.includes('"files"')) progress = Math.max(progress, 30);
-            if (fullContent.includes('<head>') || fullContent.length > 1000) progress = Math.max(progress, 45);
-            if (fullContent.includes('<style>') || fullContent.length > 2000) progress = Math.max(progress, 60);
-            if (fullContent.includes('<body>') || fullContent.length > 3000) progress = Math.max(progress, 75);
-            if (fullContent.length > 5000) progress = Math.max(progress, 85);
+            // Calculate progress based on structure
+            let progress = 10;
+            if (fullContent.length > 100) progress = 15;
+            if (fullContent.includes('"files"')) progress = Math.max(progress, 25);
+            if (fullContent.includes('"path"')) progress = Math.max(progress, 35);
             
-            setLoadingProgress(progress);
+            // Better progress tracking with file count
+            const pathCount = (fullContent.match(/"path"\s*:/g) || []).length;
+            if (pathCount > 0) {
+              progress = Math.max(progress, 30 + Math.min(50, pathCount * 3));
+              filesReceived = pathCount;
+            }
+            
+            setLoadingProgress(Math.min(85, progress));
           }
         } catch (parseError) {
           console.warn('Failed to parse chunk:', dataStr.substring(0, 100));

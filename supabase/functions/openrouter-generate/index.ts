@@ -509,11 +509,24 @@ REMEMBER: Response = pure JSON object only. Keep it SMALL and EFFICIENT.`;
           const reader = response.body!.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
+          let fullContent = '';
+          let fileCount = 0;
 
           while (true) {
             const { done, value } = await reader.read();
             
             if (done) {
+              // Send final progress
+              if (fullContent.trim()) {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({
+                    choices: [{ delta: { content: '' }, finish_reason: 'stop' }],
+                    type: 'complete',
+                    totalFiles: fileCount
+                  })}\n\n`)
+                );
+              }
+              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
               controller.close();
               break;
             }
@@ -529,13 +542,41 @@ REMEMBER: Response = pure JSON object only. Keep it SMALL and EFFICIENT.`;
               if (dataStr === '[DONE]') continue;
 
               try {
-                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
+                const parsed = JSON.parse(dataStr);
+                const deltaContent = parsed.choices?.[0]?.delta?.content;
+                
+                if (deltaContent) {
+                  fullContent += deltaContent;
+                  
+                  // Count files progressively
+                  const pathMatches = fullContent.match(/"path"\s*:/g);
+                  if (pathMatches) {
+                    fileCount = pathMatches.length;
+                  }
+                  
+                  // Forward chunk immediately
+                  controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
+                  
+                  // Send progress update every 5 files
+                  if (fileCount > 0 && fileCount % 5 === 0) {
+                    controller.enqueue(
+                      encoder.encode(`data: ${JSON.stringify({
+                        choices: [{ delta: { content: '' } }],
+                        type: 'progress',
+                        filesReceived: fileCount
+                      })}\n\n`)
+                    );
+                  }
+                }
               } catch (parseError) {
                 console.warn('Failed to parse chunk:', dataStr.substring(0, 100));
+                // Forward anyway but log warning
+                controller.enqueue(encoder.encode(`data: ${dataStr}\n\n`));
               }
             }
           }
 
+          // Final buffer flush
           if (buffer.trim()) {
             const dataStr = buffer.slice(buffer.indexOf('data:') + 6).trim();
             if (dataStr && dataStr !== '[DONE]') {
@@ -544,8 +585,16 @@ REMEMBER: Response = pure JSON object only. Keep it SMALL and EFFICIENT.`;
               } catch { }
             }
           }
+          
+          console.log(`✅ Stream complete. Total files sent: ${fileCount}`);
         } catch (error) {
-          console.error('Stream error:', error);
+          console.error('❌ Stream error:', error);
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({
+              error: error instanceof Error ? error.message : 'Stream error',
+              type: 'error'
+            })}\n\n`)
+          );
           controller.error(error);
         }
       }
