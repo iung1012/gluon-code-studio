@@ -239,6 +239,20 @@ const Index = () => {
     // Remove any remaining leading/trailing backticks or whitespace
     cleanContent = cleanContent.replace(/^`+|`+$/g, '').trim();
     
+    // Ensure JSON is complete by checking if it ends properly
+    if (cleanContent.endsWith('...') || !cleanContent.endsWith('}') && !cleanContent.endsWith(']')) {
+      console.warn('⚠️ Content appears truncated, attempting to fix...');
+      // Try to find the last complete object
+      const lastCompleteObject = cleanContent.lastIndexOf('}');
+      if (lastCompleteObject > 0) {
+        cleanContent = cleanContent.substring(0, lastCompleteObject + 1);
+        // Try to close the JSON structure
+        if (!cleanContent.endsWith(']}')) {
+          cleanContent += ']}';
+        }
+      }
+    }
+    
     // Parse as JSON multi-file response (React projects)
     try {
       const parsed = JSON.parse(cleanContent);
@@ -249,8 +263,10 @@ const Index = () => {
       }
     } catch (e) {
       console.error('❌ JSON parse failed:', e);
-      console.error('Failed content:', cleanContent.substring(0, 300));
-      throw new Error('Formato inválido: esperado JSON com estrutura React');
+      console.error('Content length:', cleanContent.length);
+      console.error('Failed content (first 300 chars):', cleanContent.substring(0, 300));
+      console.error('Failed content (last 300 chars):', cleanContent.substring(cleanContent.length - 300));
+      throw new Error('Resposta da API está incompleta ou malformada. Tente novamente.');
     }
     
     throw new Error('Formato inválido: A IA deve retornar um projeto React em JSON');
