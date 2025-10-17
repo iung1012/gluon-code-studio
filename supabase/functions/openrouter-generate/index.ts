@@ -339,6 +339,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 7. **src/App.css**: Modern CSS with Tailwind-style utilities or custom styles
 8. **src/components/*.tsx**: Additional components as needed
 
+🚨 CRITICAL REACT RULES 🚨:
+1. ALL components MUST use "export default function ComponentName()" 
+2. ALL imports MUST use "import ComponentName from './path'"
+3. NEVER use named exports like "export function" or "export const"
+4. Components must be properly imported before use
+5. Verify all icon imports from lucide-react are correct
+
 DESIGN PRINCIPLES:
 - Clean, modern UI with excellent UX
 - Fully responsive (mobile-first)
@@ -353,6 +360,8 @@ DESIGN PRINCIPLES:
 - HTML standalone files
 - Explanatory text before/after JSON
 - Incomplete JSON
+- Named exports in components
+- Using components without importing them
 
 ✅ REQUIRED:
 - Start response with {
@@ -362,6 +371,8 @@ DESIGN PRINCIPLES:
 - Modern, beautiful UI with Tailwind CSS or styled-components
 - Fully responsive design
 - TypeScript with proper types
+- All components use default export
+- All imports use default import
 
 REMEMBER: Response = pure JSON object only. Nothing else.`;
 
