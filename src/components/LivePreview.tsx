@@ -78,7 +78,7 @@ export const LivePreview = ({
         try {
           let processedHtml = htmlContent;
           
-          // Inject external CSS files
+          // Inject external CSS files or a minimal default stylesheet
           const cssFiles = allFiles.filter(f => f.path.endsWith('.css') && f.content);
           if (cssFiles.length > 0) {
             const cssLinks = cssFiles.map(cssFile => {
@@ -88,8 +88,10 @@ export const LivePreview = ({
             }).join('\n');
             
             processedHtml = processedHtml.replace('</head>', `${cssLinks}\n</head>`);
+          } else if (!/\<style[\s\S]*?\>/.test(processedHtml) && processedHtml.includes('</head>')) {
+            const defaultCss = `:root{--bg:#0b0b0f;--fg:#e6e6e6;--muted:#9aa0aa;--accent:#7c4dff}*{box-sizing:border-box}html,body{height:100%}body{margin:0;padding:0;background:#fff;color:#111;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;line-height:1.6}a{color:#2563eb;text-decoration:none}a:hover{text-decoration:underline}h1,h2,h3{line-height:1.2;margin:0 0 .5rem}section{margin:2rem 0}button{cursor:pointer}`;
+            processedHtml = processedHtml.replace('</head>', `<style>${defaultCss}</style>\n</head>`);
           }
-          
           // Inject external JS files
           const jsFiles = allFiles.filter(f => f.path.endsWith('.js') && f.content);
           if (jsFiles.length > 0) {
