@@ -17,6 +17,7 @@ import { useProjectManagement } from "@/hooks/useProjectManagement";
 import { useVersionHistory } from "@/hooks/useVersionHistory";
 import { parseProjectStructure } from "@/utils/jsonParser";
 import { buildFileTree, findFirstFile } from "@/utils/fileTreeParser";
+import { getExampleProject } from "@/utils/exampleProject";
 import type { User } from "@supabase/supabase-js";
 
 interface ChatMessage {
@@ -33,10 +34,10 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [files, setFiles] = useState<FileNode[]>([]);
+  const [files, setFiles] = useState<FileNode[]>(getExampleProject());
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const [useChatLayout, setUseChatLayout] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
