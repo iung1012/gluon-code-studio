@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { LiveProvider, LiveError, LivePreview } from 'react-live';
 import { FileNode, FileTree } from './FileTree';
 import { Code2, Eye } from 'lucide-react';
@@ -151,7 +151,18 @@ export const WebContainerPreview = ({
         <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
           <div className="h-full w-full bg-white overflow-auto">
             {reactCode ? (
-              <LiveProvider code={reactCode} noInline={false}>
+              <LiveProvider 
+                code={reactCode} 
+                noInline={false}
+                scope={{ 
+                  React, 
+                  useState, 
+                  useEffect: useEffect,
+                  useCallback,
+                  useMemo,
+                  useRef
+                }}
+              >
                 <div className="h-full">
                   <LivePreview className="h-full" />
                   <LiveError className="bg-red-50 text-red-600 p-4 font-mono text-sm" />
