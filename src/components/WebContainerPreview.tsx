@@ -1,26 +1,31 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { LiveProvider, LiveError, LivePreview } from 'react-live';
 import { FileNode, FileTree } from './FileTree';
-import { Code2, Eye } from 'lucide-react';
+import { Code2, Eye, Wand2 } from 'lucide-react';
 import { PreviewLoading } from './PreviewLoading';
 import Editor from '@monaco-editor/react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { VisualEditor } from './VisualEditor';
 
 interface WebContainerPreviewProps {
   files: FileNode[];
   isGenerating?: boolean;
   generationProgress?: number;
+  onEditElement?: (elementInfo: any, prompt: string) => void;
 }
 
 export const WebContainerPreview = ({ 
   files, 
   isGenerating = false,
-  generationProgress 
+  generationProgress,
+  onEditElement
 }: WebContainerPreviewProps) => {
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
   const [reactCode, setReactCode] = useState<string>('');
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const getFileLanguage = (filename: string): string => {
     const ext = filename.split('.').pop()?.toLowerCase();
@@ -135,19 +140,33 @@ render(<App />);
     <div className="h-full flex flex-col bg-gradient-to-br from-background to-muted/20">
       <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'preview' | 'code')} className="h-full flex flex-col">
         <div className="border-b bg-card/30 backdrop-blur-sm px-4">
-          <TabsList className="bg-transparent h-12">
-            <TabsTrigger value="preview" className="gap-2 data-[state=active]:bg-background/60">
-              <Eye className="w-4 h-4" />
-              Preview
-            </TabsTrigger>
-            <TabsTrigger value="code" className="gap-2 data-[state=active]:bg-background/60">
-              <Code2 className="w-4 h-4" />
-              Código
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between">
+            <TabsList className="bg-transparent h-12">
+              <TabsTrigger value="preview" className="gap-2 data-[state=active]:bg-background/60">
+                <Eye className="w-4 h-4" />
+                Preview
+              </TabsTrigger>
+              <TabsTrigger value="code" className="gap-2 data-[state=active]:bg-background/60">
+                <Code2 className="w-4 h-4" />
+                Código
+              </TabsTrigger>
+            </TabsList>
+            
+            {viewMode === 'preview' && onEditElement && (
+              <Button
+                variant={isEditMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={isEditMode ? "bg-purple-600 hover:bg-purple-700" : ""}
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                {isEditMode ? 'Edição Ativa' : 'Editar Página'}
+              </Button>
+            )}
+          </div>
         </div>
 
-        <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden">
+        <TabsContent value="preview" className="flex-1 m-0 p-0 data-[state=inactive]:hidden relative">
           <div className="h-full w-full bg-white overflow-auto">
             {reactCode ? (
               <LiveProvider 
@@ -166,6 +185,13 @@ render(<App />);
               </div>
             )}
           </div>
+          
+          {onEditElement && (
+            <VisualEditor 
+              isActive={isEditMode}
+              onEditElement={onEditElement}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="code" className="flex-1 m-0 data-[state=inactive]:hidden">

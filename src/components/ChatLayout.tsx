@@ -39,6 +39,7 @@ interface ChatLayoutProps {
   currentVersionId?: string;
   onRestoreVersion?: (versionId: string) => void;
   initialMessages?: ChatMessage[];
+  onEditElement?: (elementInfo: any, prompt: string) => void;
 }
 
 export const ChatLayout = ({
@@ -53,7 +54,8 @@ export const ChatLayout = ({
   websiteVersions = [],
   currentVersionId,
   onRestoreVersion,
-  initialMessages = []
+  initialMessages = [],
+  onEditElement
 }: ChatLayoutProps) => {
   const [chatVisible, setChatVisible] = useState(true);
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
@@ -261,12 +263,18 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
               minSize={50}
               className="bg-muted/20"
             >
-              <WebContainerPreview files={files} />
+              <WebContainerPreview 
+                files={files} 
+                onEditElement={onEditElement}
+              />
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
           <div className="h-full bg-muted/20">
-            <WebContainerPreview files={files} />
+            <WebContainerPreview 
+              files={files}
+              onEditElement={onEditElement}
+            />
           </div>
         )}
       </div>

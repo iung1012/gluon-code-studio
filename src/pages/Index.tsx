@@ -390,6 +390,10 @@ const Index = () => {
             currentVersionId={currentVersionId}
             onRestoreVersion={handleRestoreVersion}
             initialMessages={chatMessages}
+            onEditElement={async (elementInfo, prompt) => {
+              const fullPrompt = `Modificar ${elementInfo.tagName} "${elementInfo.textContent.substring(0, 50)}...": ${prompt}`;
+              await handleChatMessage(fullPrompt);
+            }}
           />
         ) : (
           <GeneratedPreview
