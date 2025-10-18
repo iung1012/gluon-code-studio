@@ -77,26 +77,25 @@ export const WebContainerPreview = ({
     );
 
     if (appFile?.content) {
-      // Remove import statements and export default
       let code = appFile.content;
       
       // Remove all import statements
       code = code.replace(/import\s+.*?from\s+['"].*?['"];?\s*/g, '');
       code = code.replace(/import\s+['"].*?['"];?\s*/g, '');
       
-      // Remove export default and just keep the function
+      // Remove export default
       code = code.replace(/export\s+default\s+/, '');
       
-      // If it's a function component, we need to wrap it properly
-      if (code.includes('function App')) {
-        // Extract just the function body
-        const match = code.match(/function\s+App\s*\([^)]*\)\s*{([\s\S]*)}$/);
-        if (match) {
-          code = `function App() {${match[1]}}`;
-        }
-      }
+      // Wrap with React hooks destructuring and render call
+      const processedCode = `
+const { useState, useEffect, useCallback, useMemo, useRef } = React;
+
+${code}
+
+render(<App />);
+      `.trim();
       
-      setReactCode(code);
+      setReactCode(processedCode);
     }
   }, [files]);
 
@@ -153,15 +152,8 @@ export const WebContainerPreview = ({
             {reactCode ? (
               <LiveProvider 
                 code={reactCode} 
-                noInline={false}
-                scope={{ 
-                  React, 
-                  useState, 
-                  useEffect: useEffect,
-                  useCallback,
-                  useMemo,
-                  useRef
-                }}
+                noInline={true}
+                scope={{ React }}
               >
                 <div className="h-full">
                   <LivePreview className="h-full" />
