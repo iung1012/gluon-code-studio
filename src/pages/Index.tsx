@@ -218,10 +218,19 @@ const Index = () => {
     }
     
     try {
-      const currentFile = files.find(f => f.name === 'index.html');
+      // Find the main React file (App.tsx, App.jsx, or fallback to index.html)
+      const currentFile = files.find(f => 
+        f.name === 'App.tsx' || 
+        f.name === 'App.jsx' ||
+        f.path?.endsWith('App.tsx') || 
+        f.path?.endsWith('App.jsx')
+      ) || files.find(f => f.name === 'index.html');
+      
       if (!currentFile?.content) {
-        throw new Error("Nenhum website gerado para editar");
+        throw new Error("Nenhum arquivo gerado para editar");
       }
+
+      console.log('📝 Editing file:', currentFile.name, 'with content length:', currentFile.content.length);
 
       // Load recent chat history for context
       const { data: chatHistory } = await supabase
