@@ -2,15 +2,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, Zap } from "lucide-react";
+import { ArrowUp, Zap, User } from "lucide-react";
 import { Header } from "@/components/Header";
 
 interface WelcomeScreenProps {
   onSubmit: (prompt: string, model: string, temperature: number) => void;
   isLoading: boolean;
+  onEnableGuestMode?: () => void;
 }
 
-export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
+export const WelcomeScreen = ({ onSubmit, isLoading, onEnableGuestMode }: WelcomeScreenProps) => {
   const [prompt, setPrompt] = useState("");
   const [modelType, setModelType] = useState<'basic' | 'pro'>('basic');
 
@@ -107,6 +108,21 @@ export const WelcomeScreen = ({ onSubmit, isLoading }: WelcomeScreenProps) => {
               ))}
             </div>
           </div>
+
+          {/* Guest Mode Button */}
+          {onEnableGuestMode && (
+            <div className="pt-4">
+              <Button
+                variant="outline"
+                onClick={onEnableGuestMode}
+                className="w-full gap-2"
+                disabled={isLoading}
+              >
+                <User className="w-4 h-4" />
+                Usar como Convidado
+              </Button>
+            </div>
+          )}
           </div>
         </div>
       </div>

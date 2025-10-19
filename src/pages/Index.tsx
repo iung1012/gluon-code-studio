@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { FileNode } from "@/components/FileTree";
 import { ApiKeyInput } from "@/components/ApiKeyInput";
+import { GuestApiKeyInput } from "@/components/GuestApiKeyInput";
+import { GuestModeNotification } from "@/components/GuestModeNotification";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GeneratedPreview } from "@/components/GeneratedPreview";
@@ -11,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useGuestMode } from "@/contexts/GuestModeContext";
 import { useAIGeneration } from "@/hooks/useAIGeneration";
 import { useLovableGeneration } from "@/hooks/useLovableGeneration";
 import { useProjectManagement } from "@/hooks/useProjectManagement";
@@ -29,10 +32,12 @@ interface ChatMessage {
 const Index = () => {
   const navigate = useNavigate();
   const { subscribed } = useSubscription();
+  const { isGuestMode, guestApiKey, setGuestApiKey, enableGuestMode, disableGuestMode } = useGuestMode();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [showGuestApiKeyInput, setShowGuestApiKeyInput] = useState(false);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -79,9 +84,9 @@ const Index = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       
-      if (!session?.user) {
+      if (!session?.user && !isGuestMode) {
         navigate('/auth');
-      } else {
+      } else if (session?.user) {
         setTimeout(() => {
           checkUserApiKey(session.user.id);
         }, 0);
@@ -92,15 +97,15 @@ const Index = () => {
       setUser(session?.user ?? null);
       setLoading(false);
       
-      if (!session?.user) {
+      if (!session?.user && !isGuestMode) {
         navigate('/auth');
-      } else {
+      } else if (session?.user) {
         checkUserApiKey(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, isGuestMode]);
 
   const checkUserApiKey = async (userId: string) => {
     try {
@@ -127,9 +132,40 @@ const Index = () => {
     });
   };
 
+  const handleGuestApiKeySubmit = (key: string) => {
+    setGuestApiKey(key);
+    setShowGuestApiKeyInput(false);
+    toast({
+      title: "Chave API Salva",
+      description: "Agora você pode começar a gerar websites no modo convidado!",
+    });
+  };
+
+  const handleEnableGuestMode = () => {
+    enableGuestMode();
+    toast({
+      title: "Modo Convidado Ativado",
+      description: "Você pode usar o gerador com sua chave API do OpenRouter.",
+    });
+  };
+
   const checkApiKeyAndProceed = (prompt: string, model: string, temperature: number) => {
-    if (!user) {
+    if (!user && !isGuestMode) {
       navigate('/auth');
+      return;
+    }
+    
+    if (isGuestMode) {
+      if (!guestApiKey) {
+        setShowGuestApiKeyInput(true);
+        toast({
+          title: "Chave API Necessária",
+          description: "Por favor, insira sua chave API do OpenRouter para continuar.",
+          variant: "destructive"
+        });
+        return;
+      }
+      handlePromptSubmit(prompt, model, temperature);
       return;
     }
     
@@ -371,6 +407,10 @@ const Index = () => {
     return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
   }
 
+  if (showGuestApiKeyInput) {
+    return <GuestApiKeyInput onApiKeySubmit={handleGuestApiKeySubmit} onCancel={() => setShowGuestApiKeyInput(false)} />;
+  }
+
   if (showPreview && files.length > 0) {
     return (
       <>
@@ -426,6 +466,9 @@ const Index = () => {
         open={showUpgradeDialog} 
         onOpenChange={setShowUpgradeDialog}
       />
+      {isGuestMode && (
+        <GuestModeNotification onDisableGuestMode={disableGuestMode} />
+      )}
       {user && (
         <ProjectSidebar
           onProjectSelect={handleProjectSelect}
@@ -436,6 +479,7 @@ const Index = () => {
       <WelcomeScreen 
         onSubmit={checkApiKeyAndProceed} 
         isLoading={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading}
+        onEnableGuestMode={!user ? handleEnableGuestMode : undefined}
       />
     </>
   );
