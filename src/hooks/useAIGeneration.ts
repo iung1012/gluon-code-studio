@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useGuestMode } from '@/contexts/GuestModeContext';
 import type { FileNode } from '@/components/FileTree';
 
 interface UseAIGenerationProps {
@@ -13,9 +14,10 @@ export const useAIGeneration = ({ onApiKeyInvalid, onCodeGenerated }: UseAIGener
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [currentStreamContent, setCurrentStreamContent] = useState('');
   const { toast } = useToast();
+  const { isGuestMode, guestApiKey } = useGuestMode();
 
   const handleStreamingResponse = async (response: Response) => {
-    if (!response.body) throw new Error('Nenhuma resposta da Edge Function');
+    if (!response.body) throw new Error('Nenhuma resposta da API');
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -48,7 +50,8 @@ export const useAIGeneration = ({ onApiKeyInvalid, onCodeGenerated }: UseAIGener
             throw new Error(parsed.error + (parsed.details ? ': ' + parsed.details : ''));
           }
           
-          const deltaContent = parsed.choices?.[0]?.delta?.content;
+          // Handle both Edge Function format and OpenRouter format
+          const deltaContent = parsed.choices?.[0]?.delta?.content || parsed.deltaContent;
           
           if (deltaContent) {
             fullContent += deltaContent;
@@ -57,10 +60,10 @@ export const useAIGeneration = ({ onApiKeyInvalid, onCodeGenerated }: UseAIGener
             // Update progress based on content
             let progress = 0;
             if (fullContent.length > 100) progress = 20;
-            if (fullContent.includes('<!DOCTYPE') || fullContent.includes('"files"')) progress = Math.max(progress, 30);
-            if (fullContent.includes('<head>') || fullContent.length > 1000) progress = Math.max(progress, 45);
-            if (fullContent.includes('<style>') || fullContent.length > 2000) progress = Math.max(progress, 60);
-            if (fullContent.includes('<body>') || fullContent.length > 3000) progress = Math.max(progress, 75);
+            if (fullContent.includes('<boltArtifact>') || fullContent.includes('<!DOCTYPE')) progress = Math.max(progress, 30);
+            if (fullContent.includes('<boltAction') || fullContent.length > 1000) progress = Math.max(progress, 45);
+            if (fullContent.includes('package.json') || fullContent.length > 2000) progress = Math.max(progress, 60);
+            if (fullContent.includes('</boltArtifact>') || fullContent.length > 3000) progress = Math.max(progress, 75);
             if (fullContent.length > 5000) progress = Math.max(progress, 85);
             
             setLoadingProgress(progress);
@@ -122,6 +125,80 @@ export const useAIGeneration = ({ onApiKeyInvalid, onCodeGenerated }: UseAIGener
   };
 
   const callEdgeFunction = async (payload: any) => {
+    if (isGuestMode) {
+      // In guest mode, call OpenRouter API directly
+      if (!guestApiKey) {
+        throw new Error('Chave API não configurada. Configure sua chave API para usar o modo convidado.');
+      }
+      
+      // Call OpenRouter API directly with streaming
+      console.log('🚀 Calling OpenRouter API directly with key:', guestApiKey.substring(0, 10) + '...');
+      
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${guestApiKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': '2code AI Generator'
+        },
+        body: JSON.stringify({
+          model: 'openai/gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are 2code, an expert AI assistant and exceptional senior software developer with vast knowledge across multiple programming languages, frameworks, and best practices.
+
+You are operating in an environment called WebContainer, an in-browser Node.js runtime that emulates a Linux system. You must create complete, functional React projects based on user prompts.
+
+CRITICAL: You must always follow the <boltArtifact> format.
+
+<artifact_instructions>
+1. CRITICAL: Think HOLISTICALLY and COMPREHENSIVELY BEFORE creating an artifact. This means:
+   - Consider ALL relevant files in the project
+   - Analyze the entire project context and dependencies
+   - Anticipate potential impacts on other parts of the system
+   - Plan the complete file structure before writing any code
+
+2. ALWAYS use Vite for React projects - never use react-scripts or create-react-app
+3. Include ALL necessary dependencies in package.json
+4. Create complete, runnable projects
+5. Use modern React patterns (hooks, functional components)
+6. Include proper TypeScript support when applicable
+6. Follow best practices for file organization and naming
+
+<boltArtifact> format:
+<boltArtifact title="Project Title" id="project-id">
+  <boltAction type="file" filePath="filename">
+    file content here
+  </boltAction>
+  <boltAction type="shell">
+    command to run
+  </boltAction>
+  <boltAction type="start" />
+</boltArtifact>
+
+Return ONLY the boltArtifact content, no explanations or markdown.`
+            },
+            {
+              role: 'user',
+              content: payload.prompt
+            }
+          ],
+          max_tokens: 4000,
+          temperature: 0.7,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        await handleError(null, response);
+      }
+
+      return response;
+    }
+
+    // Original authenticated flow
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) throw new Error('Usuário não autenticado');
 
