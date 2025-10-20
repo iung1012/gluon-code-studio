@@ -1,4 +1,6 @@
-import { ProjectStack } from './systemPrompts';
+import type { SystemPrompts } from './systemPrompts';
+
+type ProjectStack = keyof SystemPrompts;
 
 interface StackDetectionRule {
   keywords: string[];
