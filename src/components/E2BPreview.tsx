@@ -86,7 +86,7 @@ export const E2BPreview = ({
     const setupProject = async () => {
       try {
         setError(null);
-        addOutput('📦 Preparing project files...');
+        addOutput('📦 Preparando arquivos do projeto...');
 
         // Convert FileNode array to flat file list
         const flatFiles: Array<{ path: string; content: string }> = [];
@@ -95,7 +95,7 @@ export const E2BPreview = ({
           const path = basePath ? `${basePath}/${node.name}` : node.name;
           
           if (node.type === 'file' && node.content) {
-            flatFiles.push({ path, content: node.content });
+            flatFiles.push({ path: `/${path}`, content: node.content });
           } else if (node.type === 'folder' && node.children) {
             node.children.forEach(child => processNode(child, path));
           }
@@ -103,8 +103,8 @@ export const E2BPreview = ({
 
         files.forEach(node => processNode(node));
 
-        console.log('📁 Writing files to sandbox...', flatFiles.length);
-        addOutput(`📁 Writing ${flatFiles.length} files...`);
+        console.log('📁 Escrevendo arquivos no sandbox...', flatFiles.length);
+        addOutput(`📁 Escrevendo ${flatFiles.length} arquivos...`);
 
         // Write files to sandbox
         const { error: writeError } = await supabase.functions.invoke('e2b-sandbox', {
@@ -117,15 +117,15 @@ export const E2BPreview = ({
 
         if (writeError) throw writeError;
 
-        addOutput('✅ Files written successfully');
-        addOutput('📦 Installing dependencies...');
+        addOutput('✅ Arquivos escritos com sucesso');
+        addOutput('📦 Instalando dependências (npm install)...');
 
-        // Install dependencies
+        // Install dependencies with npm
         const { data: installData, error: installError } = await supabase.functions.invoke('e2b-sandbox', {
           body: { 
             action: 'execute',
             sandboxId,
-            command: 'npm install'
+            command: 'cd / && npm install'
           }
         });
 
@@ -134,15 +134,15 @@ export const E2BPreview = ({
         if (installData?.stdout) addOutput(installData.stdout);
         if (installData?.stderr) addOutput(installData.stderr);
         
-        addOutput('✅ Dependencies installed');
-        addOutput('🚀 Starting dev server...');
+        addOutput('✅ Dependências instaladas');
+        addOutput('🚀 Iniciando servidor de desenvolvimento...');
 
         // Start dev server (non-blocking)
         supabase.functions.invoke('e2b-sandbox', {
           body: { 
             action: 'execute',
             sandboxId,
-            command: 'npm run dev'
+            command: 'cd / && npm run dev -- --host 0.0.0.0'
           }
         }).then(({ data: devData }) => {
           if (devData?.stdout) addOutput(devData.stdout);
@@ -160,16 +160,16 @@ export const E2BPreview = ({
           });
 
           if (!urlError && urlData?.url) {
-            console.log('✅ Server ready at:', urlData.url);
+            console.log('✅ Servidor pronto em:', urlData.url);
             setUrl(urlData.url);
-            addOutput(`✅ Server running at ${urlData.url}`);
+            addOutput(`✅ Servidor rodando em ${urlData.url}`);
           }
-        }, 3000);
+        }, 5000); // Aguarda 5s para o servidor iniciar
 
       } catch (err) {
-        console.error('❌ Error setting up project:', err);
+        console.error('❌ Erro ao configurar projeto:', err);
         setError(err instanceof Error ? err.message : 'Failed to setup project');
-        addOutput(`❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        addOutput(`❌ Erro: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     };
 

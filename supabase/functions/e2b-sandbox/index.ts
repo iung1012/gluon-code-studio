@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
+import { Sandbox } from "npm:e2b@^1.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Store active sandboxes
+const sandboxes = new Map<string, any>();
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,115 +15,89 @@ serve(async (req) => {
   }
 
   try {
-    const { action, files, code } = await req.json();
+    const body = await req.json();
+    const { action, sandboxId, files, command, port } = body;
     const E2B_API_KEY = Deno.env.get('E2B_API_KEY');
     
     if (!E2B_API_KEY) {
       throw new Error('E2B_API_KEY not configured');
     }
 
-    console.log('🔧 E2B Action:', action);
+    console.log('🔧 E2B Action:', action, { sandboxId });
 
     // Create sandbox
     if (action === 'create') {
-      const response = await fetch('https://api.e2b.dev/sandboxes', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${E2B_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          template: 'base',
-        }),
+      console.log('Creating E2B sandbox...');
+      const sandbox = await Sandbox.create('base', { 
+        apiKey: E2B_API_KEY,
+        timeout: 300000 // 5 minutes
       });
-
-      if (!response.ok) {
-        const error = await response.text();
-        console.error('E2B create error:', error);
-        throw new Error(`Failed to create sandbox: ${error}`);
-      }
-
-      const sandbox = await response.json();
-      console.log('✅ Sandbox created:', sandbox.sandboxId);
+      
+      sandboxes.set(sandbox.sandboxID, sandbox);
+      
+      console.log('✅ Sandbox created:', sandbox.sandboxID);
       
       return new Response(
-        JSON.stringify({ sandboxId: sandbox.sandboxId }),
+        JSON.stringify({ 
+          sandboxId: sandbox.sandboxID
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Get or reconnect to sandbox
+    let sandbox = sandboxes.get(sandboxId);
+    if (!sandbox && sandboxId) {
+      sandbox = await Sandbox.create('base', { 
+        apiKey: E2B_API_KEY,
+        sandboxID: sandboxId
+      });
+      sandboxes.set(sandboxId, sandbox);
+    }
+
+    if (!sandbox) {
+      throw new Error('Sandbox not found');
+    }
+
     // Write files to sandbox
     if (action === 'write-files') {
-      const { sandboxId } = await req.json();
+      console.log('Writing files to sandbox...');
       
       for (const file of files) {
-        const writeResponse = await fetch(
-          `https://api.e2b.dev/sandboxes/${sandboxId}/filesystem/write`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${E2B_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              path: file.path,
-              content: file.content,
-            }),
-          }
-        );
-
-        if (!writeResponse.ok) {
-          const error = await writeResponse.text();
-          console.error('E2B write error:', error);
-          throw new Error(`Failed to write file ${file.path}: ${error}`);
-        }
+        await sandbox.filesystem.write(file.path, file.content);
+        console.log(`✅ Written: ${file.path}`);
       }
-
-      console.log('✅ Files written');
+      
+      console.log('✅ All files written');
       return new Response(
         JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Execute code
+    // Execute command
     if (action === 'execute') {
-      const { sandboxId, command } = await req.json();
+      console.log('Executing command:', command);
       
-      const execResponse = await fetch(
-        `https://api.e2b.dev/sandboxes/${sandboxId}/commands`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${E2B_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            command,
-          }),
-        }
-      );
-
-      if (!execResponse.ok) {
-        const error = await execResponse.text();
-        console.error('E2B execute error:', error);
-        throw new Error(`Failed to execute command: ${error}`);
-      }
-
-      const result = await execResponse.json();
+      const proc = await sandbox.process.startAndWait(command);
+      
       console.log('✅ Command executed');
       
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify({
+          stdout: proc.stdout,
+          stderr: proc.stderr,
+          exitCode: proc.exitCode
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Get sandbox URL
     if (action === 'get-url') {
-      const { sandboxId, port } = await req.json();
-      
-      const url = `https://${sandboxId}-${port}.e2b.dev`;
+      // Get the hostname for the port
+      const hostname = await sandbox.getHostname(port || 5173);
+      const url = `https://${hostname}`;
       
       return new Response(
         JSON.stringify({ url }),
@@ -130,15 +107,11 @@ serve(async (req) => {
 
     // Delete sandbox
     if (action === 'delete') {
-      const { sandboxId } = await req.json();
+      console.log('Deleting sandbox...');
       
-      await fetch(`https://api.e2b.dev/sandboxes/${sandboxId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${E2B_API_KEY}`,
-        },
-      });
-
+      await sandbox.close();
+      sandboxes.delete(sandboxId);
+      
       console.log('✅ Sandbox deleted');
       return new Response(
         JSON.stringify({ success: true }),
