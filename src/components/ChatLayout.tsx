@@ -6,7 +6,7 @@ import { Download, MessageSquare, X, Monitor, Tablet, Smartphone } from "lucide-
 import logo from "@/assets/logo.png";
 import { ChatPanel } from "./ChatPanel";
 import { LivePreview } from "./LivePreview";
-import { WebContainerPreview } from "./WebContainerPreview";
+import { E2BPreview } from "./E2BPreview";
 import { CodePreview } from "./CodePreview";
 import { FileNode } from "./FileTree";
 import { cn } from "@/lib/utils";
@@ -234,7 +234,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
             
             <ResizablePanel defaultSize={75} minSize={50} className="bg-muted/20">
               {activeView === 'preview' ? (
-                <WebContainerPreview files={files} />
+                <E2BPreview files={files} />
               ) : (
                 <CodePreview 
                   files={files}
@@ -246,7 +246,7 @@ Gerado em: ${new Date().toLocaleDateString('pt-BR')}
             </ResizablePanel>
           </ResizablePanelGroup> : <div className="h-full bg-muted/20">
             {activeView === 'preview' ? (
-              <WebContainerPreview files={files} />
+              <E2BPreview files={files} />
             ) : (
               <CodePreview 
                 files={files}

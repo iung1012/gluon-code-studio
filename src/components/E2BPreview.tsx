@@ -1,24 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
-import { WebContainer } from '@webcontainer/api';
 import type { FileNode } from './FileTree';
 import { Card } from './ui/card';
 import { AlertCircle, Loader2, Terminal as TerminalIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ScrollArea } from './ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
-interface WebContainerPreviewProps {
+interface E2BPreviewProps {
   files: FileNode[];
   isGenerating?: boolean;
   generationProgress?: number;
 }
 
-export const WebContainerPreview = ({ 
+export const E2BPreview = ({ 
   files, 
   isGenerating = false,
   generationProgress = 0 
-}: WebContainerPreviewProps) => {
-  const [webcontainer, setWebcontainer] = useState<WebContainer | null>(null);
+}: E2BPreviewProps) => {
+  const [sandboxId, setSandboxId] = useState<string | null>(null);
   const [url, setUrl] = useState<string>('');
   const [isBooting, setIsBooting] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,128 +26,155 @@ export const WebContainerPreview = ({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
 
-  // Boot WebContainer
+  // Helper to add terminal output
+  const addOutput = (message: string) => {
+    setTerminalOutput(prev => [...prev, message]);
+    setTimeout(() => {
+      if (terminalRef.current) {
+        terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+      }
+    }, 0);
+  };
+
+  // Create E2B Sandbox
   useEffect(() => {
     let isMounted = true;
 
-    const bootContainer = async () => {
+    const createSandbox = async () => {
       try {
-        console.log('🚀 Booting WebContainer...');
-        const instance = await WebContainer.boot();
-        
-        if (!isMounted) {
-          await instance.teardown();
-          return;
-        }
+        console.log('🚀 Creating E2B Sandbox...');
+        addOutput('🚀 Creating secure sandbox...');
 
-        setWebcontainer(instance);
+        const { data, error } = await supabase.functions.invoke('e2b-sandbox', {
+          body: { action: 'create' }
+        });
+
+        if (error) throw error;
+        if (!data?.sandboxId) throw new Error('No sandbox ID returned');
+
+        if (!isMounted) return;
+
+        setSandboxId(data.sandboxId);
         setIsBooting(false);
-        console.log('✅ WebContainer booted successfully');
+        addOutput(`✅ Sandbox created: ${data.sandboxId}`);
+        console.log('✅ E2B Sandbox created:', data.sandboxId);
       } catch (err) {
-        console.error('❌ Failed to boot WebContainer:', err);
-        setError(err instanceof Error ? err.message : 'Failed to boot WebContainer');
+        console.error('❌ Failed to create E2B sandbox:', err);
+        setError(err instanceof Error ? err.message : 'Failed to create sandbox');
         setIsBooting(false);
+        addOutput(`❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     };
 
-    bootContainer();
+    createSandbox();
 
     return () => {
       isMounted = false;
-      if (webcontainer) {
-        webcontainer.teardown();
+      // Cleanup sandbox on unmount
+      if (sandboxId) {
+        supabase.functions.invoke('e2b-sandbox', {
+          body: { action: 'delete', sandboxId }
+        });
       }
     };
   }, []);
 
-  // Mount files and run dev server
+  // Setup project in E2B
   useEffect(() => {
-    if (!webcontainer || files.length === 0 || isBooting) return;
+    if (!sandboxId || files.length === 0 || isBooting) return;
 
     const setupProject = async () => {
       try {
         setError(null);
-        setTerminalOutput(['📦 Installing dependencies...']);
+        addOutput('📦 Preparing project files...');
 
-        // Convert FileNode array to WebContainer file structure
-        const fileTree: Record<string, any> = {};
+        // Convert FileNode array to flat file list
+        const flatFiles: Array<{ path: string; content: string }> = [];
         
-        const processNode = (node: FileNode, path: string = '') => {
-          const fullPath = path ? `${path}/${node.name}` : node.name;
+        const processNode = (node: FileNode, basePath: string = '') => {
+          const path = basePath ? `${basePath}/${node.name}` : node.name;
           
           if (node.type === 'file' && node.content) {
-            // Create nested structure
-            const parts = fullPath.split('/');
-            let current = fileTree;
-            
-            for (let i = 0; i < parts.length - 1; i++) {
-              if (!current[parts[i]]) {
-                current[parts[i]] = { directory: {} };
-              }
-              current = current[parts[i]].directory;
-            }
-            
-            current[parts[parts.length - 1]] = {
-              file: { contents: node.content }
-            };
+            flatFiles.push({ path, content: node.content });
           } else if (node.type === 'folder' && node.children) {
-            node.children.forEach(child => processNode(child, fullPath));
+            node.children.forEach(child => processNode(child, path));
           }
         };
 
         files.forEach(node => processNode(node));
 
-        console.log('📁 Mounting files...', Object.keys(fileTree));
-        await webcontainer.mount(fileTree);
+        console.log('📁 Writing files to sandbox...', flatFiles.length);
+        addOutput(`📁 Writing ${flatFiles.length} files...`);
+
+        // Write files to sandbox
+        const { error: writeError } = await supabase.functions.invoke('e2b-sandbox', {
+          body: { 
+            action: 'write-files',
+            sandboxId,
+            files: flatFiles
+          }
+        });
+
+        if (writeError) throw writeError;
+
+        addOutput('✅ Files written successfully');
+        addOutput('📦 Installing dependencies...');
 
         // Install dependencies
-        const installProcess = await webcontainer.spawn('npm', ['install']);
-        
-        installProcess.output.pipeTo(new WritableStream({
-          write(data) {
-            setTerminalOutput(prev => [...prev, data]);
-            if (terminalRef.current) {
-              terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-            }
+        const { data: installData, error: installError } = await supabase.functions.invoke('e2b-sandbox', {
+          body: { 
+            action: 'execute',
+            sandboxId,
+            command: 'npm install'
           }
-        }));
-
-        const installExitCode = await installProcess.exit;
-        
-        if (installExitCode !== 0) {
-          throw new Error(`npm install failed with exit code ${installExitCode}`);
-        }
-
-        setTerminalOutput(prev => [...prev, '✅ Dependencies installed', '🚀 Starting dev server...']);
-
-        // Start dev server
-        const devProcess = await webcontainer.spawn('npm', ['run', 'dev']);
-        
-        devProcess.output.pipeTo(new WritableStream({
-          write(data) {
-            setTerminalOutput(prev => [...prev, data]);
-            if (terminalRef.current) {
-              terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-            }
-          }
-        }));
-
-        // Wait for server to be ready
-        webcontainer.on('server-ready', (port, serverUrl) => {
-          console.log('✅ Server ready at:', serverUrl);
-          setUrl(serverUrl);
-          setTerminalOutput(prev => [...prev, `✅ Server running at ${serverUrl}`]);
         });
+
+        if (installError) throw installError;
+
+        if (installData?.stdout) addOutput(installData.stdout);
+        if (installData?.stderr) addOutput(installData.stderr);
+        
+        addOutput('✅ Dependencies installed');
+        addOutput('🚀 Starting dev server...');
+
+        // Start dev server (non-blocking)
+        supabase.functions.invoke('e2b-sandbox', {
+          body: { 
+            action: 'execute',
+            sandboxId,
+            command: 'npm run dev'
+          }
+        }).then(({ data: devData }) => {
+          if (devData?.stdout) addOutput(devData.stdout);
+          if (devData?.stderr) addOutput(devData.stderr);
+        });
+
+        // Wait a bit for server to start and get URL
+        setTimeout(async () => {
+          const { data: urlData, error: urlError } = await supabase.functions.invoke('e2b-sandbox', {
+            body: { 
+              action: 'get-url',
+              sandboxId,
+              port: 5173 // Default Vite port
+            }
+          });
+
+          if (!urlError && urlData?.url) {
+            console.log('✅ Server ready at:', urlData.url);
+            setUrl(urlData.url);
+            addOutput(`✅ Server running at ${urlData.url}`);
+          }
+        }, 3000);
 
       } catch (err) {
         console.error('❌ Error setting up project:', err);
         setError(err instanceof Error ? err.message : 'Failed to setup project');
-        setTerminalOutput(prev => [...prev, `❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`]);
+        addOutput(`❌ Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     };
 
     setupProject();
-  }, [webcontainer, files, isBooting]);
+  }, [sandboxId, files, isBooting]);
 
   if (isGenerating) {
     return (
@@ -167,10 +194,10 @@ export const WebContainerPreview = ({
           <div className="flex items-start gap-4">
             <AlertCircle className="w-8 h-8 text-destructive flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-lg mb-2">WebContainer Error</h3>
+              <h3 className="font-semibold text-lg mb-2">E2B Sandbox Error</h3>
               <p className="text-sm text-muted-foreground mb-4">{error}</p>
               <p className="text-xs text-muted-foreground">
-                Certifique-se que seu navegador suporta WebContainers e que não está em modo privado/anônimo.
+                Verifique se a API key do E2B está configurada corretamente.
               </p>
             </div>
           </div>
@@ -184,7 +211,7 @@ export const WebContainerPreview = ({
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-background to-muted/20">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Iniciando WebContainer...</p>
+          <p className="text-muted-foreground">Iniciando sandbox seguro E2B...</p>
         </div>
       </div>
     );
@@ -207,7 +234,7 @@ export const WebContainerPreview = ({
               ref={iframeRef}
               src={url}
               className="w-full h-full border-0"
-              title="WebContainer Preview"
+              title="E2B Sandbox Preview"
             />
           ) : (
             <div className="h-full flex items-center justify-center">
