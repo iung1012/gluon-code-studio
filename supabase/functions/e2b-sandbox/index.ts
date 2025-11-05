@@ -61,20 +61,55 @@ serve(async (req) => {
       throw new Error('Sandbox not found');
     }
 
-    // Write files to sandbox
     if (action === 'write-files') {
       console.log('Writing files to sandbox...');
       
-      for (const file of files) {
-        await sandbox.filesystem.write(file.path, file.content);
-        console.log(`✅ Written: ${file.path}`);
+      // Normalize files input
+      const fileList = (files || []).map((f: any) => ({
+        path: f.path,
+        content: f.content ?? f.data ?? ''
+      }));
+
+      try {
+        // Preferred modern API
+        if ((sandbox as any).files?.write) {
+          const payload = fileList.map((f: any) => ({ path: f.path, data: f.content }));
+          await (sandbox as any).files.write(payload);
+          for (const f of fileList) console.log(`✅ Written: ${f.path}`);
+        }
+        // Legacy API fallback
+        else if ((sandbox as any).filesystem?.write) {
+          for (const f of fileList) {
+            await (sandbox as any).filesystem.write(f.path, f.content);
+            console.log(`✅ Written: ${f.path}`);
+          }
+        }
+        // Shell fallback
+        else {
+          for (const f of fileList) {
+            const safePath = f.path.replace(/'/g, "'\\''");
+            const script = `mkdir -p $(dirname '${safePath}') && cat > '${safePath}' << 'EOF'\n${f.content}\nEOF`;
+            const proc = await (sandbox as any).process.startAndWait(`bash -lc \"${script.replace(/\"/g, '\\\\\"')}\"`);
+            if (proc.exitCode !== 0) {
+              console.log('❌ Write failed', proc.stderr);
+              throw new Error(`Failed to write ${f.path}`);
+            }
+            console.log(`✅ Written: ${f.path}`);
+          }
+        }
+        
+        console.log('✅ All files written');
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (e) {
+        console.error('E2B write error:', e);
+        return new Response(
+          JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-      
-      console.log('✅ All files written');
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
     // Execute command
