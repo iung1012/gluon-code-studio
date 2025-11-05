@@ -50,9 +50,9 @@ serve(async (req) => {
     // Get or reconnect to sandbox
     let sandbox = sandboxes.get(sandboxId);
     if (!sandbox && sandboxId) {
-      sandbox = await Sandbox.create('base', { 
-        apiKey: E2B_API_KEY,
-        sandboxID: sandboxId
+      console.log('Reconnecting to sandbox:', sandboxId);
+      sandbox = await Sandbox.connect(sandboxId, { 
+        apiKey: E2B_API_KEY
       });
       sandboxes.set(sandboxId, sandbox);
     }
