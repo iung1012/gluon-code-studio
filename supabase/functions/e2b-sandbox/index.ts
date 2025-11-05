@@ -33,13 +33,15 @@ serve(async (req) => {
         timeout: 300000 // 5 minutes
       });
       
-      sandboxes.set(sandbox.sandboxID, sandbox);
+      const sandboxId = sandbox.id || sandbox.sandboxID || sandbox.sandboxId;
+      sandboxes.set(sandboxId, sandbox);
       
-      console.log('✅ Sandbox created:', sandbox.sandboxID);
+      console.log('✅ Sandbox created:', sandboxId);
+      console.log('Sandbox object keys:', Object.keys(sandbox));
       
       return new Response(
         JSON.stringify({ 
-          sandboxId: sandbox.sandboxID
+          sandboxId: sandboxId
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
