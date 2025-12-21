@@ -71,31 +71,10 @@ serve(async (req) => {
       }));
 
       try {
-        // Preferred modern API
-        if ((sandbox as any).files?.write) {
-          const payload = fileList.map((f: any) => ({ path: f.path, data: f.content }));
-          await (sandbox as any).files.write(payload);
-          for (const f of fileList) console.log(`✅ Written: ${f.path}`);
-        }
-        // Legacy API fallback
-        else if ((sandbox as any).filesystem?.write) {
-          for (const f of fileList) {
-            await (sandbox as any).filesystem.write(f.path, f.content);
-            console.log(`✅ Written: ${f.path}`);
-          }
-        }
-        // Shell fallback
-        else {
-          for (const f of fileList) {
-            const safePath = f.path.replace(/'/g, "'\\''");
-            const script = `mkdir -p $(dirname '${safePath}') && cat > '${safePath}' << 'EOF'\n${f.content}\nEOF`;
-            const proc = await (sandbox as any).process.startAndWait(`bash -lc \"${script.replace(/\"/g, '\\\\\"')}\"`);
-            if (proc.exitCode !== 0) {
-              console.log('❌ Write failed', proc.stderr);
-              throw new Error(`Failed to write ${f.path}`);
-            }
-            console.log(`✅ Written: ${f.path}`);
-          }
+        // Use sandbox.files.write (modern E2B API)
+        for (const f of fileList) {
+          await sandbox.files.write(f.path, f.content);
+          console.log(`✅ Written: ${f.path}`);
         }
         
         console.log('✅ All files written');
@@ -112,22 +91,30 @@ serve(async (req) => {
       }
     }
 
-    // Execute command
+    // Execute command using sandbox.commands.run
     if (action === 'execute') {
       console.log('Executing command:', command);
       
-      const proc = await sandbox.process.startAndWait(command);
-      
-      console.log('✅ Command executed');
-      
-      return new Response(
-        JSON.stringify({
-          stdout: proc.stdout,
-          stderr: proc.stderr,
-          exitCode: proc.exitCode
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      try {
+        const result = await sandbox.commands.run(command);
+        
+        console.log('✅ Command executed');
+        
+        return new Response(
+          JSON.stringify({
+            stdout: result.stdout,
+            stderr: result.stderr,
+            exitCode: result.exitCode
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (e) {
+        console.error('E2B execute error:', e);
+        return new Response(
+          JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Get sandbox URL
