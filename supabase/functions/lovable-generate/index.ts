@@ -184,11 +184,11 @@ Remember: Your entire response must be valid JSON starting with { and ending wit
 
 // Available OpenRouter models for code generation
 const MODELS = {
-  basic: 'google/gemini-2.5-flash',
-  pro: 'google/gemini-2.5-pro',
+  basic: 'z-ai/glm-4.5-air:free',
+  pro: 'z-ai/glm-4.7',
   vision: 'google/gemini-2.5-flash',
-  fast: 'anthropic/claude-3-5-haiku-20241022',
-  reasoning: 'anthropic/claude-sonnet-4-5'
+  fast: 'z-ai/glm-4.5-air:free',
+  reasoning: 'z-ai/glm-4.7'
 };
 
 serve(async (req) => {
