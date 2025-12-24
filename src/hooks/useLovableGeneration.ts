@@ -178,14 +178,40 @@ export const useLovableGeneration = ({ onCodeGenerated }: UseLovableGenerationPr
     
     let cleanContent = content.trim();
     
-    // Remove markdown if present
-    if (cleanContent.startsWith('```')) {
-      cleanContent = cleanContent.replace(/^```(?:json|html)?\s*\n?/, '');
-      cleanContent = cleanContent.replace(/\n?```\s*$/, '');
+    // Remove markdown code blocks if present
+    cleanContent = cleanContent.replace(/^```(?:json|javascript|typescript|html)?\s*\n?/g, '');
+    cleanContent = cleanContent.replace(/\n?```\s*$/g, '');
+    cleanContent = cleanContent.replace(/^`+|`+$/g, '').trim();
+    
+    // Try to extract JSON object containing "files" array
+    const jsonStartIndex = cleanContent.indexOf('{"files"');
+    if (jsonStartIndex === -1) {
+      // Try alternate format
+      const altStart = cleanContent.indexOf('{');
+      if (altStart !== -1 && cleanContent.includes('"files"')) {
+        cleanContent = cleanContent.substring(altStart);
+      }
+    } else {
+      cleanContent = cleanContent.substring(jsonStartIndex);
     }
     
-    // Remove backticks
-    cleanContent = cleanContent.replace(/^`+|`+$/g, '').trim();
+    // Find the matching closing brace
+    let braceCount = 0;
+    let jsonEndIndex = -1;
+    for (let i = 0; i < cleanContent.length; i++) {
+      if (cleanContent[i] === '{') braceCount++;
+      if (cleanContent[i] === '}') {
+        braceCount--;
+        if (braceCount === 0) {
+          jsonEndIndex = i + 1;
+          break;
+        }
+      }
+    }
+    
+    if (jsonEndIndex > 0) {
+      cleanContent = cleanContent.substring(0, jsonEndIndex);
+    }
     
     try {
       const parsed = JSON.parse(cleanContent);
@@ -212,10 +238,45 @@ export const useLovableGeneration = ({ onCodeGenerated }: UseLovableGenerationPr
       }
     } catch (e) {
       console.error('❌ JSON parse failed:', e);
+      console.error('Content preview:', cleanContent.substring(0, 500));
+      
+      // Try to extract files using regex as fallback
+      const files = tryExtractFilesFromText(cleanContent);
+      if (files.length > 0) {
+        console.log(`✅ Extracted ${files.length} files using fallback parser`);
+        return files;
+      }
+      
       throw new Error('Falha ao processar resposta da IA. Tente novamente.');
     }
     
     throw new Error('Formato inválido na resposta da IA');
+  };
+
+  const tryExtractFilesFromText = (content: string): { path: string; content: string }[] => {
+    const files: { path: string; content: string }[] = [];
+    
+    try {
+      // Match file objects with path and content
+      const filePattern = /"path"\s*:\s*"([^"]+)"\s*,\s*"content"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+      let match;
+      
+      while ((match = filePattern.exec(content)) !== null) {
+        const [, path, fileContent] = match;
+        files.push({
+          path: path,
+          content: fileContent
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"')
+            .replace(/\\t/g, '\t')
+            .replace(/\\\\/g, '\\')
+        });
+      }
+    } catch (error) {
+      console.error('Fallback parser error:', error);
+    }
+    
+    return files;
   };
 
   const generate = async (
