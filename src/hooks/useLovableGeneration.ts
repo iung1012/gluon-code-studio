@@ -222,7 +222,8 @@ export const useLovableGeneration = ({ onCodeGenerated }: UseLovableGenerationPr
     prompt: string,
     currentCode?: string,
     isEdit = false,
-    images?: string[]
+    images?: string[],
+    model: 'basic' | 'pro' | 'fast' | 'reasoning' = 'basic'
   ) => {
     setIsLoading(true);
     setLoadingProgress(0);
@@ -246,7 +247,8 @@ export const useLovableGeneration = ({ onCodeGenerated }: UseLovableGenerationPr
             prompt,
             currentCode,
             isEdit,
-            images
+            images,
+            model
           })
         }
       );

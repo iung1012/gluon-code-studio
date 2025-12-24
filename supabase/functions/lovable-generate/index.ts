@@ -180,7 +180,16 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 - All imports properly declared
 - Working code with no errors
 
-Remember: Your entire response must be valid JSON starting with { and ending with }`
+Remember: Your entire response must be valid JSON starting with { and ending with }`;
+
+// Available OpenRouter models for code generation
+const MODELS = {
+  basic: 'google/gemini-2.5-flash',
+  pro: 'google/gemini-2.5-pro',
+  vision: 'google/gemini-2.5-flash',
+  fast: 'anthropic/claude-3-5-haiku-20241022',
+  reasoning: 'anthropic/claude-sonnet-4-5'
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -205,7 +214,13 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { prompt, currentCode, isEdit = false, images = [] } = await req.json();
+    const { 
+      prompt, 
+      currentCode, 
+      isEdit = false, 
+      images = [],
+      model = 'basic'
+    } = await req.json();
 
     if (!prompt) {
       throw new Error('Prompt is required');
@@ -215,13 +230,23 @@ serve(async (req) => {
       userId: user.id, 
       isEdit, 
       hasImages: images.length > 0,
-      promptLength: prompt.length 
+      promptLength: prompt.length,
+      model
     });
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    // Get OpenRouter API key
+    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
+    if (!OPENROUTER_API_KEY) {
+      throw new Error('OPENROUTER_API_KEY not configured');
     }
+
+    // Select model based on request
+    const hasImages = images.length > 0;
+    const selectedModel = hasImages 
+      ? MODELS.vision 
+      : (MODELS[model as keyof typeof MODELS] || MODELS.basic);
+
+    console.log(`🤖 Using OpenRouter model: ${selectedModel}`);
 
     // Build messages for the AI
     const messages: any[] = [
@@ -238,7 +263,7 @@ serve(async (req) => {
       ];
 
       // Add images if provided
-      if (images.length > 0) {
+      if (hasImages) {
         userContent.push({ type: 'text', text: '\n\nREFERENCE IMAGES:' });
         images.forEach((img: string, idx: number) => {
           userContent.push({
@@ -260,7 +285,7 @@ serve(async (req) => {
       ];
 
       // Add images if provided
-      if (images.length > 0) {
+      if (hasImages) {
         userContent.push({ type: 'text', text: '\n\nREFERENCE IMAGES:' });
         images.forEach((img: string, idx: number) => {
           userContent.push({
@@ -274,76 +299,44 @@ serve(async (req) => {
       messages.push({ role: 'user', content: userContent });
     }
 
-    console.log('🤖 Calling Lovable AI Gateway...');
-
-    // Call Lovable AI with structured output using tool calling
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Call OpenRouter API
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': Deno.env.get('SUPABASE_URL') ?? 'https://lovable.app',
+        'X-Title': 'CoderIA - Code Generator',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: selectedModel,
         messages,
         temperature: 0.3,
+        max_tokens: 16000,
         stream: true,
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'generate_react_project',
-              description: 'Generate a complete React project with file structure',
-              parameters: {
-                type: 'object',
-                properties: {
-                  files: {
-                    type: 'array',
-                    description: 'Array of project files',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        path: {
-                          type: 'string',
-                          description: 'File path relative to project root'
-                        },
-                        content: {
-                          type: 'string',
-                          description: 'Complete file content'
-                        }
-                      },
-                      required: ['path', 'content']
-                    }
-                  }
-                },
-                required: ['files']
-              }
-            }
-          }
-        ],
-        tool_choice: {
-          type: 'function',
-          function: { name: 'generate_react_project' }
-        }
+        response_format: { type: 'json_object' }
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Lovable AI error:', response.status, errorText);
+      console.error('❌ OpenRouter API error:', response.status, errorText);
       
+      if (response.status === 401) {
+        throw new Error('Chave OpenRouter inválida. Verifique a configuração.');
+      }
       if (response.status === 429) {
-        throw new Error('Limite de uso excedido. Aguarde um momento e tente novamente.');
+        throw new Error('Limite de requisições excedido. Aguarde e tente novamente.');
       }
       if (response.status === 402) {
-        throw new Error('Créditos esgotados. Adicione créditos em Settings → Workspace → Usage.');
+        throw new Error('Créditos OpenRouter esgotados. Adicione créditos na sua conta.');
       }
       
-      throw new Error(`Lovable AI error: ${response.status}`);
+      throw new Error(`OpenRouter API error: ${response.status}`);
     }
 
     if (!response.body) {
-      throw new Error('No response body from Lovable AI');
+      throw new Error('No response body from OpenRouter');
     }
 
     // Stream the response back to client
@@ -354,32 +347,22 @@ serve(async (req) => {
           const reader = response.body!.getReader();
           const decoder = new TextDecoder();
           let buffer = '';
-          let toolCallBuffer = '';
-          let inToolCall = false;
+          let contentBuffer = '';
 
           while (true) {
             const { done, value } = await reader.read();
             
             if (done) {
-              // If we have accumulated tool call data, send it
-              if (toolCallBuffer) {
-                try {
-                  const toolCallData = JSON.parse(toolCallBuffer);
-                  const files = toolCallData.files;
-                  if (files && Array.isArray(files)) {
-                    // Send the complete structured data
-                    const finalData = {
-                      choices: [{
-                        delta: {
-                          content: JSON.stringify({ files })
-                        }
-                      }]
-                    };
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalData)}\n\n`));
-                  }
-                } catch (e) {
-                  console.error('Error parsing final tool call:', e);
-                }
+              // Send final content if accumulated
+              if (contentBuffer) {
+                const finalData = {
+                  choices: [{
+                    delta: {
+                      content: contentBuffer
+                    }
+                  }]
+                };
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalData)}\n\n`));
               }
               
               controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -400,14 +383,10 @@ serve(async (req) => {
                 try {
                   const parsed = JSON.parse(jsonStr);
                   
-                  // Check for tool calls
-                  const toolCalls = parsed.choices?.[0]?.delta?.tool_calls;
-                  if (toolCalls && toolCalls.length > 0) {
-                    const args = toolCalls[0].function?.arguments;
-                    if (args) {
-                      toolCallBuffer += args;
-                      inToolCall = true;
-                    }
+                  // Extract content from delta
+                  const deltaContent = parsed.choices?.[0]?.delta?.content;
+                  if (deltaContent) {
+                    contentBuffer += deltaContent;
                   }
                   
                   // Pass through the streaming data
