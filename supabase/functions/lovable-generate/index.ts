@@ -313,8 +313,7 @@ serve(async (req) => {
         messages,
         temperature: 0.3,
         max_tokens: 16000,
-        stream: true,
-        response_format: { type: 'json_object' }
+        stream: true
       })
     });
 
