@@ -184,10 +184,10 @@ Remember: Your entire response must be valid JSON starting with { and ending wit
 
 // Available OpenRouter models for code generation
 const MODELS = {
-  basic: 'z-ai/glm-4.5-air:free',
+  basic: 'kwaipilot/kat-coder-pro:free',
   pro: 'z-ai/glm-4.7',
   vision: 'google/gemini-2.5-flash',
-  fast: 'z-ai/glm-4.5-air:free',
+  fast: 'kwaipilot/kat-coder-pro:free',
   reasoning: 'z-ai/glm-4.7'
 };
 
