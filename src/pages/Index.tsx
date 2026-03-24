@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
 import { FileNode } from "@/components/FileTree";
-import { ApiKeyInput } from "@/components/ApiKeyInput";
-import { GuestApiKeyInput } from "@/components/GuestApiKeyInput";
-import { GuestModeNotification } from "@/components/GuestModeNotification";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GeneratedPreview } from "@/components/GeneratedPreview";
@@ -12,9 +9,6 @@ import { UpgradeDialog } from "@/components/UpgradeDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useSubscription } from "@/contexts/SubscriptionContext";
-import { useGuestMode } from "@/contexts/GuestModeContext";
-import { useAIGeneration } from "@/hooks/useAIGeneration";
 import { useLovableGeneration } from "@/hooks/useLovableGeneration";
 import { useProjectManagement } from "@/hooks/useProjectManagement";
 import { useVersionHistory } from "@/hooks/useVersionHistory";
@@ -31,13 +25,8 @@ interface ChatMessage {
 
 const Index = () => {
   const navigate = useNavigate();
-  const { subscribed } = useSubscription();
-  const { isGuestMode, guestApiKey, setGuestApiKey, enableGuestMode, disableGuestMode } = useGuestMode();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
-  const [showGuestApiKeyInput, setShowGuestApiKeyInput] = useState(false);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [selectedFile, setSelectedFile] = useState<{path: string, content: string} | undefined>();
   const [generatedCode, setGeneratedCode] = useState<string>("");
@@ -47,26 +36,9 @@ const Index = () => {
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const { toast } = useToast();
 
-  const [useLovableAI, setUseLovableAI] = useState(true); // Default to Lovable AI
-
   const { websiteVersions, currentVersionId, createNewVersion, restoreVersion, resetVersions } = useVersionHistory();
   const { currentProjectId, currentProjectName, setCurrentProjectId, setCurrentProjectName, saveProject, resetProject } = useProjectManagement(user);
   
-  const aiGeneration = useAIGeneration({
-    onApiKeyInvalid: () => {
-      setHasApiKey(false);
-      setShowApiKeyInput(true);
-    },
-    onCodeGenerated: (parsedFiles, content) => {
-      setFiles(parsedFiles);
-      setGeneratedCode(content);
-      const firstFile = findFirstFile(parsedFiles);
-      if (firstFile) {
-        setSelectedFile({ path: firstFile.path, content: firstFile.content || "" });
-      }
-    }
-  });
-
   const lovableGeneration = useLovableGeneration({
     onCodeGenerated: (parsedFiles, content) => {
       setFiles(parsedFiles);
@@ -78,120 +50,20 @@ const Index = () => {
     }
   });
 
-  // Check authentication and API key
+  // Check authentication
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      if (!session?.user && !isGuestMode) {
-        navigate('/auth');
-      } else if (session?.user) {
-        setTimeout(() => {
-          checkUserApiKey(session.user.id);
-        }, 0);
-      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      if (!session?.user && !isGuestMode) {
-        navigate('/auth');
-      } else if (session?.user) {
-        checkUserApiKey(session.user.id);
-      }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, isGuestMode]);
-
-  const checkUserApiKey = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('openrouter_api_key')
-        .eq('id', userId)
-        .single();
-
-      if (error) throw error;
-      setHasApiKey(!!data?.openrouter_api_key);
-    } catch (error) {
-      console.error('Error checking API key:', error);
-      setHasApiKey(false);
-    }
-  };
-
-  const handleApiKeySubmit = (key: string) => {
-    setHasApiKey(true);
-    setShowApiKeyInput(false);
-    toast({
-      title: "Chave API Salva",
-      description: "Agora você pode começar a gerar websites!",
-    });
-  };
-
-  const handleGuestApiKeySubmit = (key: string) => {
-    setGuestApiKey(key);
-    setShowGuestApiKeyInput(false);
-    toast({
-      title: "Chave API Salva",
-      description: "Agora você pode começar a gerar websites no modo convidado!",
-    });
-  };
-
-  const handleEnableGuestMode = () => {
-    enableGuestMode();
-    toast({
-      title: "Modo Convidado Ativado",
-      description: "Você pode usar o gerador com sua chave API do OpenRouter.",
-    });
-  };
-
-  const checkApiKeyAndProceed = (prompt: string, model: string, temperature: number) => {
-    if (!user && !isGuestMode) {
-      navigate('/auth');
-      return;
-    }
-    
-    if (isGuestMode) {
-      if (!guestApiKey) {
-        setShowGuestApiKeyInput(true);
-        toast({
-          title: "Chave API Necessária",
-          description: "Por favor, insira sua chave API do OpenRouter para continuar.",
-          variant: "destructive"
-        });
-        return;
-      }
-      handlePromptSubmit(prompt, model, temperature);
-      return;
-    }
-    
-    // When using Lovable AI, no user API key or subscription is needed
-    // (the server uses its own OPENROUTER_API_KEY)
-    if (useLovableAI) {
-      handlePromptSubmit(prompt, model, temperature);
-      return;
-    }
-    
-    if (!subscribed) {
-      setShowUpgradeDialog(true);
-      return;
-    }
-    
-    if (!hasApiKey) {
-      setShowApiKeyInput(true);
-      toast({
-        title: "Chave API Necessária",
-        description: "Por favor, insira sua chave API do OpenRouter para continuar.",
-        variant: "destructive"
-      });
-      return;
-    }
-    handlePromptSubmit(prompt, model, temperature);
-  };
+  }, [navigate]);
 
   const handleRestoreVersion = (versionId: string) => {
     const version = restoreVersion(versionId);
@@ -220,25 +92,11 @@ const Index = () => {
     try {
       const isEdit = files.length > 0 && files[0].content;
       
-      let fullContent: string;
-
-      if (useLovableAI) {
-        // Use Lovable AI - more robust generation
-        fullContent = await lovableGeneration.generate(
-          prompt,
-          generatedCode,
-          Boolean(isEdit)
-        );
-      } else {
-        // Use OpenRouter - legacy method
-        const currentFile = files.find(f => f.name === 'index.html');
-        fullContent = await aiGeneration.generate(
-          prompt,
-          (isEdit && currentFile) ? currentFile.content : undefined,
-          Boolean(isEdit),
-          model === 'pro' ? 'pro' : 'basic'
-        );
-      }
+      const fullContent = await lovableGeneration.generate(
+        prompt,
+        generatedCode,
+        Boolean(isEdit)
+      );
       
       const filesParsed = parseProjectStructure(fullContent);
       const parsedFiles = buildFileTree(filesParsed);
@@ -259,16 +117,11 @@ const Index = () => {
         description: "Seu website está pronto para visualização.",
       });
     } catch (error) {
-      // Error already handled in useAIGeneration
+      // Error already handled in useLovableGeneration
     }
   };
 
   const handleChatMessage = async (message: string, images?: string[], model: 'basic' | 'pro' = 'basic') => {
-    if (!useLovableAI && !subscribed) {
-      setShowUpgradeDialog(true);
-      return;
-    }
-    
     // Save user message to database
     if (user && currentProjectId) {
       await supabase.from('chat_history').insert({
@@ -280,26 +133,12 @@ const Index = () => {
     }
     
     try {
-      const currentFile = files.find(f => f.name === 'index.html');
-      if (!currentFile?.content) {
-        throw new Error("Nenhum website gerado para editar");
-      }
+      const isEdit = files.length > 0 && files[0].content;
 
-      // Load recent chat history for context
-      const { data: chatHistory } = await supabase
-        .from('chat_history')
-        .select('role, content')
-        .eq('project_id', currentProjectId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      const fullContent = await aiGeneration.generate(
+      const fullContent = await lovableGeneration.generate(
         message,
-        currentFile.content,
-        true,
-        model,
-        images,
-        chatHistory ? chatHistory.reverse() : []
+        generatedCode,
+        Boolean(isEdit)
       );
       
       const filesParsed = parseProjectStructure(fullContent);
@@ -331,7 +170,6 @@ const Index = () => {
         description: "Suas alterações foram aplicadas com sucesso.",
       });
     } catch (error) {
-      // Error already handled in useAIGeneration
       throw error;
     }
   };
@@ -352,7 +190,7 @@ const Index = () => {
         id: msg.id,
         content: msg.content,
         sender: msg.role === 'user' ? 'user' : 'ai',
-        timestamp: new Date(msg.created_at)
+        timestamp: new Date(msg.created_at!)
       }));
       
       setChatMessages(messages);
@@ -371,7 +209,6 @@ const Index = () => {
     setShowPreview(true);
     setUseChatLayout(true);
     
-    // Load chat history for this project
     await loadChatHistory(project.id);
     
     const firstFile = findFirstFile(parsedFiles);
@@ -409,22 +246,13 @@ const Index = () => {
     setSelectedFile({ path, content });
   };
 
-  // Show API key input only when explicitly requested
-  if (showApiKeyInput) {
-    return <ApiKeyInput onApiKeySubmit={handleApiKeySubmit} />;
-  }
-
-  if (showGuestApiKeyInput) {
-    return <GuestApiKeyInput onApiKeySubmit={handleGuestApiKeySubmit} onCancel={() => setShowGuestApiKeyInput(false)} />;
-  }
-
   if (showPreview && files.length > 0) {
     return (
       <>
-      <LoadingScreen 
-        isVisible={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading} 
-        progress={useLovableAI ? lovableGeneration.loadingProgress : aiGeneration.loadingProgress}
-        currentContent={useLovableAI ? lovableGeneration.currentStreamContent : aiGeneration.currentStreamContent}
+        <LoadingScreen 
+          isVisible={lovableGeneration.isLoading} 
+          progress={lovableGeneration.loadingProgress}
+          currentContent={lovableGeneration.currentStreamContent}
         />
         {user && (
           <ProjectSidebar
@@ -442,7 +270,7 @@ const Index = () => {
             onNewProject={handleNewProject}
             onSendMessage={handleChatMessage}
             generatedCode={!selectedFile ? generatedCode : undefined}
-            isLoading={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading}
+            isLoading={lovableGeneration.isLoading}
             websiteVersions={websiteVersions}
             currentVersionId={currentVersionId}
             onRestoreVersion={handleRestoreVersion}
@@ -465,17 +293,14 @@ const Index = () => {
   return (
     <>
       <LoadingScreen 
-        isVisible={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading}
-        progress={useLovableAI ? lovableGeneration.loadingProgress : aiGeneration.loadingProgress}
-        currentContent={useLovableAI ? lovableGeneration.currentStreamContent : aiGeneration.currentStreamContent}
+        isVisible={lovableGeneration.isLoading}
+        progress={lovableGeneration.loadingProgress}
+        currentContent={lovableGeneration.currentStreamContent}
       />
       <UpgradeDialog 
         open={showUpgradeDialog} 
         onOpenChange={setShowUpgradeDialog}
       />
-      {isGuestMode && (
-        <GuestModeNotification onDisableGuestMode={disableGuestMode} />
-      )}
       {user && (
         <ProjectSidebar
           onProjectSelect={handleProjectSelect}
@@ -484,9 +309,8 @@ const Index = () => {
         />
       )}
       <WelcomeScreen 
-        onSubmit={checkApiKeyAndProceed} 
-        isLoading={useLovableAI ? lovableGeneration.isLoading : aiGeneration.isLoading}
-        onEnableGuestMode={!user ? handleEnableGuestMode : undefined}
+        onSubmit={handlePromptSubmit} 
+        isLoading={lovableGeneration.isLoading}
       />
     </>
   );
