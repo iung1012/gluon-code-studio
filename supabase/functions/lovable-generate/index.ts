@@ -182,13 +182,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
 Remember: Your entire response must be valid JSON starting with { and ending with }`;
 
-// Available OpenRouter models for code generation
+// Available Moonshot models for code generation
 const MODELS = {
-  basic: 'moonshotai/kimi-k2',
-  pro: 'z-ai/glm-4.7',
-  vision: 'google/gemini-2.5-flash',
-  fast: 'moonshotai/kimi-k2',
-  reasoning: 'z-ai/glm-4.7'
+  basic: 'kimi-k2-0711-preview',
+  pro: 'kimi-k2-0711-preview',
+  vision: 'kimi-k2-0711-preview',
+  fast: 'kimi-k2-0711-preview',
+  reasoning: 'kimi-k2-0711-preview'
 };
 
 serve(async (req) => {
@@ -234,10 +234,10 @@ serve(async (req) => {
       model
     });
 
-    // Get OpenRouter API key
-    const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY');
-    if (!OPENROUTER_API_KEY) {
-      throw new Error('OPENROUTER_API_KEY not configured');
+    // Get Moonshot API key
+    const MOONSHOT_API_KEY = Deno.env.get('MOONSHOT_API_KEY');
+    if (!MOONSHOT_API_KEY) {
+      throw new Error('MOONSHOT_API_KEY not configured');
     }
 
     // Select model based on request
@@ -246,7 +246,7 @@ serve(async (req) => {
       ? MODELS.vision 
       : (MODELS[model as keyof typeof MODELS] || MODELS.basic);
 
-    console.log(`🤖 Using OpenRouter model: ${selectedModel}`);
+    console.log(`🤖 Using Moonshot model: ${selectedModel}`);
 
     // Build messages for the AI
     const messages: any[] = [
@@ -254,7 +254,6 @@ serve(async (req) => {
     ];
 
     if (isEdit && currentCode) {
-      // For edits, provide current code context
       const userContent: any[] = [
         {
           type: 'text',
@@ -262,7 +261,6 @@ serve(async (req) => {
         }
       ];
 
-      // Add images if provided
       if (hasImages) {
         userContent.push({ type: 'text', text: '\n\nREFERENCE IMAGES:' });
         images.forEach((img: string, idx: number) => {
@@ -276,7 +274,6 @@ serve(async (req) => {
 
       messages.push({ role: 'user', content: userContent });
     } else {
-      // For new projects
       const userContent: any[] = [
         {
           type: 'text',
@@ -284,7 +281,6 @@ serve(async (req) => {
         }
       ];
 
-      // Add images if provided
       if (hasImages) {
         userContent.push({ type: 'text', text: '\n\nREFERENCE IMAGES:' });
         images.forEach((img: string, idx: number) => {
@@ -299,14 +295,12 @@ serve(async (req) => {
       messages.push({ role: 'user', content: userContent });
     }
 
-    // Call OpenRouter API
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    // Call Moonshot API directly
+    const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Authorization': `Bearer ${MOONSHOT_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': Deno.env.get('SUPABASE_URL') ?? 'https://lovable.app',
-        'X-Title': 'CoderIA - Code Generator',
       },
       body: JSON.stringify({
         model: selectedModel,
@@ -319,19 +313,19 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ OpenRouter API error:', response.status, errorText);
+      console.error('❌ Moonshot API error:', response.status, errorText);
       
       if (response.status === 401) {
-        throw new Error('Chave OpenRouter inválida. Verifique a configuração.');
+        throw new Error('Chave Moonshot inválida. Verifique a configuração.');
       }
       if (response.status === 429) {
         throw new Error('Limite de requisições excedido. Aguarde e tente novamente.');
       }
       if (response.status === 402) {
-        throw new Error('Créditos OpenRouter esgotados. Adicione créditos na sua conta.');
+        throw new Error('Créditos Moonshot esgotados. Adicione créditos na sua conta.');
       }
       
-      throw new Error(`OpenRouter API error: ${response.status}`);
+      throw new Error(`Moonshot API error: ${response.status}`);
     }
 
     if (!response.body) {
