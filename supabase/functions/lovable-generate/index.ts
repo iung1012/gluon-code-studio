@@ -182,13 +182,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
 Remember: Your entire response must be valid JSON starting with { and ending with }`;
 
-// Available OpenRouter models for code generation
+// Available Moonshot models for code generation
 const MODELS = {
-  basic: 'moonshotai/kimi-k2',
-  pro: 'z-ai/glm-4.7',
-  vision: 'google/gemini-2.5-flash',
-  fast: 'moonshotai/kimi-k2',
-  reasoning: 'z-ai/glm-4.7'
+  basic: 'kimi-k2-0711-preview',
+  pro: 'kimi-k2-0711-preview',
+  vision: 'kimi-k2-0711-preview',
+  fast: 'kimi-k2-0711-preview',
+  reasoning: 'kimi-k2-0711-preview'
 };
 
 serve(async (req) => {
