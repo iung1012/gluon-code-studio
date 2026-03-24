@@ -234,10 +234,19 @@ serve(async (req) => {
       model
     });
 
-    // Get Moonshot API key
-    const MOONSHOT_API_KEY = Deno.env.get('MOONSHOT_API_KEY');
+    // Get Moonshot API key (sanitized)
+    const rawMoonshotApiKey = Deno.env.get('MOONSHOT_API_KEY') ?? '';
+    const MOONSHOT_API_KEY = rawMoonshotApiKey
+      .trim()
+      .replace(/^Bearer\s+/i, '')
+      .replace(/^['"]|['"]$/g, '');
+
     if (!MOONSHOT_API_KEY) {
       throw new Error('MOONSHOT_API_KEY not configured');
+    }
+
+    if (!MOONSHOT_API_KEY.startsWith('sk-')) {
+      console.warn('⚠️ MOONSHOT_API_KEY may be malformed (expected sk- prefix)');
     }
 
     // Select model based on request
@@ -316,7 +325,7 @@ serve(async (req) => {
       console.error('❌ Moonshot API error:', response.status, errorText);
       
       if (response.status === 401) {
-        throw new Error('Chave Moonshot inválida. Verifique a configuração.');
+        throw new Error('Falha de autenticação Moonshot. Atualize MOONSHOT_API_KEY no backend com uma chave válida da plataforma Moonshot (somente o valor da chave, sem "Bearer").');
       }
       if (response.status === 429) {
         throw new Error('Limite de requisições excedido. Aguarde e tente novamente.');
