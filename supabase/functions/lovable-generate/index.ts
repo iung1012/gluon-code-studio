@@ -245,6 +245,8 @@ serve(async (req) => {
       throw new Error('MOONSHOT_API_KEY not configured');
     }
 
+    console.log(`🔑 MOONSHOT_API_KEY: length=${MOONSHOT_API_KEY.length}, prefix=${MOONSHOT_API_KEY.substring(0, 6)}...`);
+
     if (!MOONSHOT_API_KEY.startsWith('sk-')) {
       console.warn('⚠️ MOONSHOT_API_KEY may be malformed (expected sk- prefix)');
     }
