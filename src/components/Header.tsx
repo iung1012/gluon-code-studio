@@ -23,23 +23,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { z } from "zod";
-
-const apiKeySchema = z.string()
-  .min(20, "Chave API muito curta")
-  .max(500, "Chave API muito longa")
-  .startsWith("sk-", "Chave API deve começar com 'sk-'");
 
 export const Header = () => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { subscribed } = useSubscription();
-  const [user, setUser] = useState<User | null>(null);
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {

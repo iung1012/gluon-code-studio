@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, Zap, User } from "lucide-react";
+import { ArrowUp, Zap } from "lucide-react";
 import { Header } from "@/components/Header";
 
 interface WelcomeScreenProps {
