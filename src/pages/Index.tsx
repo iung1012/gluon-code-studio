@@ -264,7 +264,7 @@ const Index = () => {
   };
 
   const handleChatMessage = async (message: string, images?: string[], model: 'basic' | 'pro' = 'basic') => {
-    if (!subscribed) {
+    if (!useLovableAI && !subscribed) {
       setShowUpgradeDialog(true);
       return;
     }
