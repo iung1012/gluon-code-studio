@@ -169,6 +169,13 @@ const Index = () => {
       return;
     }
     
+    // When using Lovable AI, no user API key or subscription is needed
+    // (the server uses its own OPENROUTER_API_KEY)
+    if (useLovableAI) {
+      handlePromptSubmit(prompt, model, temperature);
+      return;
+    }
+    
     if (!subscribed) {
       setShowUpgradeDialog(true);
       return;
@@ -257,7 +264,7 @@ const Index = () => {
   };
 
   const handleChatMessage = async (message: string, images?: string[], model: 'basic' | 'pro' = 'basic') => {
-    if (!subscribed) {
+    if (!useLovableAI && !subscribed) {
       setShowUpgradeDialog(true);
       return;
     }

@@ -39,32 +39,26 @@ export const ApiKeyInput = ({ onApiKeySubmit }: ApiKeyInputProps) => {
     }
 
     try {
-      // Salvar chave API no perfil do usuário
+      // Try to save to user profile if authenticated
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Erro de Autenticação",
-          description: "Você precisa estar logado para salvar a chave API.",
-          variant: "destructive"
-        });
-        return;
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ openrouter_api_key: trimmedKey })
+          .eq('id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Fallback: save to localStorage if not authenticated
+        localStorage.setItem('openrouter_api_key', trimmedKey);
       }
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ openrouter_api_key: trimmedKey })
-        .eq('id', user.id);
-
-      if (error) throw error;
 
       onApiKeySubmit(trimmedKey);
     } catch (error) {
       console.error('Error saving API key:', error);
-      toast({
-        title: "Erro ao Salvar",
-        description: error instanceof Error ? error.message : "Erro ao salvar chave API.",
-        variant: "destructive"
-      });
+      // Fallback to localStorage on any error
+      localStorage.setItem('openrouter_api_key', trimmedKey);
+      onApiKeySubmit(trimmedKey);
     }
   };
 
