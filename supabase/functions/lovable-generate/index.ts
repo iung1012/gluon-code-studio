@@ -184,11 +184,11 @@ Remember: Your entire response must be valid JSON starting with { and ending wit
 
 // Available Moonshot models for code generation
 const MODELS = {
-  basic: 'kimi-k2-0711-preview',
-  pro: 'kimi-k2-0711-preview',
-  vision: 'kimi-k2-0711-preview',
-  fast: 'kimi-k2-0711-preview',
-  reasoning: 'kimi-k2-0711-preview'
+  basic: 'kimi-k2-0905-preview',
+  pro: 'kimi-k2-0905-preview',
+  vision: 'kimi-k2-0905-preview',
+  fast: 'kimi-k2-turbo-preview',
+  reasoning: 'kimi-k2-0905-preview'
 };
 
 serve(async (req) => {
